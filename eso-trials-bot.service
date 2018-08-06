@@ -1,0 +1,26 @@
+[Unit]
+Description=eso-trials-bot
+After=syslog.target network.target
+
+[Service]
+Type=simple
+User=discordbot
+Group=discordbot
+
+LimitNOFILE=999996
+# LimitNProc=...
+
+ExecStart=/home/discordbot/eso-discord/trials-bot \
+            --config /home/discordbot/eso-discord/trials-bot-config.toml \
+            --database /home/discordbot/eso-discord/trialsbot.db \
+            --num_workers 20 \
+            --log_level info
+
+KillMode=mixed
+KillSignal=SIGTERM
+
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target

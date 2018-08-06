@@ -1,0 +1,19 @@
+syntax = "proto3";
+package storage;
+
+message ProtoTrialSignup {
+    string name = 1;
+    string role = 2;
+    string state = 3;
+}
+
+message ProtoTrial {
+    string name = 1;
+    string state = 2;
+    string announce_channel = 3;
+    string signup_channel = 4;
+    string description = 7;
+
+    map<string, uint64> role_counts = 5;
+    repeated ProtoTrialSignup signups = 6;
+}
