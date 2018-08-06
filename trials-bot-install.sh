@@ -10,8 +10,8 @@ HERE="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 echo ${HERE}
 
 systemctl stop eso-have-want-bot
-cp ${HERE}/eso-have-want-bot.service /etc/systemd/system/
+cp ${HERE}/eso-trials-bot.service /etc/systemd/system/
 systemctl daemon-reload
-rm ${HERE}/have-want-bot
-gunzip ${HERE}/have-want-bot.gz
-systemctl start eso-have-want-bot
+rm ${HERE}/trials-bot
+gunzip ${HERE}/trials-bot.gz
+systemctl start eso-trials-bot
