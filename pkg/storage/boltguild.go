@@ -23,6 +23,9 @@ func (g *boltGuild) Serialize() (out []byte, err error) {
 
 func (g *boltGuild) GetSettings() (s GuildSettings) {
 	s.ControlSequence = g.protoGuild.CommandIndicator
+	s.AnnounceChannel = g.protoGuild.AnnounceChannel
+	s.AdminChannel = g.protoGuild.AdminChannel
+	s.SignupChannel = g.protoGuild.SignupChannel
 	return
 }
 
