@@ -1,22 +1,19 @@
-package msghandler
+package storage
 
 import (
-	"github.com/gsmcwhirter/discord-bot-lib/snowflake"
 	"github.com/gsmcwhirter/discord-bot-lib/util"
 	"github.com/pkg/errors"
-
-	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
 
 // GetSettings TODOC
-func GetSettings(gapi storage.GuildAPI, gid snowflake.Snowflake) (s storage.GuildSettings, err error) {
+func GetSettings(gapi GuildAPI, guild string) (s GuildSettings, err error) {
 	t, err := gapi.NewTransaction(false)
 	if err != nil {
 		return
 	}
 	defer util.CheckDefer(t.Rollback)
 
-	bGuild, err := t.AddGuild(gid.ToString())
+	bGuild, err := t.AddGuild(guild)
 	if err != nil {
 		err = errors.Wrap(err, "unable to find guild")
 		return

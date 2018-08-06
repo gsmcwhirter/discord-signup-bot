@@ -4,4 +4,7 @@ package storage;
 message ProtoGuild {
     string name = 1;
     string command_indicator = 2;
+    string announce_channel = 3;
+    string signup_channel = 4;
+    string admin_channel = 5;
 }

@@ -28,4 +28,7 @@ func (g *boltGuild) GetSettings() (s GuildSettings) {
 
 func (g *boltGuild) SetSettings(s GuildSettings) {
 	g.protoGuild.CommandIndicator = s.ControlSequence
+	g.protoGuild.AnnounceChannel = s.AnnounceChannel
+	g.protoGuild.AdminChannel = s.AdminChannel
+	g.protoGuild.SignupChannel = s.SignupChannel
 }

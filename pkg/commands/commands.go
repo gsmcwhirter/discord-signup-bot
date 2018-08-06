@@ -13,8 +13,12 @@ import (
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
 
+// ErrNoResponse TODOC
+var ErrNoResponse = errors.New("no response")
+
 type dependencies interface {
 	TrialAPI() storage.TrialAPI
+	GuildAPI() storage.GuildAPI
 }
 
 // Options TODOC

@@ -83,7 +83,7 @@ func (h *handlers) guildCommandIndicator(gid snowflake.Snowflake) string {
 		return h.defaultCommandIndicator
 	}
 
-	s, err := GetSettings(h.deps.GuildAPI(), gid)
+	s, err := storage.GetSettings(h.deps.GuildAPI(), gid.ToString())
 	if err != nil {
 		return h.defaultCommandIndicator
 	}
@@ -100,7 +100,7 @@ func (h *handlers) guildAdminChannelName(gid snowflake.Snowflake) string {
 		return ""
 	}
 
-	s, err := GetSettings(h.deps.GuildAPI(), gid)
+	s, err := storage.GetSettings(h.deps.GuildAPI(), gid.ToString())
 	if err != nil {
 		return ""
 	}

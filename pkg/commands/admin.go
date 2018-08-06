@@ -71,20 +71,10 @@ func (c *adminCommands) create(user, guild, args string) (cmdhandler.Response, e
 		settings = argParts[1]
 	}
 
-	gt, err := c.deps.GuildAPI().NewTransaction(false)
+	gsettings, err := getGuildSettings(c.deps.GuildAPI(), guild)
 	if err != nil {
 		return r, err
 	}
-	defer util.CheckDefer(gt.Rollback)
-
-	bGuild, err := gt.AddGuild(guild)
-	if err != nil {
-		err = errors.Wrap(err, "unable to find guild")
-		return r, err
-	}
-
-	gsettings := bGuild.GetSettings()
-	gt.Rollback()
 
 	t, err := c.deps.TrialAPI().NewTransaction(guild, true)
 	if err != nil {
