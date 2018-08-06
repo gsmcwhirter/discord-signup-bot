@@ -71,7 +71,7 @@ func (c *adminCommands) create(user, guild, args string) (cmdhandler.Response, e
 		settings = argParts[1]
 	}
 
-	gsettings, err := getGuildSettings(c.deps.GuildAPI(), guild)
+	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), guild)
 	if err != nil {
 		return r, err
 	}
