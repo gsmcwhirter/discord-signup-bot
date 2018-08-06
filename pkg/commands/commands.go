@@ -100,6 +100,7 @@ func (c *rootCommands) show(user, guild, args string) (cmdhandler.Response, erro
 		suNames := make([]string, 0, len(signups))
 		ofNames := make([]string, 0, len(signups))
 		for _, su := range signups {
+			fmt.Printf("*** considering  %+v\n", su)
 			if strings.ToLower(su.GetRole()) != lowerRole {
 				continue
 			}
@@ -157,6 +158,10 @@ func (c *rootCommands) signup(user, guild, args string) (cmdhandler.Response, er
 		return r, err
 	}
 
+	if trial.GetState() != storage.TrialStateOpen {
+		return r, errors.New("cannot sign up for a closed trial")
+	}
+
 	roleCounts := trial.GetRoleCounts() // already sorted by name
 	rc, known := roleCountByName(role, roleCounts)
 	if !known {
@@ -205,6 +210,10 @@ func (c *rootCommands) withdraw(user, guild, args string) (cmdhandler.Response, 
 		return r, err
 	}
 
+	if trial.GetState() != storage.TrialStateOpen {
+		return r, errors.New("cannot withdraw from a closed trial")
+	}
+
 	trial.RemoveSignup(user)
 
 	err = t.SaveTrial(trial)
@@ -237,7 +246,9 @@ func CommandHandler(deps dependencies, versionStr string, opts Options) *cmdhand
 	ch.SetHandler("list", cmdhandler.NewLineHandler(rh.list))
 	ch.SetHandler("show", cmdhandler.NewLineHandler(rh.show))
 	ch.SetHandler("signup", cmdhandler.NewLineHandler(rh.signup))
+	ch.SetHandler("su", cmdhandler.NewLineHandler(rh.signup))
 	ch.SetHandler("withdraw", cmdhandler.NewLineHandler(rh.withdraw))
+	ch.SetHandler("wd", cmdhandler.NewLineHandler(rh.signup))
 
 	return ch
 }

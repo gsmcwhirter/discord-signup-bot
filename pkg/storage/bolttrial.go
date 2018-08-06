@@ -44,6 +44,7 @@ func (b *boltTrial) GetSignups() []TrialSignup {
 
 		s = append(s, &boltTrialSignup{
 			name: ps.Name,
+			role: ps.Role,
 		})
 	}
 
