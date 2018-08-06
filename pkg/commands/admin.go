@@ -199,7 +199,7 @@ func (c *adminCommands) edit(user, guild, args string) (cmdhandler.Response, err
 		return r, errors.Wrap(err, "could not save trial")
 	}
 
-	r.Description = fmt.Sprintf("Trial %s created successfully", trialName)
+	r.Description = fmt.Sprintf("Trial %s edited successfully", trialName)
 
 	return r, nil
 }

@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"fmt"
 	"sort"
 	"strconv"
 	"strings"
@@ -42,8 +43,9 @@ func signupsForRole(role string, signups []storage.TrialSignup, sorted bool) []s
 }
 
 func roleCountByName(role string, roleCounts []storage.RoleCount) (storage.RoleCount, bool) {
+	roleLower := strings.ToLower(role)
 	for _, rc := range roleCounts {
-		if rc.GetRole() == role {
+		if strings.ToLower(rc.GetRole()) == roleLower {
 			return rc, true
 		}
 	}
@@ -66,7 +68,7 @@ func parseSettingDescriptionArgs(args string) (map[string]string, error) {
 		}
 
 		if strings.ToLower(pairParts[0]) == "description" {
-			argMap[strings.ToLower(pairParts[0])] = pairParts[1] + strings.Join(parts[i+1:], " ")
+			argMap[strings.ToLower(pairParts[0])] = fmt.Sprintf("%s %s", pairParts[1], strings.Join(parts[i+1:], " "))
 			break
 		}
 		argMap[strings.ToLower(pairParts[0])] = pairParts[1]

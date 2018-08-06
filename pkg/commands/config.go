@@ -99,6 +99,8 @@ func (c *configCommands) set(user, guild, args string) (cmdhandler.Response, err
 		return r, errors.New("no settings to save")
 	}
 
+	fmt.Printf("*** %+v\n", argPairs)
+
 	t, err := c.deps.GuildAPI().NewTransaction(true)
 	if err != nil {
 		return r, err

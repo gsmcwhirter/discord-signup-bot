@@ -9,7 +9,7 @@ done
 HERE="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 echo ${HERE}
 
-systemctl stop eso-have-want-bot
+systemctl stop eso-trials-bot
 cp ${HERE}/eso-trials-bot.service /etc/systemd/system/
 systemctl daemon-reload
 rm ${HERE}/trials-bot

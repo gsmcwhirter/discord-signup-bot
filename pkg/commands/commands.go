@@ -111,15 +111,22 @@ func (c *rootCommands) show(user, guild, args string) (cmdhandler.Response, erro
 			}
 		}
 
-		r.Fields = append(r.Fields, cmdhandler.EmbedField{
-			Name: fmt.Sprintf("*%s* (%d/%d)", rc.GetRole(), len(suNames), rc.GetCount()),
-			Val:  strings.Join(suNames, "\n"),
-		})
+		if len(suNames) > 0 {
+			r.Fields = append(r.Fields, cmdhandler.EmbedField{
+				Name: fmt.Sprintf("*%s* (%d/%d)", rc.GetRole(), len(suNames), rc.GetCount()),
+				Val:  strings.Join(suNames, "\n") + "\n",
+			})
+		} else {
+			r.Fields = append(r.Fields, cmdhandler.EmbedField{
+				Name: fmt.Sprintf("*%s* (%d/%d)", rc.GetRole(), len(suNames), rc.GetCount()),
+				Val:  "(empty)",
+			})
+		}
 
 		if len(ofNames) > 0 {
 			r.Fields = append(r.Fields, cmdhandler.EmbedField{
 				Name: fmt.Sprintf("*%s Overflow* (%d)", rc.GetRole(), len(ofNames)),
-				Val:  strings.Join(ofNames, "\n"),
+				Val:  strings.Join(ofNames, "\n") + "\n",
 			})
 		}
 	}
