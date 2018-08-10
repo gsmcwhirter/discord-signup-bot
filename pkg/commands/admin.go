@@ -316,13 +316,8 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 		return r, err
 	}
 
-	var everyoneRid snowflake.Snowflake
 	var signupCid snowflake.Snowflake
 	var announceCid snowflake.Snowflake
-
-	if everyoneRole, ok := c.deps.BotSession().EveryoneRoleID(msg.GuildID()); ok {
-		everyoneRid = everyoneRole
-	}
 
 	if scID, ok := sessionGuild.ChannelWithName(trial.GetSignupChannel()); ok {
 		signupCid = scID
@@ -339,7 +334,7 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 	}
 
 	r2 := &cmdhandler.EmbedResponse{
-		To:          cmdhandler.RoleMentionString(everyoneRid),
+		To:          "@everyone",
 		ToChannel:   announceCid,
 		Title:       fmt.Sprintf("Signups are open for %s", trial.GetName()),
 		Description: trial.GetDescription(),

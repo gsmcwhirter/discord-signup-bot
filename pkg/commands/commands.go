@@ -185,7 +185,7 @@ func (c *rootCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, erro
 	signups := trial.GetSignups()
 	roleSignups := signupsForRole(role, signups, false)
 
-	trial.AddSignup(msg.UserID().ToString(), role)
+	trial.AddSignup(cmdhandler.UserMentionString(msg.UserID()), role)
 
 	err = t.SaveTrial(trial)
 	if err != nil {
@@ -262,7 +262,7 @@ func CommandHandler(deps dependencies, versionStr string, opts Options) *cmdhand
 	ch.SetHandler("signup", cmdhandler.NewMessageHandler(rh.signup))
 	ch.SetHandler("su", cmdhandler.NewMessageHandler(rh.signup))
 	ch.SetHandler("withdraw", cmdhandler.NewMessageHandler(rh.withdraw))
-	ch.SetHandler("wd", cmdhandler.NewMessageHandler(rh.signup))
+	ch.SetHandler("wd", cmdhandler.NewMessageHandler(rh.withdraw))
 
 	return ch
 }
