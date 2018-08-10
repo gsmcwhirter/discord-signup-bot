@@ -78,7 +78,7 @@ func (c *rootCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error)
 	r.Fields = []cmdhandler.EmbedField{
 		{
 			Name: "*Available Trials*",
-			Val:  fmt.Sprintf("```\n%s\n```\n", strings.Join(tNames, "\n")),
+			Val:  strings.Join(tNames, "\n"),
 		},
 	}
 
