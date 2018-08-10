@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 	"github.com/pkg/errors"
 )
@@ -99,4 +100,78 @@ func parseRolesString(args string) (map[string]uint64, error) {
 	}
 
 	return roleMap, nil
+}
+
+func formatTrialDisplay(trial storage.Trial, withState bool) *cmdhandler.EmbedResponse {
+	r := &cmdhandler.EmbedResponse{}
+
+	if withState {
+		r.Title = fmt.Sprintf("__%s__ (%s)", trial.GetName(), string(trial.GetState()))
+	} else {
+		r.Title = fmt.Sprintf("__%s__", trial.GetName())
+	}
+	r.Description = trial.GetDescription()
+	r.Fields = []cmdhandler.EmbedField{}
+
+	overflowFields := []cmdhandler.EmbedField{}
+
+	roleCounts := trial.GetRoleCounts() // already sorted by name
+	signups := trial.GetSignups()
+
+	for _, rc := range roleCounts {
+		lowerRole := strings.ToLower(rc.GetRole())
+		suNames := make([]string, 0, len(signups))
+		ofNames := make([]string, 0, len(signups))
+		for _, su := range signups {
+			if strings.ToLower(su.GetRole()) != lowerRole {
+				continue
+			}
+
+			if uint64(len(suNames)) < rc.GetCount() {
+				suNames = append(suNames, su.GetName())
+			} else {
+				ofNames = append(ofNames, su.GetName())
+			}
+		}
+
+		if len(suNames) > 0 {
+			r.Fields = append(r.Fields, cmdhandler.EmbedField{
+				Name: fmt.Sprintf("*%s* (%d/%d)", rc.GetRole(), len(suNames), rc.GetCount()),
+				Val:  strings.Join(suNames, "\n") + "\n",
+			})
+		} else {
+			r.Fields = append(r.Fields, cmdhandler.EmbedField{
+				Name: fmt.Sprintf("*%s* (%d/%d)", rc.GetRole(), len(suNames), rc.GetCount()),
+				Val:  "(empty)",
+			})
+		}
+
+		if len(ofNames) > 0 {
+			overflowFields = append(overflowFields, cmdhandler.EmbedField{
+				Name: fmt.Sprintf("*Overflow %s* (%d)", rc.GetRole(), len(ofNames)),
+				Val:  strings.Join(ofNames, "\n") + "\n",
+			})
+		}
+	}
+
+	r.Fields = append(r.Fields, overflowFields...)
+
+	return r
+}
+
+func signupUser(trial storage.Trial, userMentionStr, role string) (overflow bool, err error) {
+	roleCounts := trial.GetRoleCounts() // already sorted by name
+	rc, known := roleCountByName(role, roleCounts)
+	if !known {
+		err = errors.New("unknown role")
+		return
+	}
+
+	signups := trial.GetSignups()
+	roleSignups := signupsForRole(role, signups, false)
+
+	trial.AddSignup(userMentionStr, role)
+	overflow = uint64(len(roleSignups)) >= rc.GetCount()
+
+	return
 }

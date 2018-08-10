@@ -86,7 +86,7 @@ func (c *rootCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error)
 }
 
 func (c *rootCommands) show(msg cmdhandler.Message) (cmdhandler.Response, error) {
-	r := &cmdhandler.EmbedResponse{
+	r := &cmdhandler.SimpleEmbedResponse{
 		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
@@ -103,50 +103,10 @@ func (c *rootCommands) show(msg cmdhandler.Message) (cmdhandler.Response, error)
 		return r, err
 	}
 
-	r.Title = fmt.Sprintf("__%s__ (%s)", trial.GetName(), string(trial.GetState()))
-	r.Description = trial.GetDescription()
-	r.Fields = []cmdhandler.EmbedField{}
+	r2 := formatTrialDisplay(trial, true)
+	r2.To = cmdhandler.UserMentionString(msg.UserID())
 
-	roleCounts := trial.GetRoleCounts() // already sorted by name
-	signups := trial.GetSignups()
-
-	for _, rc := range roleCounts {
-		lowerRole := strings.ToLower(rc.GetRole())
-		suNames := make([]string, 0, len(signups))
-		ofNames := make([]string, 0, len(signups))
-		for _, su := range signups {
-			if strings.ToLower(su.GetRole()) != lowerRole {
-				continue
-			}
-
-			if uint64(len(suNames)) < rc.GetCount() {
-				suNames = append(suNames, su.GetName())
-			} else {
-				ofNames = append(ofNames, su.GetName())
-			}
-		}
-
-		if len(suNames) > 0 {
-			r.Fields = append(r.Fields, cmdhandler.EmbedField{
-				Name: fmt.Sprintf("*%s* (%d/%d)", rc.GetRole(), len(suNames), rc.GetCount()),
-				Val:  strings.Join(suNames, "\n") + "\n",
-			})
-		} else {
-			r.Fields = append(r.Fields, cmdhandler.EmbedField{
-				Name: fmt.Sprintf("*%s* (%d/%d)", rc.GetRole(), len(suNames), rc.GetCount()),
-				Val:  "(empty)",
-			})
-		}
-
-		if len(ofNames) > 0 {
-			r.Fields = append(r.Fields, cmdhandler.EmbedField{
-				Name: fmt.Sprintf("*%s Overflow* (%d)", rc.GetRole(), len(ofNames)),
-				Val:  strings.Join(ofNames, "\n") + "\n",
-			})
-		}
-	}
-
-	return r, nil
+	return r2, nil
 }
 
 func (c *rootCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, error) {
@@ -176,28 +136,20 @@ func (c *rootCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, erro
 		return r, errors.New("cannot sign up for a closed trial")
 	}
 
-	roleCounts := trial.GetRoleCounts() // already sorted by name
-	rc, known := roleCountByName(role, roleCounts)
-	if !known {
-		return r, errors.New("unknown role")
+	overflow, err := signupUser(trial, cmdhandler.UserMentionString(msg.UserID()), role)
+	if err != nil {
+		return r, err
 	}
 
-	signups := trial.GetSignups()
-	roleSignups := signupsForRole(role, signups, false)
-
-	trial.AddSignup(cmdhandler.UserMentionString(msg.UserID()), role)
-
-	err = t.SaveTrial(trial)
-	if err != nil {
+	if err = t.SaveTrial(trial); err != nil {
 		return r, errors.Wrap(err, "could not save trial signup")
 	}
 
-	err = t.Commit()
-	if err != nil {
+	if err = t.Commit(); err != nil {
 		return r, errors.Wrap(err, "could not save trial signup")
 	}
 
-	if uint64(len(roleSignups)) >= rc.GetCount() {
+	if overflow {
 		r.Description = fmt.Sprintf("Signed up as OVERFLOW for %s in %s", role, trialName)
 	} else {
 		r.Description = fmt.Sprintf("Signed up for %s in %s", role, trialName)
@@ -230,13 +182,11 @@ func (c *rootCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, er
 
 	trial.RemoveSignup(cmdhandler.UserMentionString(msg.UserID()))
 
-	err = t.SaveTrial(trial)
-	if err != nil {
+	if err = t.SaveTrial(trial); err != nil {
 		return r, errors.Wrap(err, "could not save trial withdraw")
 	}
 
-	err = t.Commit()
-	if err != nil {
+	if err = t.Commit(); err != nil {
 		return r, errors.Wrap(err, "could not save trial withdraw")
 	}
 

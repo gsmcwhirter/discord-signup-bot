@@ -298,7 +298,12 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
-	trialName := strings.TrimSpace(msg.Contents())
+	parts := strings.SplitN(strings.TrimSpace(msg.Contents()), " ", 2)
+	trialName := parts[0]
+	phrase := ""
+	if len(parts) > 1 {
+		phrase = parts[1]
+	}
 
 	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), false)
 	if err != nil {
@@ -334,7 +339,7 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 	}
 
 	r2 := &cmdhandler.EmbedResponse{
-		To:          "@everyone",
+		To:          fmt.Sprintf("@everyone %s", phrase),
 		ToChannel:   announceCid,
 		Title:       fmt.Sprintf("Signups are open for %s", trial.GetName()),
 		Description: trial.GetDescription(),
@@ -354,6 +359,163 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 	}
 
 	return r2, nil
+}
+
+func (c *adminCommands) grouping(msg cmdhandler.Message) (cmdhandler.Response, error) {
+	r := &cmdhandler.SimpleEmbedResponse{
+		To: cmdhandler.UserMentionString(msg.UserID()),
+	}
+
+	parts := strings.SplitN(strings.TrimSpace(msg.Contents()), " ", 2)
+	trialName := parts[0]
+	phrase := "Grouping now!"
+	if len(parts) > 1 {
+		phrase = parts[1]
+	}
+
+	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), false)
+	if err != nil {
+		return r, err
+	}
+	defer util.CheckDefer(t.Rollback)
+
+	trial, err := t.GetTrial(trialName)
+	if err != nil {
+		return r, err
+	}
+
+	sessionGuild, err := c.deps.BotSession().Guild(msg.GuildID())
+	if err != nil {
+		return r, err
+	}
+
+	var announceCid snowflake.Snowflake
+	if acID, ok := sessionGuild.ChannelWithName(trial.GetAnnounceChannel()); ok {
+		announceCid = acID
+	}
+
+	r2 := formatTrialDisplay(trial, false)
+	r2.To = fmt.Sprintf("@everyone %s", phrase)
+	r2.ToChannel = announceCid
+
+	return r2, nil
+}
+
+func (c *adminCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, error) {
+	r := &cmdhandler.SimpleEmbedResponse{
+		To: cmdhandler.UserMentionString(msg.UserID()),
+	}
+
+	parts := strings.SplitN(strings.TrimSpace(msg.Contents()), " ", 3)
+	if len(parts) != 3 {
+		return r, errors.New("not enough arguments (need `user-mention trial-name role`")
+	}
+	userMention := parts[0]
+	trialName := parts[1]
+	role := parts[2]
+
+	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), true)
+	if err != nil {
+		return r, err
+	}
+	defer util.CheckDefer(t.Rollback)
+
+	trial, err := t.GetTrial(trialName)
+	if err != nil {
+		return r, err
+	}
+
+	if trial.GetState() != storage.TrialStateOpen {
+		return r, errors.New("cannot sign up for a closed trial")
+	}
+
+	sessionGuild, err := c.deps.BotSession().Guild(msg.GuildID())
+	if err != nil {
+		return r, err
+	}
+
+	var signupCid snowflake.Snowflake
+	if scID, ok := sessionGuild.ChannelWithName(trial.GetSignupChannel()); ok {
+		signupCid = scID
+	}
+
+	overflow, err := signupUser(trial, userMention, role)
+	if err != nil {
+		return r, err
+	}
+
+	if err = t.SaveTrial(trial); err != nil {
+		return r, errors.Wrap(err, "could not save trial signup")
+	}
+
+	if err = t.Commit(); err != nil {
+		return r, errors.Wrap(err, "could not save trial signup")
+	}
+
+	r.To = userMention
+	r.ToChannel = signupCid
+
+	if overflow {
+		r.Description = fmt.Sprintf("Signed up as OVERFLOW for %s in %s by %s", role, trialName, cmdhandler.UserMentionString(msg.UserID()))
+	} else {
+		r.Description = fmt.Sprintf("Signed up for %s in %s by %s", role, trialName, cmdhandler.UserMentionString(msg.UserID()))
+	}
+
+	return r, nil
+}
+
+func (c *adminCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, error) {
+	r := &cmdhandler.SimpleEmbedResponse{
+		To: cmdhandler.UserMentionString(msg.UserID()),
+	}
+
+	parts := strings.SplitN(strings.TrimSpace(msg.Contents()), " ", 2)
+	if len(parts) != 2 {
+		return r, errors.New("not enough arguments (need `user-mention trial-name`")
+	}
+	userMention := parts[0]
+	trialName := parts[1]
+
+	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), true)
+	if err != nil {
+		return r, err
+	}
+	defer util.CheckDefer(t.Rollback)
+
+	trial, err := t.GetTrial(trialName)
+	if err != nil {
+		return r, err
+	}
+
+	if trial.GetState() != storage.TrialStateOpen {
+		return r, errors.New("cannot withdraw from a closed trial")
+	}
+
+	sessionGuild, err := c.deps.BotSession().Guild(msg.GuildID())
+	if err != nil {
+		return r, err
+	}
+
+	var signupCid snowflake.Snowflake
+	if scID, ok := sessionGuild.ChannelWithName(trial.GetSignupChannel()); ok {
+		signupCid = scID
+	}
+
+	trial.RemoveSignup(userMention)
+
+	if err = t.SaveTrial(trial); err != nil {
+		return r, errors.Wrap(err, "could not save trial withdraw")
+	}
+
+	if err = t.Commit(); err != nil {
+		return r, errors.Wrap(err, "could not save trial withdraw")
+	}
+
+	r.To = userMention
+	r.ToChannel = signupCid
+	r.Description = fmt.Sprintf("Withdrawn from %s by %s", trialName, cmdhandler.UserMentionString(msg.UserID()))
+
+	return r, nil
 }
 
 // AdminCommandHandler TODOC
@@ -378,6 +540,11 @@ func AdminCommandHandler(deps adminDependencies, preCommand string) *cmdhandler.
 	ch.SetHandler("close", cmdhandler.NewMessageHandler(cc.close))
 	ch.SetHandler("delete", cmdhandler.NewMessageHandler(cc.delete))
 	ch.SetHandler("announce", cmdhandler.NewMessageHandler(cc.announce))
+	ch.SetHandler("grouping", cmdhandler.NewMessageHandler(cc.grouping))
+	ch.SetHandler("signup", cmdhandler.NewMessageHandler(cc.signup))
+	ch.SetHandler("su", cmdhandler.NewMessageHandler(cc.signup))
+	ch.SetHandler("withdraw", cmdhandler.NewMessageHandler(cc.withdraw))
+	ch.SetHandler("wd", cmdhandler.NewMessageHandler(cc.withdraw))
 
 	return ch
 }
