@@ -7,6 +7,7 @@ import (
 
 	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
 	"github.com/gsmcwhirter/discord-bot-lib/discordapi/session"
+	"github.com/gsmcwhirter/discord-bot-lib/snowflake"
 	"github.com/gsmcwhirter/discord-bot-lib/util"
 	"github.com/gsmcwhirter/go-util/parser"
 	"github.com/pkg/errors"
@@ -20,6 +21,7 @@ var ErrNoResponse = errors.New("no response")
 type dependencies interface {
 	TrialAPI() storage.TrialAPI
 	GuildAPI() storage.GuildAPI
+	BotSession() *session.Session
 }
 
 // Options TODOC
@@ -52,11 +54,23 @@ func (c *rootCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error)
 	}
 	defer util.CheckDefer(t.Rollback)
 
+	g, gerr := c.deps.BotSession().Guild(msg.GuildID())
+
 	trials := t.GetTrials()
 	tNames := make([]string, 0, len(trials))
 	for _, trial := range trials {
 		if trial.GetState() != storage.TrialStateClosed {
-			tNames = append(tNames, fmt.Sprintf("%s (#%s)", trial.GetName(), trial.GetSignupChannel()))
+			var tscID snowflake.Snowflake
+			var ok bool
+			if gerr == nil {
+				tscID, ok = g.ChannelWithName(trial.GetSignupChannel())
+			}
+
+			if ok {
+				tNames = append(tNames, fmt.Sprintf("%s (%s)", trial.GetName(), cmdhandler.ChannelMentionString(tscID)))
+			} else {
+				tNames = append(tNames, trial.GetName())
+			}
 		}
 	}
 	sort.Strings(tNames)
@@ -101,7 +115,6 @@ func (c *rootCommands) show(msg cmdhandler.Message) (cmdhandler.Response, error)
 		suNames := make([]string, 0, len(signups))
 		ofNames := make([]string, 0, len(signups))
 		for _, su := range signups {
-			fmt.Printf("*** considering  %+v\n", su)
 			if strings.ToLower(su.GetRole()) != lowerRole {
 				continue
 			}

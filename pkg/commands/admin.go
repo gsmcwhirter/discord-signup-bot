@@ -332,6 +332,12 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 		announceCid = acID
 	}
 
+	roles := trial.GetRoleCounts()
+	roleStrs := make([]string, 0, len(roles))
+	for _, rc := range roles {
+		roleStrs = append(roleStrs, fmt.Sprintf("%s: %d", rc.GetRole(), rc.GetCount()))
+	}
+
 	r2 := &cmdhandler.EmbedResponse{
 		To:          cmdhandler.RoleMentionString(everyoneRid),
 		ToChannel:   announceCid,
@@ -340,7 +346,7 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 		Fields: []cmdhandler.EmbedField{
 			{
 				Name: "Roles Requested",
-				Val:  "",
+				Val:  fmt.Sprintf("```\n%s\n```\n", strings.Join(roleStrs, "\n")),
 			},
 		},
 	}
