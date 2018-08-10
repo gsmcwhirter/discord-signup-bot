@@ -17,9 +17,9 @@ type configCommands struct {
 	deps       configDependencies
 }
 
-func (c *configCommands) list(user, guild, args string) (cmdhandler.Response, error) {
+func (c *configCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	r := &cmdhandler.SimpleEmbedResponse{
-		To: user,
+		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
 	t, err := c.deps.GuildAPI().NewTransaction(false)
@@ -28,7 +28,7 @@ func (c *configCommands) list(user, guild, args string) (cmdhandler.Response, er
 	}
 	defer util.CheckDefer(t.Rollback)
 
-	bGuild, err := t.AddGuild(guild)
+	bGuild, err := t.AddGuild(msg.GuildID().ToString())
 	if err != nil {
 		return r, errors.Wrap(err, "unable to find guild")
 	}
@@ -38,12 +38,12 @@ func (c *configCommands) list(user, guild, args string) (cmdhandler.Response, er
 	return r, nil
 }
 
-func (c *configCommands) get(user, guild, args string) (cmdhandler.Response, error) {
+func (c *configCommands) get(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	r := &cmdhandler.SimpleEmbedResponse{
-		To: user,
+		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
-	settingName := strings.TrimSpace(args)
+	settingName := strings.TrimSpace(msg.Contents())
 
 	t, err := c.deps.GuildAPI().NewTransaction(false)
 	if err != nil {
@@ -51,7 +51,7 @@ func (c *configCommands) get(user, guild, args string) (cmdhandler.Response, err
 	}
 	defer util.CheckDefer(t.Rollback)
 
-	bGuild, err := t.AddGuild(guild)
+	bGuild, err := t.AddGuild(msg.GuildID().ToString())
 	if err != nil {
 		return r, errors.Wrap(err, "unable to find guild")
 	}
@@ -70,12 +70,12 @@ type argPair struct {
 	key, val string
 }
 
-func (c *configCommands) set(user, guild, args string) (cmdhandler.Response, error) {
+func (c *configCommands) set(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	r := &cmdhandler.SimpleEmbedResponse{
-		To: user,
+		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
-	args = strings.TrimSpace(args)
+	args := strings.TrimSpace(msg.Contents())
 
 	argList := strings.Split(args, " ")
 	argPairs := make([]argPair, 0, len(argList))
@@ -107,7 +107,7 @@ func (c *configCommands) set(user, guild, args string) (cmdhandler.Response, err
 	}
 	defer util.CheckDefer(t.Rollback)
 
-	bGuild, err := t.AddGuild(guild)
+	bGuild, err := t.AddGuild(msg.GuildID().ToString())
 	if err != nil {
 		return r, errors.Wrap(err, "unable to find guild")
 	}
@@ -131,12 +131,12 @@ func (c *configCommands) set(user, guild, args string) (cmdhandler.Response, err
 		return r, errors.Wrap(err, "could not save guild settings")
 	}
 
-	return c.list(user, guild, "")
+	return c.list(cmdhandler.NewWithContents(msg, ""))
 }
 
-func (c *configCommands) reset(user, guild, args string) (cmdhandler.Response, error) {
+func (c *configCommands) reset(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	r := &cmdhandler.SimpleEmbedResponse{
-		To: user,
+		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
 	t, err := c.deps.GuildAPI().NewTransaction(true)
@@ -145,7 +145,7 @@ func (c *configCommands) reset(user, guild, args string) (cmdhandler.Response, e
 	}
 	defer util.CheckDefer(t.Rollback)
 
-	bGuild, err := t.AddGuild(guild)
+	bGuild, err := t.AddGuild(msg.GuildID().ToString())
 	if err != nil {
 		return r, errors.Wrap(err, "unable to find or add guild")
 	}
@@ -163,7 +163,7 @@ func (c *configCommands) reset(user, guild, args string) (cmdhandler.Response, e
 		return r, errors.Wrap(err, "could not save guild settings")
 	}
 
-	return c.list(user, guild, args)
+	return c.list(msg)
 }
 
 // ConfigCommandHandler TODOC
@@ -181,10 +181,10 @@ func ConfigCommandHandler(deps configDependencies, preCommand string) *cmdhandle
 		Placeholder:         "action",
 		HelpOnEmptyCommands: true,
 	})
-	ch.SetHandler("list", cmdhandler.NewLineHandler(cc.list))
-	ch.SetHandler("get", cmdhandler.NewLineHandler(cc.get))
-	ch.SetHandler("set", cmdhandler.NewLineHandler(cc.set))
-	ch.SetHandler("reset", cmdhandler.NewLineHandler(cc.reset))
+	ch.SetHandler("list", cmdhandler.NewMessageHandler(cc.list))
+	ch.SetHandler("get", cmdhandler.NewMessageHandler(cc.get))
+	ch.SetHandler("set", cmdhandler.NewMessageHandler(cc.set))
+	ch.SetHandler("reset", cmdhandler.NewMessageHandler(cc.reset))
 
 	return ch
 }

@@ -24,6 +24,7 @@ type TrialAPITx interface {
 	GetTrial(name string) (Trial, error)
 	AddTrial(name string) (Trial, error)
 	SaveTrial(trial Trial) error
+	DeleteTrial(name string) error
 
 	GetTrials() []Trial
 }

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/snowflake"
 	"github.com/gsmcwhirter/discord-bot-lib/util"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 	"github.com/gsmcwhirter/go-util/parser"
@@ -17,12 +18,12 @@ type adminCommands struct {
 	deps       adminDependencies
 }
 
-func (c *adminCommands) list(user, guild, args string) (cmdhandler.Response, error) {
+func (c *adminCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	r := &cmdhandler.EmbedResponse{
-		To: user,
+		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
-	t, err := c.deps.TrialAPI().NewTransaction(guild, false)
+	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), false)
 	if err != nil {
 		return r, err
 	}
@@ -55,15 +56,15 @@ func (c *adminCommands) list(user, guild, args string) (cmdhandler.Response, err
 	return r, nil
 }
 
-func (c *adminCommands) create(user, guild, args string) (cmdhandler.Response, error) {
+func (c *adminCommands) create(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	r := &cmdhandler.SimpleEmbedResponse{
-		To: user,
+		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
 	var trialName string
 	var settings string
 
-	argParts := strings.SplitN(strings.TrimSpace(args), " ", 2)
+	argParts := strings.SplitN(strings.TrimSpace(msg.Contents()), " ", 2)
 	trialName = argParts[0]
 	if len(argParts) < 2 {
 		settings = ""
@@ -71,12 +72,12 @@ func (c *adminCommands) create(user, guild, args string) (cmdhandler.Response, e
 		settings = argParts[1]
 	}
 
-	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), guild)
+	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID().ToString())
 	if err != nil {
 		return r, err
 	}
 
-	t, err := c.deps.TrialAPI().NewTransaction(guild, true)
+	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), true)
 	if err != nil {
 		return r, err
 	}
@@ -118,13 +119,11 @@ func (c *adminCommands) create(user, guild, args string) (cmdhandler.Response, e
 		}
 	}
 
-	err = t.SaveTrial(trial)
-	if err != nil {
+	if err = t.SaveTrial(trial); err != nil {
 		return r, errors.Wrap(err, "could not save trial")
 	}
 
-	err = t.Commit()
-	if err != nil {
+	if err = t.Commit(); err != nil {
 		return r, errors.Wrap(err, "could not save trial")
 	}
 
@@ -133,15 +132,15 @@ func (c *adminCommands) create(user, guild, args string) (cmdhandler.Response, e
 	return r, nil
 }
 
-func (c *adminCommands) edit(user, guild, args string) (cmdhandler.Response, error) {
+func (c *adminCommands) edit(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	r := &cmdhandler.SimpleEmbedResponse{
-		To: user,
+		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
 	var trialName string
 	var settings string
 
-	argParts := strings.SplitN(strings.TrimSpace(args), " ", 2)
+	argParts := strings.SplitN(strings.TrimSpace(msg.Contents()), " ", 2)
 	trialName = argParts[0]
 	if len(argParts) < 2 {
 		settings = ""
@@ -149,7 +148,7 @@ func (c *adminCommands) edit(user, guild, args string) (cmdhandler.Response, err
 		settings = argParts[1]
 	}
 
-	t, err := c.deps.TrialAPI().NewTransaction(guild, true)
+	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), true)
 	if err != nil {
 		return r, err
 	}
@@ -189,13 +188,11 @@ func (c *adminCommands) edit(user, guild, args string) (cmdhandler.Response, err
 		}
 	}
 
-	err = t.SaveTrial(trial)
-	if err != nil {
+	if err = t.SaveTrial(trial); err != nil {
 		return r, errors.Wrap(err, "could not save trial")
 	}
 
-	err = t.Commit()
-	if err != nil {
+	if err = t.Commit(); err != nil {
 		return r, errors.Wrap(err, "could not save trial")
 	}
 
@@ -204,14 +201,14 @@ func (c *adminCommands) edit(user, guild, args string) (cmdhandler.Response, err
 	return r, nil
 }
 
-func (c *adminCommands) open(user, guild, args string) (cmdhandler.Response, error) {
+func (c *adminCommands) open(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	r := &cmdhandler.SimpleEmbedResponse{
-		To: user,
+		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
-	trialName := strings.TrimSpace(args)
+	trialName := strings.TrimSpace(msg.Contents())
 
-	t, err := c.deps.TrialAPI().NewTransaction(guild, true)
+	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), true)
 	if err != nil {
 		return r, err
 	}
@@ -224,13 +221,11 @@ func (c *adminCommands) open(user, guild, args string) (cmdhandler.Response, err
 
 	trial.SetState(storage.TrialStateOpen)
 
-	err = t.SaveTrial(trial)
-	if err != nil {
+	if err = t.SaveTrial(trial); err != nil {
 		return r, errors.Wrap(err, "could not open trial")
 	}
 
-	err = t.Commit()
-	if err != nil {
+	if err = t.Commit(); err != nil {
 		return r, errors.Wrap(err, "could not open trial")
 	}
 
@@ -239,14 +234,14 @@ func (c *adminCommands) open(user, guild, args string) (cmdhandler.Response, err
 	return r, nil
 }
 
-func (c *adminCommands) close(user, guild, args string) (cmdhandler.Response, error) {
+func (c *adminCommands) close(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	r := &cmdhandler.SimpleEmbedResponse{
-		To: user,
+		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
-	trialName := strings.TrimSpace(args)
+	trialName := strings.TrimSpace(msg.Contents())
 
-	t, err := c.deps.TrialAPI().NewTransaction(guild, true)
+	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), true)
 	if err != nil {
 		return r, err
 	}
@@ -259,13 +254,11 @@ func (c *adminCommands) close(user, guild, args string) (cmdhandler.Response, er
 
 	trial.SetState(storage.TrialStateClosed)
 
-	err = t.SaveTrial(trial)
-	if err != nil {
+	if err = t.SaveTrial(trial); err != nil {
 		return r, errors.Wrap(err, "could not close trial")
 	}
 
-	err = t.Commit()
-	if err != nil {
+	if err = t.Commit(); err != nil {
 		return r, errors.Wrap(err, "could not close trial")
 	}
 
@@ -274,20 +267,92 @@ func (c *adminCommands) close(user, guild, args string) (cmdhandler.Response, er
 	return r, nil
 }
 
-// func (c *adminCommands) delete(user, guild, args string) (cmdhandler.Response, error) {
-// 	r := &cmdhandler.SimpleEmbedResponse{
-// 		To: user,
-// 	}
-
-// 	return r, nil
-// }
-
-func (c *adminCommands) announce(user, guild, args string) (cmdhandler.Response, error) {
+func (c *adminCommands) delete(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	r := &cmdhandler.SimpleEmbedResponse{
-		To: user,
+		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
+	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), true)
+	if err != nil {
+		return r, err
+	}
+	defer util.CheckDefer(t.Rollback)
+
+	trialName := strings.TrimSpace(msg.Contents())
+
+	if err = t.DeleteTrial(trialName); err != nil {
+		return r, errors.Wrap(err, "could not delete trial")
+	}
+
+	if err = t.Commit(); err != nil {
+		return r, errors.Wrap(err, "could not delete trial")
+	}
+
+	r.Description = fmt.Sprintf("Deleted trial %s", trialName)
+
 	return r, nil
+}
+
+func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, error) {
+	r := &cmdhandler.SimpleEmbedResponse{
+		To: cmdhandler.UserMentionString(msg.UserID()),
+	}
+
+	trialName := strings.TrimSpace(msg.Contents())
+
+	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), false)
+	if err != nil {
+		return r, err
+	}
+	defer util.CheckDefer(t.Rollback)
+
+	trial, err := t.GetTrial(trialName)
+	if err != nil {
+		return r, err
+	}
+
+	sessionGuild, err := c.deps.BotSession().Guild(msg.GuildID())
+	if err != nil {
+		return r, err
+	}
+
+	var everyoneRid snowflake.Snowflake
+	var signupCid snowflake.Snowflake
+	var announceCid snowflake.Snowflake
+
+	if everyoneRole, ok := c.deps.BotSession().EveryoneRoleID(msg.GuildID()); ok {
+		everyoneRid = everyoneRole
+	}
+
+	if scID, ok := sessionGuild.ChannelWithName(trial.GetSignupChannel()); ok {
+		signupCid = scID
+	}
+
+	if acID, ok := sessionGuild.ChannelWithName(trial.GetAnnounceChannel()); ok {
+		announceCid = acID
+	}
+
+	r2 := &cmdhandler.EmbedResponse{
+		To:          cmdhandler.RoleMentionString(everyoneRid),
+		ToChannel:   announceCid,
+		Title:       fmt.Sprintf("Signups are open for %s", trial.GetName()),
+		Description: trial.GetDescription(),
+		Fields: []cmdhandler.EmbedField{
+			{
+				Name: "Roles Requested",
+				Val:  "",
+			},
+		},
+	}
+
+	if signupCid != 0 {
+		r2.Fields = append(r2.Fields, cmdhandler.EmbedField{
+			Name: "Signup Channel",
+			Val:  cmdhandler.ChannelMentionString(signupCid),
+		})
+	}
+
+	return r2, nil
 }
 
 // AdminCommandHandler TODOC
@@ -305,13 +370,13 @@ func AdminCommandHandler(deps adminDependencies, preCommand string) *cmdhandler.
 		Placeholder:         "action",
 		HelpOnEmptyCommands: true,
 	})
-	ch.SetHandler("list", cmdhandler.NewLineHandler(cc.list))
-	ch.SetHandler("create", cmdhandler.NewLineHandler(cc.create))
-	ch.SetHandler("edit", cmdhandler.NewLineHandler(cc.edit))
-	ch.SetHandler("open", cmdhandler.NewLineHandler(cc.open))
-	ch.SetHandler("close", cmdhandler.NewLineHandler(cc.close))
-	// ch.SetHandler("delete", cmdhandler.NewLineHandler(cc.delete))
-	ch.SetHandler("announce", cmdhandler.NewLineHandler(cc.announce))
+	ch.SetHandler("list", cmdhandler.NewMessageHandler(cc.list))
+	ch.SetHandler("create", cmdhandler.NewMessageHandler(cc.create))
+	ch.SetHandler("edit", cmdhandler.NewMessageHandler(cc.edit))
+	ch.SetHandler("open", cmdhandler.NewMessageHandler(cc.open))
+	ch.SetHandler("close", cmdhandler.NewMessageHandler(cc.close))
+	ch.SetHandler("delete", cmdhandler.NewMessageHandler(cc.delete))
+	ch.SetHandler("announce", cmdhandler.NewMessageHandler(cc.announce))
 
 	return ch
 }

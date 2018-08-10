@@ -10,6 +10,7 @@ import (
 	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
 	"github.com/gsmcwhirter/discord-bot-lib/discordapi"
 	"github.com/gsmcwhirter/discord-bot-lib/discordapi/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/discordapi/session"
 	"github.com/gsmcwhirter/discord-bot-lib/logging"
 	"github.com/gsmcwhirter/discord-bot-lib/snowflake"
 	"github.com/gsmcwhirter/discord-bot-lib/wsclient"
@@ -28,6 +29,7 @@ type dependencies interface {
 	ConfigHandler() *cmdhandler.CommandHandler
 	AdminHandler() *cmdhandler.CommandHandler
 	MessageRateLimiter() *rate.Limiter
+	BotSession() *session.Session
 }
 
 // Handlers TODOC
@@ -69,12 +71,12 @@ func (h *handlers) ConnectToBot(bot discordapi.DiscordBot) {
 }
 
 func (h *handlers) channelGuild(cid snowflake.Snowflake) (gid snowflake.Snowflake) {
-	gid, _ = h.bot.GuildOfChannel(cid)
+	gid, _ = h.deps.BotSession().GuildOfChannel(cid)
 	return
 }
 
 func (h *handlers) channelName(cid snowflake.Snowflake) (name string) {
-	name, _ = h.bot.ChannelName(cid)
+	name, _ = h.deps.BotSession().ChannelName(cid)
 	return
 }
 
@@ -95,22 +97,27 @@ func (h *handlers) guildCommandIndicator(gid snowflake.Snowflake) string {
 	return s.ControlSequence
 }
 
-func (h *handlers) guildAdminChannelName(gid snowflake.Snowflake) string {
+func (h *handlers) guildAdminChannelID(gid snowflake.Snowflake) (snowflake.Snowflake, bool) {
 	if gid == 0 {
-		return ""
+		return 0, false
 	}
 
 	s, err := storage.GetSettings(h.deps.GuildAPI(), gid.ToString())
 	if err != nil {
-		return ""
+		return 0, false
 	}
 
-	return s.AdminChannel
+	g, err := h.deps.BotSession().Guild(gid)
+	if err != nil {
+		return 0, false
+	}
+
+	return g.ChannelWithName(s.AdminChannel)
 }
 
-func (h *handlers) attemptConfigAndAdminHandlers(req wsclient.WSMessage, cmdIndicator string, content string, m etfapi.Message, gid snowflake.Snowflake) (resp cmdhandler.Response, err error) {
+func (h *handlers) attemptConfigAndAdminHandlers(msg *cmdhandler.SimpleMessage, req wsclient.WSMessage, cmdIndicator string, content string, m etfapi.Message, gid snowflake.Snowflake) (resp cmdhandler.Response, err error) {
 	// TODO: check auth
-	if !h.bot.IsGuildAdmin(gid, m.AuthorID()) {
+	if !h.deps.BotSession().IsGuildAdmin(gid, m.AuthorID()) {
 		_ = level.Debug(logging.WithContext(req.Ctx, h.deps.Logger())).Log("message", "non-admin trying to config", "author_id", m.AuthorID().ToString(), "guild_id", gid.ToString())
 
 		err = errUnauthorized
@@ -119,12 +126,29 @@ func (h *handlers) attemptConfigAndAdminHandlers(req wsclient.WSMessage, cmdIndi
 
 	_ = level.Debug(logging.WithContext(req.Ctx, h.deps.Logger())).Log("message", "admin trying to config", "author_id", m.AuthorID().ToString(), "guild_id", gid.ToString())
 	cmdContent := h.deps.ConfigHandler().CommandIndicator() + strings.TrimPrefix(content, cmdIndicator)
-	resp, err = h.deps.ConfigHandler().HandleLine(m.AuthorIDString(), gid.ToString(), cmdContent)
+	resp, err = h.deps.ConfigHandler().HandleLine(cmdhandler.NewWithContents(msg, cmdContent))
 
-	if err != nil && (err == errUnauthorized || err == parser.ErrUnknownCommand) && h.channelName(m.ChannelID()) == h.guildAdminChannelName(gid) {
-		cmdContent := h.deps.AdminHandler().CommandIndicator() + strings.TrimPrefix(content, cmdIndicator)
-		resp, err = h.deps.AdminHandler().HandleLine(m.AuthorIDString(), gid.ToString(), cmdContent)
+	if err == nil {
+		return
 	}
+
+	if err != errUnauthorized && err != parser.ErrUnknownCommand {
+		return
+	}
+
+	adminChannelID, ok := h.guildAdminChannelID(gid)
+	if !ok {
+		err = errUnauthorized
+		return
+	}
+
+	if m.ChannelID() != adminChannelID {
+		err = errUnauthorized
+		return
+	}
+
+	cmdContent = h.deps.AdminHandler().CommandIndicator() + strings.TrimPrefix(content, cmdIndicator)
+	resp, err = h.deps.AdminHandler().HandleLine(cmdhandler.NewWithContents(msg, cmdContent))
 
 	return
 }
@@ -167,11 +191,14 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 		return
 	}
 
+	msg := cmdhandler.NewSimpleMessage(m.AuthorID(), gid, m.ChannelID(), m.ID(), "")
+
 	_ = level.Info(logger).Log("message", "attempting to handle command")
-	resp, err := h.attemptConfigAndAdminHandlers(req, cmdIndicator, content, m, gid)
+	resp, err := h.attemptConfigAndAdminHandlers(msg, req, cmdIndicator, content, m, gid)
+
 	if err != nil && (err == errUnauthorized || err == parser.ErrUnknownCommand) {
 		cmdContent := h.deps.CommandHandler().CommandIndicator() + strings.TrimPrefix(content, cmdIndicator)
-		resp, err = h.deps.CommandHandler().HandleLine(m.AuthorIDString(), gid.ToString(), cmdContent)
+		resp, err = h.deps.CommandHandler().HandleLine(cmdhandler.NewWithContents(msg, cmdContent))
 	}
 
 	if err != nil {
@@ -193,13 +220,18 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 
 	_ = level.Debug(logger).Log("message", "sending message", "marshaler", fmt.Sprintf("%+v", resp.ToMessage()), "resp", fmt.Sprintf("%+v", resp))
 
-	sendResp, body, err := h.bot.SendMessage(req.Ctx, m.ChannelID(), resp.ToMessage())
+	sendTo := resp.Channel()
+	if sendTo == 0 {
+		sendTo = m.ChannelID()
+	}
+
+	sendResp, body, err := h.bot.SendMessage(req.Ctx, sendTo, resp.ToMessage())
 	if err != nil {
 		_ = level.Error(logger).Log("message", "could not send message", "err", err, "resp_body", string(body), "status_code", sendResp.StatusCode)
 		return
 	}
 
-	_ = level.Info(logger).Log("message", "successfully sent message to channel", "channel_id", m.ChannelID().ToString())
+	_ = level.Info(logger).Log("message", "successfully sent message to channel", "channel_id", sendTo.ToString())
 
 	return
 }

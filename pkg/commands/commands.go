@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/discordapi/session"
 	"github.com/gsmcwhirter/discord-bot-lib/util"
 	"github.com/gsmcwhirter/go-util/parser"
 	"github.com/pkg/errors"
@@ -32,20 +33,20 @@ type rootCommands struct {
 	versionStr string
 }
 
-func (c *rootCommands) version(user, guild, args string) (cmdhandler.Response, error) {
+func (c *rootCommands) version(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	r := &cmdhandler.SimpleEmbedResponse{
-		To:          user,
+		To:          cmdhandler.UserMentionString(msg.UserID()),
 		Description: c.versionStr,
 	}
 	return r, nil
 }
 
-func (c *rootCommands) list(user, guild, args string) (cmdhandler.Response, error) {
+func (c *rootCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	r := &cmdhandler.EmbedResponse{
-		To: user,
+		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
-	t, err := c.deps.TrialAPI().NewTransaction(guild, false)
+	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), false)
 	if err != nil {
 		return r, err
 	}
@@ -70,14 +71,14 @@ func (c *rootCommands) list(user, guild, args string) (cmdhandler.Response, erro
 	return r, nil
 }
 
-func (c *rootCommands) show(user, guild, args string) (cmdhandler.Response, error) {
+func (c *rootCommands) show(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	r := &cmdhandler.EmbedResponse{
-		To: user,
+		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
-	trialName := strings.TrimSpace(args)
+	trialName := strings.TrimSpace(msg.Contents())
 
-	t, err := c.deps.TrialAPI().NewTransaction(guild, false)
+	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), false)
 	if err != nil {
 		return r, err
 	}
@@ -135,19 +136,19 @@ func (c *rootCommands) show(user, guild, args string) (cmdhandler.Response, erro
 	return r, nil
 }
 
-func (c *rootCommands) signup(user, guild, args string) (cmdhandler.Response, error) {
+func (c *rootCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	r := &cmdhandler.SimpleEmbedResponse{
-		To: user,
+		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
-	argParts := strings.SplitN(strings.TrimSpace(args), " ", 2)
+	argParts := strings.SplitN(strings.TrimSpace(msg.Contents()), " ", 2)
 	if len(argParts) < 2 {
 		return r, errors.New("missing role")
 	}
 
 	trialName, role := argParts[0], argParts[1]
 
-	t, err := c.deps.TrialAPI().NewTransaction(guild, true)
+	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), true)
 	if err != nil {
 		return r, err
 	}
@@ -171,7 +172,7 @@ func (c *rootCommands) signup(user, guild, args string) (cmdhandler.Response, er
 	signups := trial.GetSignups()
 	roleSignups := signupsForRole(role, signups, false)
 
-	trial.AddSignup(user, role)
+	trial.AddSignup(msg.UserID().ToString(), role)
 
 	err = t.SaveTrial(trial)
 	if err != nil {
@@ -192,14 +193,14 @@ func (c *rootCommands) signup(user, guild, args string) (cmdhandler.Response, er
 	return r, nil
 }
 
-func (c *rootCommands) withdraw(user, guild, args string) (cmdhandler.Response, error) {
+func (c *rootCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	r := &cmdhandler.SimpleEmbedResponse{
-		To: user,
+		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
-	trialName := strings.TrimSpace(args)
+	trialName := strings.TrimSpace(msg.Contents())
 
-	t, err := c.deps.TrialAPI().NewTransaction(guild, true)
+	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), true)
 	if err != nil {
 		return r, err
 	}
@@ -214,7 +215,7 @@ func (c *rootCommands) withdraw(user, guild, args string) (cmdhandler.Response, 
 		return r, errors.New("cannot withdraw from a closed trial")
 	}
 
-	trial.RemoveSignup(user)
+	trial.RemoveSignup(msg.UserID().ToString())
 
 	err = t.SaveTrial(trial)
 	if err != nil {
@@ -242,13 +243,13 @@ func CommandHandler(deps dependencies, versionStr string, opts Options) *cmdhand
 	}
 
 	ch := cmdhandler.NewCommandHandler(p, cmdhandler.Options{})
-	ch.SetHandler("version", cmdhandler.NewLineHandler(rh.version))
-	ch.SetHandler("list", cmdhandler.NewLineHandler(rh.list))
-	ch.SetHandler("show", cmdhandler.NewLineHandler(rh.show))
-	ch.SetHandler("signup", cmdhandler.NewLineHandler(rh.signup))
-	ch.SetHandler("su", cmdhandler.NewLineHandler(rh.signup))
-	ch.SetHandler("withdraw", cmdhandler.NewLineHandler(rh.withdraw))
-	ch.SetHandler("wd", cmdhandler.NewLineHandler(rh.signup))
+	ch.SetHandler("version", cmdhandler.NewMessageHandler(rh.version))
+	ch.SetHandler("list", cmdhandler.NewMessageHandler(rh.list))
+	ch.SetHandler("show", cmdhandler.NewMessageHandler(rh.show))
+	ch.SetHandler("signup", cmdhandler.NewMessageHandler(rh.signup))
+	ch.SetHandler("su", cmdhandler.NewMessageHandler(rh.signup))
+	ch.SetHandler("withdraw", cmdhandler.NewMessageHandler(rh.withdraw))
+	ch.SetHandler("wd", cmdhandler.NewMessageHandler(rh.signup))
 
 	return ch
 }
@@ -267,6 +268,11 @@ func ConfigHandler(deps configDependencies, versionStr string, opts Options) *cm
 		NoHelpOnUnknownCommands: true,
 	})
 	ch.SetHandler("config-su", ConfigCommandHandler(deps, fmt.Sprintf("%sconfig", opts.CmdIndicator)))
+	// disable help for config
+	ch.SetHandler("help", cmdhandler.NewMessageHandler(func(msg cmdhandler.Message) (cmdhandler.Response, error) {
+		r := &cmdhandler.SimpleEmbedResponse{}
+		return r, parser.ErrUnknownCommand
+	}))
 
 	return ch
 }
@@ -274,6 +280,7 @@ func ConfigHandler(deps configDependencies, versionStr string, opts Options) *cm
 type adminDependencies interface {
 	GuildAPI() storage.GuildAPI
 	TrialAPI() storage.TrialAPI
+	BotSession() *session.Session
 }
 
 // AdminHandler TODOC
@@ -287,6 +294,11 @@ func AdminHandler(deps adminDependencies, versionStr string, opts Options) *cmdh
 	})
 
 	ch.SetHandler("admin", AdminCommandHandler(deps, fmt.Sprintf("%sadmin", opts.CmdIndicator)))
+	// disable help for admin
+	ch.SetHandler("help", cmdhandler.NewMessageHandler(func(msg cmdhandler.Message) (cmdhandler.Response, error) {
+		r := &cmdhandler.SimpleEmbedResponse{}
+		return r, parser.ErrUnknownCommand
+	}))
 
 	return ch
 }

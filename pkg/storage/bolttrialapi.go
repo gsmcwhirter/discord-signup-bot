@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"strings"
+
 	bolt "github.com/coreos/bbolt"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
@@ -65,6 +67,8 @@ func (b *boltTrialAPITx) Rollback() error {
 }
 
 func (b *boltTrialAPITx) AddTrial(name string) (Trial, error) {
+	name = strings.ToLower(name)
+
 	user, err := b.GetTrial(name)
 	if err == ErrTrialNotExist {
 		user = &boltTrial{
@@ -83,10 +87,11 @@ func (b *boltTrialAPITx) SaveTrial(t Trial) error {
 		return err
 	}
 
-	return bucket.Put([]byte(t.GetName()), serial)
+	return bucket.Put([]byte(strings.ToLower(t.GetName())), serial)
 }
 
 func (b *boltTrialAPITx) GetTrial(name string) (Trial, error) {
+	name = strings.ToLower(name)
 	bucket := b.tx.Bucket(b.bucketName)
 
 	val := bucket.Get([]byte(name))
@@ -102,6 +107,18 @@ func (b *boltTrialAPITx) GetTrial(name string) (Trial, error) {
 	}
 
 	return &boltTrial{&protoTrial}, nil
+}
+
+func (b *boltTrialAPITx) DeleteTrial(name string) error {
+	_, err := b.GetTrial(name)
+	if err != nil {
+		return err
+	}
+
+	name = strings.ToLower(name)
+	bucket := b.tx.Bucket(b.bucketName)
+
+	return bucket.Delete([]byte(name))
 }
 
 func (b *boltTrialAPITx) GetTrials() []Trial {

@@ -10,6 +10,9 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/discordapi"
+	"github.com/gsmcwhirter/discord-bot-lib/discordapi/messagehandler"
+	"github.com/gsmcwhirter/discord-bot-lib/discordapi/session"
 	"github.com/gsmcwhirter/discord-bot-lib/httpclient"
 	"github.com/gsmcwhirter/discord-bot-lib/wsclient"
 	"golang.org/x/time/rate"
@@ -29,9 +32,11 @@ type dependencies struct {
 	cmdHandler         *cmdhandler.CommandHandler
 	configHandler      *cmdhandler.CommandHandler
 	adminHandler       *cmdhandler.CommandHandler
+	discordMsgHandler  discordapi.DiscordMessageHandler
 	messageRateLimiter *rate.Limiter
 	connectRateLimiter *rate.Limiter
 	msgHandlers        msghandler.Handlers
+	botSession         *session.Session
 }
 
 func createDependencies(conf config) (d *dependencies, err error) {
@@ -89,6 +94,9 @@ func createDependencies(conf config) (d *dependencies, err error) {
 
 	d.connectRateLimiter = rate.NewLimiter(rate.Every(5*time.Second), 1)
 	d.messageRateLimiter = rate.NewLimiter(rate.Every(60*time.Second), 120)
+
+	d.discordMsgHandler = messagehandler.NewDiscordMessageHandler(d)
+	d.botSession = session.NewSession()
 
 	d.msgHandlers = msghandler.NewHandlers(d, msghandler.Options{
 		DefaultCommandIndicator: "!",
@@ -151,4 +159,12 @@ func (d *dependencies) MessageRateLimiter() *rate.Limiter {
 
 func (d *dependencies) ConnectRateLimiter() *rate.Limiter {
 	return d.connectRateLimiter
+}
+
+func (d *dependencies) BotSession() *session.Session {
+	return d.botSession
+}
+
+func (d *dependencies) DiscordMessageHandler() discordapi.DiscordMessageHandler {
+	return d.discordMsgHandler
 }
