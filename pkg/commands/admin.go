@@ -414,6 +414,10 @@ func (c *adminCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, err
 	trialName := parts[1]
 	role := parts[2]
 
+	if !cmdhandler.IsUserMention(userMention) {
+		return r, errors.New("you must mention the user you are trying to sign up (@...)")
+	}
+
 	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), true)
 	if err != nil {
 		return r, err
@@ -475,6 +479,10 @@ func (c *adminCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, e
 	}
 	userMention := parts[0]
 	trialName := parts[1]
+
+	if !cmdhandler.IsUserMention(userMention) {
+		return r, errors.New("you must mention the user you are trying to withdraw (@...)")
+	}
 
 	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), true)
 	if err != nil {

@@ -7,8 +7,9 @@ import (
 	"strings"
 
 	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
-	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 	"github.com/pkg/errors"
+
+	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
 
 // type suSorter struct {
