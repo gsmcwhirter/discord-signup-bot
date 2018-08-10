@@ -91,13 +91,14 @@ func (b *boltTrialAPITx) SaveTrial(t Trial) error {
 }
 
 func (b *boltTrialAPITx) GetTrial(name string) (Trial, error) {
-	name = strings.ToLower(name)
 	bucket := b.tx.Bucket(b.bucketName)
 
-	val := bucket.Get([]byte(name))
-
+	val := bucket.Get([]byte(strings.ToLower(name)))
 	if val == nil {
-		return nil, ErrTrialNotExist
+		val = bucket.Get([]byte(name))
+		if val == nil {
+			return nil, ErrTrialNotExist
+		}
 	}
 
 	protoTrial := ProtoTrial{}
