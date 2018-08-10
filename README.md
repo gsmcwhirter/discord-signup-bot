@@ -9,6 +9,7 @@ on using the bot.
 
 ## TODO
 
+- admin signup/withdraw others
 - signup channel restrictions
 - announce grouping now (@everyone-targetted !show)
 - working REPL (need to mock guild state to force admin)
