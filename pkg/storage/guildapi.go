@@ -14,10 +14,13 @@ var ErrBadSetting = errors.New("bad setting")
 
 // GuildSettings TODOC
 type GuildSettings struct {
-	ControlSequence string
-	AnnounceChannel string
-	SignupChannel   string
-	AdminChannel    string
+	ControlSequence   string
+	AnnounceChannel   string
+	SignupChannel     string
+	AdminChannel      string
+	AnnounceTo        string
+	ShowAfterSignup   string
+	ShowAfterWithdraw string
 }
 
 // PrettyString TODOC
@@ -28,10 +31,13 @@ GuildSettings{
 	ControlSequence: '%[2]s',
 	AnnounceChannel: '#%[3]s',
 	SignupChannel: '#%[4]s',
-	AdminChannel: '#%[5]s', 
+	AdminChannel: '#%[5]s',
+	AnnounceTo: '%[6]s', 
+	ShowAfterSignup: '%[7]s',
+	ShowAfterWithdraw: '%[8]s',
 }
 %[1]s
-	`, "```", s.ControlSequence, s.AnnounceChannel, s.SignupChannel, s.AdminChannel)
+	`, "```", s.ControlSequence, s.AnnounceChannel, s.SignupChannel, s.AdminChannel, s.AnnounceTo, s.ShowAfterSignup, s.ShowAfterWithdraw)
 }
 
 // GetSettingString TODOC
@@ -45,8 +51,25 @@ func (s *GuildSettings) GetSettingString(name string) (string, error) {
 		return s.AdminChannel, nil
 	case "signupchannel":
 		return s.SignupChannel, nil
+	case "announceto":
+		return s.AnnounceTo, nil
+	case "showaftersignup":
+		return s.ShowAfterSignup, nil
+	case "showafterwithdraw":
+		return s.ShowAfterWithdraw, nil
 	default:
 		return "", ErrBadSetting
+	}
+}
+
+func normalizeTrueFalseString(val string) (string, error) {
+	switch strings.ToLower(val) {
+	case "yes", "true", "ok", "1", "+", "t", "on":
+		return "true", nil
+	case "", "no", "false", "not ok", "0", "-", "f", "off":
+		return "false", nil
+	default:
+		return val, errors.New("could not understand option value")
 	}
 }
 
@@ -64,6 +87,23 @@ func (s *GuildSettings) SetSettingString(name, val string) error {
 		return nil
 	case "signupchannel":
 		s.SignupChannel = strings.TrimLeft(val, "#")
+		return nil
+	case "announceto":
+		s.AnnounceTo = val
+		return nil
+	case "showaftersignup":
+		v, err := normalizeTrueFalseString(val)
+		if err != nil {
+			return errors.Wrap(err, "could not set ShowAfterSignup")
+		}
+		s.ShowAfterSignup = v
+		return nil
+	case "showafterwithdraw":
+		v, err := normalizeTrueFalseString(val)
+		if err != nil {
+			return errors.Wrap(err, "could not set ShowAfterWithdraw")
+		}
+		s.ShowAfterWithdraw = v
 		return nil
 	default:
 		return ErrBadSetting

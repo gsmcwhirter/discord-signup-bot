@@ -26,6 +26,19 @@ func (g *boltGuild) GetSettings() (s GuildSettings) {
 	s.AnnounceChannel = g.protoGuild.AnnounceChannel
 	s.AdminChannel = g.protoGuild.AdminChannel
 	s.SignupChannel = g.protoGuild.SignupChannel
+	s.AnnounceTo = g.protoGuild.AnnounceTo
+
+	if g.protoGuild.ShowAfterSignup {
+		s.ShowAfterSignup = "true"
+	} else {
+		s.ShowAfterSignup = "false"
+	}
+
+	if g.protoGuild.ShowAfterWithdraw {
+		s.ShowAfterWithdraw = "true"
+	} else {
+		s.ShowAfterWithdraw = "false"
+	}
 	return
 }
 
@@ -34,4 +47,8 @@ func (g *boltGuild) SetSettings(s GuildSettings) {
 	g.protoGuild.AnnounceChannel = s.AnnounceChannel
 	g.protoGuild.AdminChannel = s.AdminChannel
 	g.protoGuild.SignupChannel = s.SignupChannel
+	g.protoGuild.AnnounceTo = s.AnnounceTo
+
+	g.protoGuild.ShowAfterSignup = s.ShowAfterSignup == "true"
+	g.protoGuild.ShowAfterWithdraw = s.ShowAfterWithdraw == "true"
 }

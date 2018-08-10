@@ -121,6 +121,11 @@ func (c *rootCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, erro
 
 	trialName, role := argParts[0], argParts[1]
 
+	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID().ToString())
+	if err != nil {
+		return r, err
+	}
+
 	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), true)
 	if err != nil {
 		return r, err
@@ -149,11 +154,35 @@ func (c *rootCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, erro
 		return r, errors.Wrap(err, "could not save trial signup")
 	}
 
+	var descStr string
 	if overflow {
-		r.Description = fmt.Sprintf("Signed up as OVERFLOW for %s in %s", role, trialName)
+		descStr = fmt.Sprintf("Signed up as OVERFLOW for %s in %s", role, trialName)
 	} else {
-		r.Description = fmt.Sprintf("Signed up for %s in %s", role, trialName)
+		descStr = fmt.Sprintf("Signed up for %s in %s", role, trialName)
 	}
+
+	if gsettings.ShowAfterSignup == "true" {
+		r2, err := c.show(cmdhandler.NewWithContents(msg, trialName))
+		if err != nil {
+			return r2, err
+		}
+
+		switch r3 := r2.(type) {
+		case *cmdhandler.SimpleResponse:
+			r3.Content = fmt.Sprintf("%s\n\n%s", descStr, r3.Content)
+			return r3, nil
+		case *cmdhandler.SimpleEmbedResponse:
+			r3.Description = fmt.Sprintf("%s\n\n%s", descStr, r3.Description)
+			return r3, nil
+		case *cmdhandler.EmbedResponse:
+			r3.Description = fmt.Sprintf("%s\n\n%s", descStr, r3.Description)
+			return r3, nil
+		default:
+			return r2, err
+		}
+	}
+
+	r.Description = descStr
 
 	return r, nil
 }
@@ -164,6 +193,11 @@ func (c *rootCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, er
 	}
 
 	trialName := strings.TrimSpace(msg.Contents())
+
+	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID().ToString())
+	if err != nil {
+		return r, err
+	}
 
 	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), true)
 	if err != nil {
@@ -190,7 +224,30 @@ func (c *rootCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, er
 		return r, errors.Wrap(err, "could not save trial withdraw")
 	}
 
-	r.Description = fmt.Sprintf("Withdrew from %s", trialName)
+	descStr := fmt.Sprintf("Withdrew from %s", trialName)
+
+	if gsettings.ShowAfterWithdraw == "true" {
+		r2, err := c.show(cmdhandler.NewWithContents(msg, trialName))
+		if err != nil {
+			return r2, err
+		}
+
+		switch r3 := r2.(type) {
+		case *cmdhandler.SimpleResponse:
+			r3.Content = fmt.Sprintf("%s\n\n%s", descStr, r3.Content)
+			return r3, nil
+		case *cmdhandler.SimpleEmbedResponse:
+			r3.Description = fmt.Sprintf("%s\n\n%s", descStr, r3.Description)
+			return r3, nil
+		case *cmdhandler.EmbedResponse:
+			r3.Description = fmt.Sprintf("%s\n\n%s", descStr, r3.Description)
+			return r3, nil
+		default:
+			return r2, err
+		}
+	}
+
+	r.Description = descStr
 
 	return r, nil
 }

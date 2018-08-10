@@ -7,4 +7,7 @@ message ProtoGuild {
     string announce_channel = 3;
     string signup_channel = 4;
     string admin_channel = 5;
+    string announce_to = 6;
+    bool show_after_signup = 7;
+    bool show_after_withdraw = 8;
 }

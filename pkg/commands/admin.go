@@ -305,6 +305,11 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 		phrase = parts[1]
 	}
 
+	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID().ToString())
+	if err != nil {
+		return r, err
+	}
+
 	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), false)
 	if err != nil {
 		return r, err
@@ -338,8 +343,13 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 		roleStrs = append(roleStrs, fmt.Sprintf("%s: %d", rc.GetRole(), rc.GetCount()))
 	}
 
+	toStr := "@everyone"
+	if gsettings.AnnounceTo != "" {
+		toStr = gsettings.AnnounceTo
+	}
+
 	r2 := &cmdhandler.EmbedResponse{
-		To:          fmt.Sprintf("@everyone %s", phrase),
+		To:          fmt.Sprintf("%s %s", toStr, phrase),
 		ToChannel:   announceCid,
 		Title:       fmt.Sprintf("Signups are open for %s", trial.GetName()),
 		Description: trial.GetDescription(),
@@ -373,6 +383,11 @@ func (c *adminCommands) grouping(msg cmdhandler.Message) (cmdhandler.Response, e
 		phrase = parts[1]
 	}
 
+	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID().ToString())
+	if err != nil {
+		return r, err
+	}
+
 	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), false)
 	if err != nil {
 		return r, err
@@ -394,8 +409,13 @@ func (c *adminCommands) grouping(msg cmdhandler.Message) (cmdhandler.Response, e
 		announceCid = acID
 	}
 
+	toStr := "@everyone"
+	if gsettings.AnnounceTo != "" {
+		toStr = gsettings.AnnounceTo
+	}
+
 	r2 := formatTrialDisplay(trial, false)
-	r2.To = fmt.Sprintf("@everyone %s", phrase)
+	r2.To = fmt.Sprintf("%s %s", toStr, phrase)
 	r2.ToChannel = announceCid
 
 	return r2, nil
@@ -456,14 +476,16 @@ func (c *adminCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, err
 		return r, errors.Wrap(err, "could not save trial signup")
 	}
 
+	var descStr string
+	if overflow {
+		descStr = fmt.Sprintf("Signed up as OVERFLOW for %s in %s by %s", role, trialName, cmdhandler.UserMentionString(msg.UserID()))
+	} else {
+		descStr = fmt.Sprintf("Signed up for %s in %s by %s", role, trialName, cmdhandler.UserMentionString(msg.UserID()))
+	}
+
 	r.To = userMention
 	r.ToChannel = signupCid
-
-	if overflow {
-		r.Description = fmt.Sprintf("Signed up as OVERFLOW for %s in %s by %s", role, trialName, cmdhandler.UserMentionString(msg.UserID()))
-	} else {
-		r.Description = fmt.Sprintf("Signed up for %s in %s by %s", role, trialName, cmdhandler.UserMentionString(msg.UserID()))
-	}
+	r.Description = descStr
 
 	return r, nil
 }
