@@ -228,7 +228,7 @@ func (c *rootCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, er
 		return r, errors.New("cannot withdraw from a closed trial")
 	}
 
-	trial.RemoveSignup(msg.UserID().ToString())
+	trial.RemoveSignup(cmdhandler.UserMentionString(msg.UserID()))
 
 	err = t.SaveTrial(trial)
 	if err != nil {
