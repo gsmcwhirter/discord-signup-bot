@@ -549,7 +549,7 @@ func (c *adminCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, e
 }
 
 // AdminCommandHandler TODOC
-func AdminCommandHandler(deps adminDependencies, preCommand string) *cmdhandler.CommandHandler {
+func AdminCommandHandler(deps adminDependencies, preCommand string) (*cmdhandler.CommandHandler, error) {
 	p := parser.NewParser(parser.Options{
 		CmdIndicator: " ",
 	})
@@ -558,11 +558,15 @@ func AdminCommandHandler(deps adminDependencies, preCommand string) *cmdhandler.
 		deps:       deps,
 	}
 
-	ch := cmdhandler.NewCommandHandler(p, cmdhandler.Options{
+	ch, err := cmdhandler.NewCommandHandler(p, cmdhandler.Options{
 		PreCommand:          preCommand,
 		Placeholder:         "action",
 		HelpOnEmptyCommands: true,
 	})
+	if err != nil {
+		return nil, err
+	}
+
 	ch.SetHandler("list", cmdhandler.NewMessageHandler(cc.list))
 	ch.SetHandler("create", cmdhandler.NewMessageHandler(cc.create))
 	ch.SetHandler("edit", cmdhandler.NewMessageHandler(cc.edit))
@@ -576,5 +580,5 @@ func AdminCommandHandler(deps adminDependencies, preCommand string) *cmdhandler.
 	ch.SetHandler("withdraw", cmdhandler.NewMessageHandler(cc.withdraw))
 	ch.SetHandler("wd", cmdhandler.NewMessageHandler(cc.withdraw))
 
-	return ch
+	return ch, nil
 }

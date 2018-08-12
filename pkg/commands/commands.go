@@ -253,7 +253,7 @@ func (c *rootCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, er
 }
 
 // CommandHandler TODOC
-func CommandHandler(deps dependencies, versionStr string, opts Options) *cmdhandler.CommandHandler {
+func CommandHandler(deps dependencies, versionStr string, opts Options) (*cmdhandler.CommandHandler, error) {
 	p := parser.NewParser(parser.Options{
 		CmdIndicator: opts.CmdIndicator,
 	})
@@ -262,7 +262,11 @@ func CommandHandler(deps dependencies, versionStr string, opts Options) *cmdhand
 		versionStr: versionStr,
 	}
 
-	ch := cmdhandler.NewCommandHandler(p, cmdhandler.Options{})
+	ch, err := cmdhandler.NewCommandHandler(p, cmdhandler.Options{})
+	if err != nil {
+		return nil, err
+	}
+
 	ch.SetHandler("version", cmdhandler.NewMessageHandler(rh.version))
 	ch.SetHandler("list", cmdhandler.NewMessageHandler(rh.list))
 	ch.SetHandler("show", cmdhandler.NewMessageHandler(rh.show))
@@ -271,7 +275,7 @@ func CommandHandler(deps dependencies, versionStr string, opts Options) *cmdhand
 	ch.SetHandler("withdraw", cmdhandler.NewMessageHandler(rh.withdraw))
 	ch.SetHandler("wd", cmdhandler.NewMessageHandler(rh.withdraw))
 
-	return ch
+	return ch, nil
 }
 
 type configDependencies interface {
@@ -279,22 +283,31 @@ type configDependencies interface {
 }
 
 // ConfigHandler TODOC
-func ConfigHandler(deps configDependencies, versionStr string, opts Options) *cmdhandler.CommandHandler {
+func ConfigHandler(deps configDependencies, versionStr string, opts Options) (*cmdhandler.CommandHandler, error) {
 	p := parser.NewParser(parser.Options{
 		CmdIndicator: opts.CmdIndicator,
 	})
 
-	ch := cmdhandler.NewCommandHandler(p, cmdhandler.Options{
+	ch, err := cmdhandler.NewCommandHandler(p, cmdhandler.Options{
 		NoHelpOnUnknownCommands: true,
 	})
-	ch.SetHandler("config-su", ConfigCommandHandler(deps, fmt.Sprintf("%sconfig", opts.CmdIndicator)))
+	if err != nil {
+		return nil, err
+	}
+
+	cch, err := ConfigCommandHandler(deps, fmt.Sprintf("%sconfig", opts.CmdIndicator))
+	if err != nil {
+		return nil, err
+	}
+
+	ch.SetHandler("config-su", cch)
 	// disable help for config
 	ch.SetHandler("help", cmdhandler.NewMessageHandler(func(msg cmdhandler.Message) (cmdhandler.Response, error) {
 		r := &cmdhandler.SimpleEmbedResponse{}
 		return r, parser.ErrUnknownCommand
 	}))
 
-	return ch
+	return ch, nil
 }
 
 type adminDependencies interface {
@@ -304,21 +317,29 @@ type adminDependencies interface {
 }
 
 // AdminHandler TODOC
-func AdminHandler(deps adminDependencies, versionStr string, opts Options) *cmdhandler.CommandHandler {
+func AdminHandler(deps adminDependencies, versionStr string, opts Options) (*cmdhandler.CommandHandler, error) {
 	p := parser.NewParser(parser.Options{
 		CmdIndicator: opts.CmdIndicator,
 	})
 
-	ch := cmdhandler.NewCommandHandler(p, cmdhandler.Options{
+	ch, err := cmdhandler.NewCommandHandler(p, cmdhandler.Options{
 		NoHelpOnUnknownCommands: true,
 	})
+	if err != nil {
+		return nil, err
+	}
 
-	ch.SetHandler("admin", AdminCommandHandler(deps, fmt.Sprintf("%sadmin", opts.CmdIndicator)))
+	ach, err := AdminCommandHandler(deps, fmt.Sprintf("%sadmin", opts.CmdIndicator))
+	if err != nil {
+		return nil, err
+	}
+
+	ch.SetHandler("admin", ach)
 	// disable help for admin
 	ch.SetHandler("help", cmdhandler.NewMessageHandler(func(msg cmdhandler.Message) (cmdhandler.Response, error) {
 		r := &cmdhandler.SimpleEmbedResponse{}
 		return r, parser.ErrUnknownCommand
 	}))
 
-	return ch
+	return ch, nil
 }

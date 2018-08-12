@@ -167,7 +167,7 @@ func (c *configCommands) reset(msg cmdhandler.Message) (cmdhandler.Response, err
 }
 
 // ConfigCommandHandler TODOC
-func ConfigCommandHandler(deps configDependencies, preCommand string) *cmdhandler.CommandHandler {
+func ConfigCommandHandler(deps configDependencies, preCommand string) (*cmdhandler.CommandHandler, error) {
 	p := parser.NewParser(parser.Options{
 		CmdIndicator: " ",
 	})
@@ -176,15 +176,19 @@ func ConfigCommandHandler(deps configDependencies, preCommand string) *cmdhandle
 		deps:       deps,
 	}
 
-	ch := cmdhandler.NewCommandHandler(p, cmdhandler.Options{
+	ch, err := cmdhandler.NewCommandHandler(p, cmdhandler.Options{
 		PreCommand:          preCommand,
 		Placeholder:         "action",
 		HelpOnEmptyCommands: true,
 	})
+	if err != nil {
+		return nil, err
+	}
+
 	ch.SetHandler("list", cmdhandler.NewMessageHandler(cc.list))
 	ch.SetHandler("get", cmdhandler.NewMessageHandler(cc.get))
 	ch.SetHandler("set", cmdhandler.NewMessageHandler(cc.set))
 	ch.SetHandler("reset", cmdhandler.NewMessageHandler(cc.reset))
 
-	return ch
+	return ch, err
 }
