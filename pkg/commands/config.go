@@ -216,6 +216,7 @@ func ConfigCommandHandler(deps configDependencies, versionStr, preCommand string
 	ch.SetHandler("get", cmdhandler.NewMessageHandler(cc.get))
 	ch.SetHandler("set", cmdhandler.NewMessageHandler(cc.set))
 	ch.SetHandler("reset", cmdhandler.NewMessageHandler(cc.reset))
+	ch.SetHandler("version", cmdhandler.NewMessageHandler(cc.version))
 
 	return ch, err
 }

@@ -738,7 +738,6 @@ func AdminCommandHandler(deps adminDependencies, preCommand string) (*cmdhandler
 	ch.SetHandler("su", cmdhandler.NewMessageHandler(cc.signup))
 	ch.SetHandler("withdraw", cmdhandler.NewMessageHandler(cc.withdraw))
 	ch.SetHandler("wd", cmdhandler.NewMessageHandler(cc.withdraw))
-	ch.SetHandler("version", cmdhandler.NewMessageHandler(cc.version))
 
 	return ch, nil
 }
