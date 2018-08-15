@@ -17,10 +17,14 @@ import (
 	"github.com/gsmcwhirter/go-util/parser"
 	"golang.org/x/time/rate"
 
+	msglogging "github.com/gsmcwhirter/discord-signup-bot/pkg/logging"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
 
 var errUnauthorized = errors.New("unauthorized")
+
+// ErrNoResponse TODOC
+var ErrNoResponse = errors.New("no response")
 
 type dependencies interface {
 	Logger() log.Logger
@@ -117,14 +121,16 @@ func (h *handlers) guildAdminChannelID(gid snowflake.Snowflake) (snowflake.Snowf
 
 func (h *handlers) attemptConfigAndAdminHandlers(msg *cmdhandler.SimpleMessage, req wsclient.WSMessage, cmdIndicator string, content string, m etfapi.Message, gid snowflake.Snowflake) (resp cmdhandler.Response, err error) {
 	// TODO: check auth
+	logger := msglogging.WithMessage(msg, h.deps.Logger())
+
 	if !h.deps.BotSession().IsGuildAdmin(gid, m.AuthorID()) {
-		_ = level.Debug(logging.WithContext(req.Ctx, h.deps.Logger())).Log("message", "non-admin trying to config", "author_id", m.AuthorID().ToString(), "guild_id", gid.ToString())
+		_ = level.Debug(logger).Log("message", "non-admin trying to config")
 
 		err = errUnauthorized
 		return
 	}
 
-	_ = level.Debug(logging.WithContext(req.Ctx, h.deps.Logger())).Log("message", "admin trying to config", "author_id", m.AuthorID().ToString(), "guild_id", gid.ToString())
+	_ = level.Debug(logger).Log("message", "admin trying to config")
 	cmdContent := h.deps.ConfigHandler().CommandIndicator() + strings.TrimPrefix(content, cmdIndicator)
 	resp, err = h.deps.ConfigHandler().HandleLine(cmdhandler.NewWithContents(msg, cmdContent))
 
@@ -136,17 +142,7 @@ func (h *handlers) attemptConfigAndAdminHandlers(msg *cmdhandler.SimpleMessage, 
 		return
 	}
 
-	adminChannelID, ok := h.guildAdminChannelID(gid)
-	if !ok {
-		err = errUnauthorized
-		return
-	}
-
-	if m.ChannelID() != adminChannelID {
-		err = errUnauthorized
-		return
-	}
-
+	_ = level.Debug(logger).Log("message", "admin trying to admin")
 	cmdContent = h.deps.AdminHandler().CommandIndicator() + strings.TrimPrefix(content, cmdIndicator)
 	resp, err = h.deps.AdminHandler().HandleLine(cmdhandler.NewWithContents(msg, cmdContent))
 
@@ -191,14 +187,18 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 		return
 	}
 
-	msg := cmdhandler.NewSimpleMessage(m.AuthorID(), gid, m.ChannelID(), m.ID(), "")
-
-	_ = level.Info(logger).Log("message", "attempting to handle command")
+	msg := cmdhandler.NewSimpleMessage(req.Ctx, m.AuthorID(), gid, m.ChannelID(), m.ID(), "")
+	logger = msglogging.WithMessage(msg, h.deps.Logger())
 	resp, err := h.attemptConfigAndAdminHandlers(msg, req, cmdIndicator, content, m, gid)
 
 	if err != nil && (err == errUnauthorized || err == parser.ErrUnknownCommand) {
+		_ = level.Debug(logger).Log("message", "admin not successful; processing as real message")
 		cmdContent := h.deps.CommandHandler().CommandIndicator() + strings.TrimPrefix(content, cmdIndicator)
 		resp, err = h.deps.CommandHandler().HandleLine(cmdhandler.NewWithContents(msg, cmdContent))
+	}
+
+	if err == ErrNoResponse {
+		return
 	}
 
 	if err != nil {

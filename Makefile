@@ -4,6 +4,7 @@ GIT_SHA := $(shell git rev-parse HEAD)
 
 APP_NAME := trials-bot
 REPL_NAME := trials-repl
+DUMP_NAME := trials-dump
 PROJECT := github.com/gsmcwhirter/discord-signup-bot
 
 SERVER := discordbot@evogames.org:~/eso-discord/
@@ -22,10 +23,12 @@ all: deps debug  ## Download dependencies and do a debug build
 build-debug: version generate
 	$Q go build -v -ldflags "-X main.AppName=$(APP_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(APP_NAME) -race $(PROJECT)/cmd/$(APP_NAME)
 	$Q go build -v -ldflags "-X main.AppName=$(REPL_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(REPL_NAME) -race $(PROJECT)/cmd/$(REPL_NAME)
+	$Q go build -v -ldflags "-X main.AppName=$(DUMP_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(DUMP_NAME) -race $(PROJECT)/cmd/$(DUMP_NAME)
 
 build-release: version generate
 	$Q GOOS=linux go build -v -ldflags "-s -w -X main.AppName=$(APP_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(APP_NAME) $(PROJECT)/cmd/$(APP_NAME)
 	$Q GOOS=linux go build -v -ldflags "-s -w -X main.AppName=$(REPL_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(REPL_NAME) $(PROJECT)/cmd/$(REPL_NAME)
+	$Q GOOS=linux go build -v -ldflags "-s -w -X main.AppName=$(DUMP_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(DUMP_NAME) $(PROJECT)/cmd/$(DUMP_NAME)
 
 generate:
 	$Q go generate ./...
@@ -35,6 +38,8 @@ build-release-bundles: build-release
 	$Q cp bin/$(APP_NAME).gz bin/$(APP_NAME)-$(VERSION).gz
 	$Q gzip -k -f bin/$(REPL_NAME)
 	$Q cp bin/$(REPL_NAME).gz bin/$(REPL_NAME)-$(VERSION).gz
+	$Q gzip -k -f bin/$(DUMP_NAME)
+	$Q cp bin/$(DUMP_NAME).gz bin/$(DUMP_NAME)-$(VERSION).gz
 
 clean:  ## Remove compiled artifacts
 	$Q rm bin/*
@@ -65,6 +70,7 @@ upload:
 	$Q scp $(CONF_FILE) $(SERVICE_FILE) $(INSTALLER) $(SERVER)
 	$Q scp  ./bin/$(APP_NAME).gz ./bin/$(APP_NAME)-$(VERSION).gz $(SERVER)
 	$Q scp ./bin/$(REPL_NAME).gz ./bin/$(REPL_NAME)-$(VERSION).gz $(SERVER)
+	$Q scp ./bin/$(DUMP_NAME).gz ./bin/$(DUMP_NAME)-$(VERSION).gz $(SERVER)
 
 help:  ## Show the help message
 	@awk 'BEGIN {FS = ":.*?## "} /^[a-zA-Z_-]+:.*?## / {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}' ./Makefile

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -48,7 +49,7 @@ func start(c config) error {
 		return errors.Wrap(err, "could not parse channel id")
 	}
 
-	baseMsg := cmdhandler.NewSimpleMessage(uid, gid, cid, 0, "")
+	baseMsg := cmdhandler.NewSimpleMessage(context.Background(), uid, gid, cid, 0, "")
 
 	scanner := gonsole.NewReader(os.Stdin)
 	var line string

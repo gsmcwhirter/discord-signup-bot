@@ -7,26 +7,39 @@ import (
 	"strings"
 
 	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/discordapi/session"
 	"github.com/pkg/errors"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
 
-// type suSorter struct {
-// 	signups []storage.TrialSignup
-// }
+func isAdminChannel(msg cmdhandler.Message, adminChannel string, session *session.Session) bool {
+	g, err := session.Guild(msg.GuildID())
+	if err != nil {
+		return false
+	}
 
-// func (s *suSorter) Len() int {
-// 	return len(s.signups)
-// }
+	cid, ok := g.ChannelWithName(adminChannel)
+	if !ok {
+		return false
+	}
 
-// func (s *suSorter) Swap(i, j int) {
-// 	s.signups[i], s.signups[j] = s.signups[j], s.signups[i]
-// }
+	return cid == msg.ChannelID()
+}
 
-// func (s *suSorter) Less(i, j int) bool {
-// 	return s.signups[i].GetName() < s.signups[j].GetName()
-// }
+func isSignupChannel(msg cmdhandler.Message, signupChannel string, session *session.Session) bool {
+	g, err := session.Guild(msg.GuildID())
+	if err != nil {
+		return false
+	}
+
+	cid, ok := g.ChannelWithName(signupChannel)
+	if !ok {
+		return false
+	}
+
+	return cid == msg.ChannelID()
+}
 
 func signupsForRole(role string, signups []storage.TrialSignup, sorted bool) []string {
 	roleLower := strings.ToLower(role)

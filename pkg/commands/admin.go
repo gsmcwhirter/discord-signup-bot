@@ -5,9 +5,12 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/go-kit/kit/log/level"
 	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
 	"github.com/gsmcwhirter/discord-bot-lib/snowflake"
 	"github.com/gsmcwhirter/discord-bot-lib/util"
+	"github.com/gsmcwhirter/discord-signup-bot/pkg/logging"
+	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 	"github.com/gsmcwhirter/go-util/parser"
 	"github.com/pkg/errors"
@@ -22,6 +25,20 @@ func (c *adminCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error
 	r := &cmdhandler.EmbedResponse{
 		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
+
+	logger := logging.WithMessage(msg, c.deps.Logger())
+
+	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID().ToString())
+	if err != nil {
+		return r, err
+	}
+
+	if !isAdminChannel(msg, gsettings.AdminChannel, c.deps.BotSession()) {
+		_ = level.Info(logger).Log("message", "command not in admin channel", "admin_channel", gsettings.AdminChannel)
+		return r, msghandler.ErrNoResponse
+	}
+
+	_ = level.Info(logger).Log("message", "handling adminCommand", "command", "list")
 
 	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), false)
 	if err != nil {
@@ -72,10 +89,19 @@ func (c *adminCommands) create(msg cmdhandler.Message) (cmdhandler.Response, err
 		settings = argParts[1]
 	}
 
+	logger := logging.WithMessage(msg, c.deps.Logger())
+
 	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID().ToString())
 	if err != nil {
 		return r, err
 	}
+
+	if !isAdminChannel(msg, gsettings.AdminChannel, c.deps.BotSession()) {
+		_ = level.Info(logger).Log("message", "command not in admin channel", "admin_channel", gsettings.AdminChannel)
+		return r, msghandler.ErrNoResponse
+	}
+
+	_ = level.Info(logger).Log("message", "handling adminCommand", "command", "create", "trial_name", trialName, "settings", settings)
 
 	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), true)
 	if err != nil {
@@ -127,6 +153,7 @@ func (c *adminCommands) create(msg cmdhandler.Message) (cmdhandler.Response, err
 		return r, errors.Wrap(err, "could not save trial")
 	}
 
+	_ = level.Info(logger).Log("message", "trial created", "trial_name", trialName)
 	r.Description = fmt.Sprintf("Trial %s created successfully", trialName)
 
 	return r, nil
@@ -147,6 +174,20 @@ func (c *adminCommands) edit(msg cmdhandler.Message) (cmdhandler.Response, error
 	} else {
 		settings = argParts[1]
 	}
+
+	logger := logging.WithMessage(msg, c.deps.Logger())
+
+	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID().ToString())
+	if err != nil {
+		return r, err
+	}
+
+	if !isAdminChannel(msg, gsettings.AdminChannel, c.deps.BotSession()) {
+		_ = level.Info(logger).Log("message", "command not in admin channel", "admin_channel", gsettings.AdminChannel)
+		return r, msghandler.ErrNoResponse
+	}
+
+	_ = level.Info(logger).Log("message", "handling adminCommand", "command", "edit", "trial_name", trialName, "settings", settings)
 
 	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), true)
 	if err != nil {
@@ -196,6 +237,7 @@ func (c *adminCommands) edit(msg cmdhandler.Message) (cmdhandler.Response, error
 		return r, errors.Wrap(err, "could not save trial")
 	}
 
+	_ = level.Info(logger).Log("message", "trial edited", "trial_name", trialName)
 	r.Description = fmt.Sprintf("Trial %s edited successfully", trialName)
 
 	return r, nil
@@ -207,6 +249,20 @@ func (c *adminCommands) open(msg cmdhandler.Message) (cmdhandler.Response, error
 	}
 
 	trialName := strings.TrimSpace(msg.Contents())
+
+	logger := logging.WithMessage(msg, c.deps.Logger())
+
+	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID().ToString())
+	if err != nil {
+		return r, err
+	}
+
+	if !isAdminChannel(msg, gsettings.AdminChannel, c.deps.BotSession()) {
+		_ = level.Info(logger).Log("message", "command not in admin channel", "admin_channel", gsettings.AdminChannel)
+		return r, msghandler.ErrNoResponse
+	}
+
+	_ = level.Info(logger).Log("message", "handling adminCommand", "command", "open", "trial_name", trialName)
 
 	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), true)
 	if err != nil {
@@ -229,6 +285,7 @@ func (c *adminCommands) open(msg cmdhandler.Message) (cmdhandler.Response, error
 		return r, errors.Wrap(err, "could not open trial")
 	}
 
+	_ = level.Info(logger).Log("message", "trial opened", "trial_name", trialName)
 	r.Description = fmt.Sprintf("Opened trial %s", trialName)
 
 	return r, nil
@@ -240,6 +297,20 @@ func (c *adminCommands) close(msg cmdhandler.Message) (cmdhandler.Response, erro
 	}
 
 	trialName := strings.TrimSpace(msg.Contents())
+
+	logger := logging.WithMessage(msg, c.deps.Logger())
+
+	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID().ToString())
+	if err != nil {
+		return r, err
+	}
+
+	if !isAdminChannel(msg, gsettings.AdminChannel, c.deps.BotSession()) {
+		_ = level.Info(logger).Log("message", "command not in admin channel", "admin_channel", gsettings.AdminChannel)
+		return r, msghandler.ErrNoResponse
+	}
+
+	_ = level.Info(logger).Log("message", "handling adminCommand", "command", "close", "trial_name", trialName)
 
 	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), true)
 	if err != nil {
@@ -262,6 +333,7 @@ func (c *adminCommands) close(msg cmdhandler.Message) (cmdhandler.Response, erro
 		return r, errors.Wrap(err, "could not close trial")
 	}
 
+	_ = level.Info(logger).Log("message", "trial closed", "trial_name", trialName)
 	r.Description = fmt.Sprintf("Closed trial %s", trialName)
 
 	return r, nil
@@ -272,13 +344,27 @@ func (c *adminCommands) delete(msg cmdhandler.Message) (cmdhandler.Response, err
 		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
+	trialName := strings.TrimSpace(msg.Contents())
+
+	logger := logging.WithMessage(msg, c.deps.Logger())
+
+	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID().ToString())
+	if err != nil {
+		return r, err
+	}
+
+	if !isAdminChannel(msg, gsettings.AdminChannel, c.deps.BotSession()) {
+		_ = level.Info(logger).Log("message", "command not in admin channel", "admin_channel", gsettings.AdminChannel)
+		return r, msghandler.ErrNoResponse
+	}
+
+	_ = level.Info(logger).Log("message", "handling adminCommand", "command", "delete", "trial_name", trialName)
+
 	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), true)
 	if err != nil {
 		return r, err
 	}
 	defer util.CheckDefer(t.Rollback)
-
-	trialName := strings.TrimSpace(msg.Contents())
 
 	if err = t.DeleteTrial(trialName); err != nil {
 		return r, errors.Wrap(err, "could not delete trial")
@@ -288,6 +374,7 @@ func (c *adminCommands) delete(msg cmdhandler.Message) (cmdhandler.Response, err
 		return r, errors.Wrap(err, "could not delete trial")
 	}
 
+	_ = level.Info(logger).Log("message", "trial deleted", "trial_name", trialName)
 	r.Description = fmt.Sprintf("Deleted trial %s", trialName)
 
 	return r, nil
@@ -305,10 +392,19 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 		phrase = parts[1]
 	}
 
+	logger := logging.WithMessage(msg, c.deps.Logger())
+
 	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID().ToString())
 	if err != nil {
 		return r, err
 	}
+
+	if !isAdminChannel(msg, gsettings.AdminChannel, c.deps.BotSession()) {
+		_ = level.Info(logger).Log("message", "command not in admin channel", "admin_channel", gsettings.AdminChannel)
+		return r, msghandler.ErrNoResponse
+	}
+
+	_ = level.Info(logger).Log("message", "handling adminCommand", "command", "announce", "trial_name", trialName, "phrase", phrase)
 
 	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), false)
 	if err != nil {
@@ -368,6 +464,8 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 		})
 	}
 
+	_ = level.Info(logger).Log("message", "trial announced", "trial_name", trialName, "announce_channel", r2.ToChannel.ToString(), "announce_to", r2.To)
+
 	return r2, nil
 }
 
@@ -383,10 +481,19 @@ func (c *adminCommands) grouping(msg cmdhandler.Message) (cmdhandler.Response, e
 		phrase = parts[1]
 	}
 
+	logger := logging.WithMessage(msg, c.deps.Logger())
+
 	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID().ToString())
 	if err != nil {
 		return r, err
 	}
+
+	if !isAdminChannel(msg, gsettings.AdminChannel, c.deps.BotSession()) {
+		_ = level.Info(logger).Log("message", "command not in admin channel", "admin_channel", gsettings.AdminChannel)
+		return r, msghandler.ErrNoResponse
+	}
+
+	_ = level.Info(logger).Log("message", "handling adminCommand", "command", "grouping", "trial_name", trialName, "phrase", phrase)
 
 	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), false)
 	if err != nil {
@@ -418,6 +525,8 @@ func (c *adminCommands) grouping(msg cmdhandler.Message) (cmdhandler.Response, e
 	r2.To = fmt.Sprintf("%s %s", toStr, phrase)
 	r2.ToChannel = announceCid
 
+	_ = level.Info(logger).Log("message", "trial grouping", "trial_name", trialName, "announce_channel", r2.ToChannel.ToString(), "announce_to", r2.To)
+
 	return r2, nil
 }
 
@@ -427,6 +536,21 @@ func (c *adminCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, err
 	}
 
 	parts := strings.SplitN(strings.TrimSpace(msg.Contents()), " ", 3)
+
+	logger := logging.WithMessage(msg, c.deps.Logger())
+
+	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID().ToString())
+	if err != nil {
+		return r, err
+	}
+
+	if !isAdminChannel(msg, gsettings.AdminChannel, c.deps.BotSession()) {
+		_ = level.Info(logger).Log("message", "command not in admin channel", "admin_channel", gsettings.AdminChannel)
+		return r, msghandler.ErrNoResponse
+	}
+
+	_ = level.Info(logger).Log("message", "handling adminCommand", "command", "signup", "signup_args", parts)
+
 	if len(parts) != 3 {
 		return r, errors.New("not enough arguments (need `user-mention trial-name role`")
 	}
@@ -436,6 +560,11 @@ func (c *adminCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, err
 
 	if !cmdhandler.IsUserMention(userMention) {
 		return r, errors.New("you must mention the user you are trying to sign up (@...)")
+	}
+
+	userMention, err = cmdhandler.ForceUserNicknameMention(userMention)
+	if err != nil {
+		return r, err
 	}
 
 	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), true)
@@ -487,6 +616,8 @@ func (c *adminCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, err
 	r.ToChannel = signupCid
 	r.Description = descStr
 
+	_ = level.Info(logger).Log("message", "admin signup complete", "trial_name", trialName, "signup_user", userMention, "role", role, "signup_channel", r.ToChannel.ToString())
+
 	return r, nil
 }
 
@@ -496,6 +627,21 @@ func (c *adminCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, e
 	}
 
 	parts := strings.SplitN(strings.TrimSpace(msg.Contents()), " ", 2)
+
+	logger := logging.WithMessage(msg, c.deps.Logger())
+
+	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID().ToString())
+	if err != nil {
+		return r, err
+	}
+
+	if !isAdminChannel(msg, gsettings.AdminChannel, c.deps.BotSession()) {
+		_ = level.Info(logger).Log("message", "command not in admin channel", "admin_channel", gsettings.AdminChannel)
+		return r, msghandler.ErrNoResponse
+	}
+
+	_ = level.Info(logger).Log("message", "handling adminCommand", "command", "withdraw", "withdraw_args", parts)
+
 	if len(parts) != 2 {
 		return r, errors.New("not enough arguments (need `user-mention trial-name`")
 	}
@@ -504,6 +650,16 @@ func (c *adminCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, e
 
 	if !cmdhandler.IsUserMention(userMention) {
 		return r, errors.New("you must mention the user you are trying to withdraw (@...)")
+	}
+
+	userNickMention, err := cmdhandler.ForceUserNicknameMention(userMention)
+	if err != nil {
+		return r, err
+	}
+
+	userAcctMention, err := cmdhandler.ForceUserAccountMention(userMention)
+	if err != nil {
+		return r, err
 	}
 
 	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), true)
@@ -531,7 +687,8 @@ func (c *adminCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, e
 		signupCid = scID
 	}
 
-	trial.RemoveSignup(userMention)
+	trial.RemoveSignup(userAcctMention)
+	trial.RemoveSignup(userNickMention)
 
 	if err = t.SaveTrial(trial); err != nil {
 		return r, errors.Wrap(err, "could not save trial withdraw")
@@ -544,6 +701,8 @@ func (c *adminCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, e
 	r.To = userMention
 	r.ToChannel = signupCid
 	r.Description = fmt.Sprintf("Withdrawn from %s by %s", trialName, cmdhandler.UserMentionString(msg.UserID()))
+
+	_ = level.Info(logger).Log("message", "admin withdraw complete", "trial_name", trialName, "withdraw_user", userMention, "signup_channel", r.ToChannel.ToString())
 
 	return r, nil
 }

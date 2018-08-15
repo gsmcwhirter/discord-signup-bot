@@ -4,23 +4,41 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/go-kit/kit/log/level"
 	"github.com/gsmcwhirter/discord-bot-lib/util"
 	"github.com/pkg/errors"
 
 	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
+	"github.com/gsmcwhirter/discord-signup-bot/pkg/logging"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 	"github.com/gsmcwhirter/go-util/parser"
 )
 
 type configCommands struct {
 	preCommand string
+	versionStr string
 	deps       configDependencies
+}
+
+func (c *configCommands) version(msg cmdhandler.Message) (cmdhandler.Response, error) {
+	r := &cmdhandler.SimpleEmbedResponse{
+		To:          cmdhandler.UserMentionString(msg.UserID()),
+		Description: c.versionStr,
+	}
+
+	logger := logging.WithMessage(msg, c.deps.Logger())
+	_ = level.Info(logger).Log("message", "handling configCommand", "command", "version")
+
+	return r, nil
 }
 
 func (c *configCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	r := &cmdhandler.SimpleEmbedResponse{
 		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
+
+	logger := logging.WithMessage(msg, c.deps.Logger())
+	_ = level.Info(logger).Log("message", "handling configCommand", "command", "list")
 
 	t, err := c.deps.GuildAPI().NewTransaction(false)
 	if err != nil {
@@ -44,6 +62,9 @@ func (c *configCommands) get(msg cmdhandler.Message) (cmdhandler.Response, error
 	}
 
 	settingName := strings.TrimSpace(msg.Contents())
+
+	logger := logging.WithMessage(msg, c.deps.Logger())
+	_ = level.Info(logger).Log("message", "handling adminCommand", "command", "get", "setting_name", settingName)
 
 	t, err := c.deps.GuildAPI().NewTransaction(false)
 	if err != nil {
@@ -78,6 +99,10 @@ func (c *configCommands) set(msg cmdhandler.Message) (cmdhandler.Response, error
 	args := strings.TrimSpace(msg.Contents())
 
 	argList := strings.Split(args, " ")
+
+	logger := logging.WithMessage(msg, c.deps.Logger())
+	_ = level.Info(logger).Log("message", "handling adminCommand", "command", "set", "set_args", argList)
+
 	argPairs := make([]argPair, 0, len(argList))
 
 	for _, arg := range argList {
@@ -98,8 +123,6 @@ func (c *configCommands) set(msg cmdhandler.Message) (cmdhandler.Response, error
 	if len(argPairs) == 0 {
 		return r, errors.New("no settings to save")
 	}
-
-	fmt.Printf("*** %+v\n", argPairs)
 
 	t, err := c.deps.GuildAPI().NewTransaction(true)
 	if err != nil {
@@ -139,6 +162,9 @@ func (c *configCommands) reset(msg cmdhandler.Message) (cmdhandler.Response, err
 		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
+	logger := logging.WithMessage(msg, c.deps.Logger())
+	_ = level.Info(logger).Log("message", "handling adminCommand", "command", "reset")
+
 	t, err := c.deps.GuildAPI().NewTransaction(true)
 	if err != nil {
 		return r, err
@@ -167,13 +193,14 @@ func (c *configCommands) reset(msg cmdhandler.Message) (cmdhandler.Response, err
 }
 
 // ConfigCommandHandler TODOC
-func ConfigCommandHandler(deps configDependencies, preCommand string) (*cmdhandler.CommandHandler, error) {
+func ConfigCommandHandler(deps configDependencies, versionStr, preCommand string) (*cmdhandler.CommandHandler, error) {
 	p := parser.NewParser(parser.Options{
 		CmdIndicator: " ",
 	})
 	cc := configCommands{
 		preCommand: preCommand,
 		deps:       deps,
+		versionStr: versionStr,
 	}
 
 	ch, err := cmdhandler.NewCommandHandler(p, cmdhandler.Options{

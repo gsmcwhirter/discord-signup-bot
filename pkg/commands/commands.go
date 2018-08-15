@@ -5,6 +5,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
 	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
 	"github.com/gsmcwhirter/discord-bot-lib/discordapi/session"
 	"github.com/gsmcwhirter/discord-bot-lib/snowflake"
@@ -12,6 +14,8 @@ import (
 	"github.com/gsmcwhirter/go-util/parser"
 	"github.com/pkg/errors"
 
+	"github.com/gsmcwhirter/discord-signup-bot/pkg/logging"
+	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
 
@@ -19,6 +23,7 @@ import (
 var ErrNoResponse = errors.New("no response")
 
 type dependencies interface {
+	Logger() log.Logger
 	TrialAPI() storage.TrialAPI
 	GuildAPI() storage.GuildAPI
 	BotSession() *session.Session
@@ -31,22 +36,16 @@ type Options struct {
 
 // RootCommands holds the commands at the root level
 type rootCommands struct {
-	deps       dependencies
-	versionStr string
-}
-
-func (c *rootCommands) version(msg cmdhandler.Message) (cmdhandler.Response, error) {
-	r := &cmdhandler.SimpleEmbedResponse{
-		To:          cmdhandler.UserMentionString(msg.UserID()),
-		Description: c.versionStr,
-	}
-	return r, nil
+	deps dependencies
 }
 
 func (c *rootCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	r := &cmdhandler.EmbedResponse{
 		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
+
+	logger := logging.WithMessage(msg, c.deps.Logger())
+	_ = level.Info(logger).Log("message", "handling rootCommand", "command", "list")
 
 	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), false)
 	if err != nil {
@@ -92,6 +91,9 @@ func (c *rootCommands) show(msg cmdhandler.Message) (cmdhandler.Response, error)
 
 	trialName := strings.TrimSpace(msg.Contents())
 
+	logger := logging.WithMessage(msg, c.deps.Logger())
+	_ = level.Info(logger).Log("message", "handling rootCommand", "command", "show", "trial_name", trialName)
+
 	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), false)
 	if err != nil {
 		return r, err
@@ -101,6 +103,11 @@ func (c *rootCommands) show(msg cmdhandler.Message) (cmdhandler.Response, error)
 	trial, err := t.GetTrial(trialName)
 	if err != nil {
 		return r, err
+	}
+
+	if !isSignupChannel(msg, trial.GetSignupChannel(), c.deps.BotSession()) {
+		_ = level.Info(logger).Log("message", "command not in signup channel", "signup_channel", trial.GetSignupChannel())
+		return r, msghandler.ErrNoResponse
 	}
 
 	r2 := formatTrialDisplay(trial, true)
@@ -115,6 +122,10 @@ func (c *rootCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, erro
 	}
 
 	argParts := strings.SplitN(strings.TrimSpace(msg.Contents()), " ", 2)
+
+	logger := logging.WithMessage(msg, c.deps.Logger())
+	_ = level.Info(logger).Log("message", "handling rootCommand", "command", "signup", "trial_and_role", argParts)
+
 	if len(argParts) < 2 {
 		return r, errors.New("missing role")
 	}
@@ -137,6 +148,11 @@ func (c *rootCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, erro
 		return r, err
 	}
 
+	if !isSignupChannel(msg, trial.GetSignupChannel(), c.deps.BotSession()) {
+		_ = level.Info(logger).Log("message", "command not in signup channel", "signup_channel", trial.GetSignupChannel())
+		return r, msghandler.ErrNoResponse
+	}
+
 	if trial.GetState() != storage.TrialStateOpen {
 		return r, errors.New("cannot sign up for a closed trial")
 	}
@@ -156,12 +172,15 @@ func (c *rootCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, erro
 
 	var descStr string
 	if overflow {
+		_ = level.Info(logger).Log("message", "signed up", "overflow", true, "role", role, "trial_name", trialName)
 		descStr = fmt.Sprintf("Signed up as OVERFLOW for %s in %s", role, trialName)
 	} else {
+		_ = level.Info(logger).Log("message", "signed up", "overflow", false, "role", role, "trial_name", trialName)
 		descStr = fmt.Sprintf("Signed up for %s in %s", role, trialName)
 	}
 
 	if gsettings.ShowAfterSignup == "true" {
+		_ = level.Debug(logger).Log("message", "auto-show after signup", "trial_name", trialName)
 		r2, err := c.show(cmdhandler.NewWithContents(msg, trialName))
 		if err != nil {
 			return r2, err
@@ -194,6 +213,9 @@ func (c *rootCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, er
 
 	trialName := strings.TrimSpace(msg.Contents())
 
+	logger := logging.WithMessage(msg, c.deps.Logger())
+	_ = level.Info(logger).Log("message", "handling rootCommand", "command", "withdraw", "trial_name", trialName)
+
 	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID().ToString())
 	if err != nil {
 		return r, err
@@ -210,6 +232,11 @@ func (c *rootCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, er
 		return r, err
 	}
 
+	if !isSignupChannel(msg, trial.GetSignupChannel(), c.deps.BotSession()) {
+		_ = level.Info(logger).Log("message", "command not in signup channel", "signup_channel", trial.GetSignupChannel())
+		return r, msghandler.ErrNoResponse
+	}
+
 	if trial.GetState() != storage.TrialStateOpen {
 		return r, errors.New("cannot withdraw from a closed trial")
 	}
@@ -224,9 +251,11 @@ func (c *rootCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, er
 		return r, errors.Wrap(err, "could not save trial withdraw")
 	}
 
+	_ = level.Info(logger).Log("message", "withdrew", "trial_name", trialName)
 	descStr := fmt.Sprintf("Withdrew from %s", trialName)
 
 	if gsettings.ShowAfterWithdraw == "true" {
+		_ = level.Debug(logger).Log("message", "auto-show after withdraw", "trial_name", trialName)
 		r2, err := c.show(cmdhandler.NewWithContents(msg, trialName))
 		if err != nil {
 			return r2, err
@@ -258,16 +287,16 @@ func CommandHandler(deps dependencies, versionStr string, opts Options) (*cmdhan
 		CmdIndicator: opts.CmdIndicator,
 	})
 	rh := rootCommands{
-		deps:       deps,
-		versionStr: versionStr,
+		deps: deps,
 	}
 
-	ch, err := cmdhandler.NewCommandHandler(p, cmdhandler.Options{})
+	ch, err := cmdhandler.NewCommandHandler(p, cmdhandler.Options{
+		NoHelpOnUnknownCommands: true,
+	})
 	if err != nil {
 		return nil, err
 	}
 
-	ch.SetHandler("version", cmdhandler.NewMessageHandler(rh.version))
 	ch.SetHandler("list", cmdhandler.NewMessageHandler(rh.list))
 	ch.SetHandler("show", cmdhandler.NewMessageHandler(rh.show))
 	ch.SetHandler("signup", cmdhandler.NewMessageHandler(rh.signup))
@@ -279,6 +308,7 @@ func CommandHandler(deps dependencies, versionStr string, opts Options) (*cmdhan
 }
 
 type configDependencies interface {
+	Logger() log.Logger
 	GuildAPI() storage.GuildAPI
 }
 
@@ -295,7 +325,7 @@ func ConfigHandler(deps configDependencies, versionStr string, opts Options) (*c
 		return nil, err
 	}
 
-	cch, err := ConfigCommandHandler(deps, fmt.Sprintf("%sconfig", opts.CmdIndicator))
+	cch, err := ConfigCommandHandler(deps, versionStr, fmt.Sprintf("%sconfig", opts.CmdIndicator))
 	if err != nil {
 		return nil, err
 	}
@@ -311,6 +341,7 @@ func ConfigHandler(deps configDependencies, versionStr string, opts Options) (*c
 }
 
 type adminDependencies interface {
+	Logger() log.Logger
 	GuildAPI() storage.GuildAPI
 	TrialAPI() storage.TrialAPI
 	BotSession() *session.Session
