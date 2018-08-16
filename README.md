@@ -9,5 +9,4 @@ on using the bot.
 
 ## TODO
 
-- signup channel restrictions
 - working REPL (need to mock guild state to force admin)
