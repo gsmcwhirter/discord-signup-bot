@@ -181,24 +181,11 @@ func (c *rootCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, erro
 
 	if gsettings.ShowAfterSignup == "true" {
 		_ = level.Debug(logger).Log("message", "auto-show after signup", "trial_name", trialName)
-		r2, err := c.show(cmdhandler.NewWithContents(msg, trialName))
-		if err != nil {
-			return r2, err
-		}
 
-		switch r3 := r2.(type) {
-		case *cmdhandler.SimpleResponse:
-			r3.Content = fmt.Sprintf("%s\n\n%s", descStr, r3.Content)
-			return r3, nil
-		case *cmdhandler.SimpleEmbedResponse:
-			r3.Description = fmt.Sprintf("%s\n\n%s", descStr, r3.Description)
-			return r3, nil
-		case *cmdhandler.EmbedResponse:
-			r3.Description = fmt.Sprintf("%s\n\n%s", descStr, r3.Description)
-			return r3, nil
-		default:
-			return r2, err
-		}
+		r2 := formatTrialDisplay(trial, true)
+		r2.To = cmdhandler.UserMentionString(msg.UserID())
+		r2.Description = fmt.Sprintf("%s\n\n%s", descStr, r2.Description)
+		return r2, nil
 	}
 
 	r.Description = descStr
@@ -256,24 +243,11 @@ func (c *rootCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, er
 
 	if gsettings.ShowAfterWithdraw == "true" {
 		_ = level.Debug(logger).Log("message", "auto-show after withdraw", "trial_name", trialName)
-		r2, err := c.show(cmdhandler.NewWithContents(msg, trialName))
-		if err != nil {
-			return r2, err
-		}
 
-		switch r3 := r2.(type) {
-		case *cmdhandler.SimpleResponse:
-			r3.Content = fmt.Sprintf("%s\n\n%s", descStr, r3.Content)
-			return r3, nil
-		case *cmdhandler.SimpleEmbedResponse:
-			r3.Description = fmt.Sprintf("%s\n\n%s", descStr, r3.Description)
-			return r3, nil
-		case *cmdhandler.EmbedResponse:
-			r3.Description = fmt.Sprintf("%s\n\n%s", descStr, r3.Description)
-			return r3, nil
-		default:
-			return r2, err
-		}
+		r2 := formatTrialDisplay(trial, true)
+		r2.To = cmdhandler.UserMentionString(msg.UserID())
+		r2.Description = fmt.Sprintf("%s\n\n%s", descStr, r2.Description)
+		return r2, nil
 	}
 
 	r.Description = descStr

@@ -5,6 +5,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/hashicorp/go-multierror"
+
 	"github.com/go-kit/kit/log/level"
 	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
 	"github.com/gsmcwhirter/discord-bot-lib/snowflake"
@@ -535,7 +537,7 @@ func (c *adminCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, err
 		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
-	parts := strings.SplitN(strings.TrimSpace(msg.Contents()), " ", 3)
+	parts := strings.Split(strings.TrimSpace(msg.Contents()), " ")
 
 	logger := logging.WithMessage(msg, c.deps.Logger())
 
@@ -551,20 +553,30 @@ func (c *adminCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, err
 
 	_ = level.Info(logger).Log("message", "handling adminCommand", "command", "signup", "signup_args", parts)
 
-	if len(parts) != 3 {
-		return r, errors.New("not enough arguments (need `user-mention trial-name role`")
+	if len(parts) < 3 {
+		return r, errors.New("not enough arguments (need `trial-name role user-mention(s)`")
 	}
-	userMention := parts[0]
-	trialName := parts[1]
-	role := parts[2]
+	trialName := parts[0]
+	role := parts[1]
+	userMentions := make([]string, 0, len(parts)-2)
 
-	if !cmdhandler.IsUserMention(userMention) {
-		return r, errors.New("you must mention the user you are trying to sign up (@...)")
+	for _, m := range parts[2:] {
+		if !cmdhandler.IsUserMention(m) {
+			_ = level.Warn(logger).Log("message", "skipping signup user", "reason", "not user mention")
+			continue
+		}
+
+		m, err = cmdhandler.ForceUserNicknameMention(m)
+		if err != nil {
+			_ = level.Warn(logger).Log("message", "skipping signup user", "reason", err)
+			continue
+		}
+
+		userMentions = append(userMentions, m)
 	}
 
-	userMention, err = cmdhandler.ForceUserNicknameMention(userMention)
-	if err != nil {
-		return r, err
+	if len(userMentions) == 0 {
+		return r, errors.New("you must mention one or more users that you are trying to sign up (@...)")
 	}
 
 	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), true)
@@ -592,7 +604,25 @@ func (c *adminCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, err
 		signupCid = scID
 	}
 
-	overflow, err := signupUser(trial, userMention, role)
+	overflows := make([]bool, len(userMentions))
+	regularUsers := make([]string, 0, len(userMentions))
+	overflowUsers := make([]string, 0, len(userMentions))
+
+	for i, userMention := range userMentions {
+		var serr error
+		overflows[i], serr = signupUser(trial, userMention, role)
+		if serr != nil {
+			err = multierror.Append(err, serr)
+			continue
+		}
+
+		if overflows[i] {
+			overflowUsers = append(overflowUsers, userMention)
+		} else {
+			regularUsers = append(regularUsers, userMention)
+		}
+	}
+
 	if err != nil {
 		return r, err
 	}
@@ -605,18 +635,29 @@ func (c *adminCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, err
 		return r, errors.Wrap(err, "could not save trial signup")
 	}
 
-	var descStr string
-	if overflow {
-		descStr = fmt.Sprintf("Signed up as OVERFLOW for %s in %s by %s", role, trialName, cmdhandler.UserMentionString(msg.UserID()))
-	} else {
-		descStr = fmt.Sprintf("Signed up for %s in %s by %s", role, trialName, cmdhandler.UserMentionString(msg.UserID()))
+	descStr := fmt.Sprintf("Signed up for %s in %s by %s\n\n", role, trialName, cmdhandler.UserMentionString(msg.UserID()))
+	if len(regularUsers) > 0 {
+		descStr += fmt.Sprintf("**Main Group:** %s\n", strings.Join(regularUsers, ", "))
+	}
+	if len(overflowUsers) > 0 {
+		descStr += fmt.Sprintf("**Overflow:** %s\n", strings.Join(overflowUsers, ", "))
 	}
 
-	r.To = userMention
+	if gsettings.ShowAfterSignup == "true" {
+		_ = level.Debug(logger).Log("message", "auto-show after signup", "trial_name", trialName)
+
+		r2 := formatTrialDisplay(trial, true)
+		r2.To = strings.Join(userMentions, ", ")
+		r2.ToChannel = signupCid
+		r2.Description = fmt.Sprintf("%s\n\n%s", descStr, r2.Description)
+		return r2, nil
+	}
+
+	r.To = strings.Join(userMentions, ", ")
 	r.ToChannel = signupCid
 	r.Description = descStr
 
-	_ = level.Info(logger).Log("message", "admin signup complete", "trial_name", trialName, "signup_user", userMention, "role", role, "signup_channel", r.ToChannel.ToString())
+	_ = level.Info(logger).Log("message", "admin signup complete", "trial_name", trialName, "signup_users", userMentions, "overflows", overflows, "role", role, "signup_channel", r.ToChannel.ToString())
 
 	return r, nil
 }
@@ -626,7 +667,7 @@ func (c *adminCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, e
 		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
-	parts := strings.SplitN(strings.TrimSpace(msg.Contents()), " ", 2)
+	parts := strings.Split(strings.TrimSpace(msg.Contents()), " ")
 
 	logger := logging.WithMessage(msg, c.deps.Logger())
 
@@ -642,24 +683,29 @@ func (c *adminCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, e
 
 	_ = level.Info(logger).Log("message", "handling adminCommand", "command", "withdraw", "withdraw_args", parts)
 
-	if len(parts) != 2 {
-		return r, errors.New("not enough arguments (need `user-mention trial-name`")
+	if len(parts) < 2 {
+		return r, errors.New("not enough arguments (need `trial-name user-mention(s)`")
 	}
-	userMention := parts[0]
-	trialName := parts[1]
+	trialName := parts[0]
+	userMentions := make([]string, 0, len(parts)-2)
 
-	if !cmdhandler.IsUserMention(userMention) {
-		return r, errors.New("you must mention the user you are trying to withdraw (@...)")
+	for _, m := range parts[1:] {
+		if !cmdhandler.IsUserMention(m) {
+			_ = level.Warn(logger).Log("message", "skipping withdraw user", "reason", "not user mention")
+			continue
+		}
+
+		m, err = cmdhandler.ForceUserNicknameMention(m)
+		if err != nil {
+			_ = level.Warn(logger).Log("message", "skipping withdraw user", "reason", err)
+			continue
+		}
+
+		userMentions = append(userMentions, m)
 	}
 
-	userNickMention, err := cmdhandler.ForceUserNicknameMention(userMention)
-	if err != nil {
-		return r, err
-	}
-
-	userAcctMention, err := cmdhandler.ForceUserAccountMention(userMention)
-	if err != nil {
-		return r, err
+	if len(userMentions) == 0 {
+		return r, errors.New("you must mention one or more users that you are trying to withdraw (@...)")
 	}
 
 	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), true)
@@ -687,8 +733,20 @@ func (c *adminCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, e
 		signupCid = scID
 	}
 
-	trial.RemoveSignup(userAcctMention)
-	trial.RemoveSignup(userNickMention)
+	for _, m := range userMentions {
+		userAcctMention, werr := cmdhandler.ForceUserAccountMention(m)
+		if err != nil {
+			err = multierror.Append(err, werr)
+			continue
+		}
+
+		trial.RemoveSignup(userAcctMention)
+		trial.RemoveSignup(m)
+	}
+
+	if err != nil {
+		return r, err
+	}
 
 	if err = t.SaveTrial(trial); err != nil {
 		return r, errors.Wrap(err, "could not save trial withdraw")
@@ -698,11 +756,23 @@ func (c *adminCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, e
 		return r, errors.Wrap(err, "could not save trial withdraw")
 	}
 
-	r.To = userMention
-	r.ToChannel = signupCid
-	r.Description = fmt.Sprintf("Withdrawn from %s by %s", trialName, cmdhandler.UserMentionString(msg.UserID()))
+	descStr := fmt.Sprintf("Withdrawn from %s by %s", trialName, cmdhandler.UserMentionString(msg.UserID()))
 
-	_ = level.Info(logger).Log("message", "admin withdraw complete", "trial_name", trialName, "withdraw_user", userMention, "signup_channel", r.ToChannel.ToString())
+	if gsettings.ShowAfterWithdraw == "true" {
+		_ = level.Debug(logger).Log("message", "auto-show after withdraw", "trial_name", trialName)
+
+		r2 := formatTrialDisplay(trial, true)
+		r2.To = strings.Join(userMentions, ", ")
+		r2.ToChannel = signupCid
+		r2.Description = fmt.Sprintf("%s\n\n%s", descStr, r2.Description)
+		return r2, nil
+	}
+
+	r.To = strings.Join(userMentions, ", ")
+	r.ToChannel = signupCid
+	r.Description = descStr
+
+	_ = level.Info(logger).Log("message", "admin withdraw complete", "trial_name", trialName, "withdraw_users", userMentions, "signup_channel", r.ToChannel.ToString())
 
 	return r, nil
 }
