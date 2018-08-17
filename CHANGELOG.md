@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.9.0
+
+- Add ability to have emoji with role displays
+- Fix multiple-signups for the same role
+
 ## v0.8.0
 
 - Add multi-signup and multi-withdraw for admin
