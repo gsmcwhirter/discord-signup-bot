@@ -2,7 +2,7 @@ package storage
 
 //go:generate protoc --go_out=. --proto_path=. ./trialapi.proto
 
-// TrialState TODOC
+// TrialState represents the state of a trial
 type TrialState string
 
 // State Constants
@@ -11,12 +11,12 @@ const (
 	TrialStateClosed = "closed"
 )
 
-// TrialAPI TODOC
+// TrialAPI is the API for managing trials transactions
 type TrialAPI interface {
 	NewTransaction(guild string, writable bool) (TrialAPITx, error)
 }
 
-// TrialAPITx TODOC
+// TrialAPITx is the api for managing trials within a transaction
 type TrialAPITx interface {
 	Commit() error
 	Rollback() error
@@ -29,7 +29,7 @@ type TrialAPITx interface {
 	GetTrials() []Trial
 }
 
-// Trial TODOC
+// Trial is the api for managing a particular trial
 type Trial interface {
 	GetName() string
 	GetDescription() string
@@ -52,13 +52,13 @@ type Trial interface {
 	Serialize() ([]byte, error)
 }
 
-// TrialSignup TODOC
+// TrialSignup is the api for managing a signup for a trial
 type TrialSignup interface {
 	GetName() string
 	GetRole() string
 }
 
-// RoleCount TODOC
+// RoleCount is the api for managing a role in a trial
 type RoleCount interface {
 	GetRole() string
 	GetCount() uint64

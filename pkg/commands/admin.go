@@ -10,10 +10,10 @@ import (
 	"github.com/go-kit/kit/log/level"
 	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
 	"github.com/gsmcwhirter/discord-bot-lib/snowflake"
-	"github.com/gsmcwhirter/discord-bot-lib/util"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/logging"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
+	"github.com/gsmcwhirter/go-util/deferutil"
 	"github.com/gsmcwhirter/go-util/parser"
 	"github.com/pkg/errors"
 )
@@ -46,7 +46,7 @@ func (c *adminCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error
 	if err != nil {
 		return r, err
 	}
-	defer util.CheckDefer(t.Rollback)
+	defer deferutil.CheckDefer(t.Rollback)
 
 	trials := t.GetTrials()
 	tNamesOpen := make([]string, 0, len(trials))
@@ -109,7 +109,7 @@ func (c *adminCommands) create(msg cmdhandler.Message) (cmdhandler.Response, err
 	if err != nil {
 		return r, err
 	}
-	defer util.CheckDefer(t.Rollback)
+	defer deferutil.CheckDefer(t.Rollback)
 
 	trial, err := t.AddTrial(trialName)
 	if err != nil {
@@ -195,7 +195,7 @@ func (c *adminCommands) edit(msg cmdhandler.Message) (cmdhandler.Response, error
 	if err != nil {
 		return r, err
 	}
-	defer util.CheckDefer(t.Rollback)
+	defer deferutil.CheckDefer(t.Rollback)
 
 	trial, err := t.AddTrial(trialName)
 	if err != nil {
@@ -270,7 +270,7 @@ func (c *adminCommands) open(msg cmdhandler.Message) (cmdhandler.Response, error
 	if err != nil {
 		return r, err
 	}
-	defer util.CheckDefer(t.Rollback)
+	defer deferutil.CheckDefer(t.Rollback)
 
 	trial, err := t.GetTrial(trialName)
 	if err != nil {
@@ -318,7 +318,7 @@ func (c *adminCommands) close(msg cmdhandler.Message) (cmdhandler.Response, erro
 	if err != nil {
 		return r, err
 	}
-	defer util.CheckDefer(t.Rollback)
+	defer deferutil.CheckDefer(t.Rollback)
 
 	trial, err := t.GetTrial(trialName)
 	if err != nil {
@@ -366,7 +366,7 @@ func (c *adminCommands) delete(msg cmdhandler.Message) (cmdhandler.Response, err
 	if err != nil {
 		return r, err
 	}
-	defer util.CheckDefer(t.Rollback)
+	defer deferutil.CheckDefer(t.Rollback)
 
 	if err = t.DeleteTrial(trialName); err != nil {
 		return r, errors.Wrap(err, "could not delete trial")
@@ -412,7 +412,7 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 	if err != nil {
 		return r, err
 	}
-	defer util.CheckDefer(t.Rollback)
+	defer deferutil.CheckDefer(t.Rollback)
 
 	trial, err := t.GetTrial(trialName)
 	if err != nil {
@@ -501,7 +501,7 @@ func (c *adminCommands) grouping(msg cmdhandler.Message) (cmdhandler.Response, e
 	if err != nil {
 		return r, err
 	}
-	defer util.CheckDefer(t.Rollback)
+	defer deferutil.CheckDefer(t.Rollback)
 
 	trial, err := t.GetTrial(trialName)
 	if err != nil {
@@ -583,7 +583,7 @@ func (c *adminCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, err
 	if err != nil {
 		return r, err
 	}
-	defer util.CheckDefer(t.Rollback)
+	defer deferutil.CheckDefer(t.Rollback)
 
 	trial, err := t.GetTrial(trialName)
 	if err != nil {
@@ -712,7 +712,7 @@ func (c *adminCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, e
 	if err != nil {
 		return r, err
 	}
-	defer util.CheckDefer(t.Rollback)
+	defer deferutil.CheckDefer(t.Rollback)
 
 	trial, err := t.GetTrial(trialName)
 	if err != nil {
@@ -777,7 +777,7 @@ func (c *adminCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, e
 	return r, nil
 }
 
-// AdminCommandHandler TODOC
+// AdminCommandHandler creates a new command handler for !admin commands
 func AdminCommandHandler(deps adminDependencies, preCommand string) (*cmdhandler.CommandHandler, error) {
 	p := parser.NewParser(parser.Options{
 		CmdIndicator: " ",

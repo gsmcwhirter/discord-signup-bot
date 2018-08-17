@@ -8,7 +8,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ErrTrialNotExist TODOC
+// ErrTrialNotExist is the error returned if a trial does not exist
 var ErrTrialNotExist = errors.New("trial does not exist")
 
 type boltTrialAPI struct {

@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ErrGuildNotExist TODOC
+// ErrGuildNotExist is the error returned if a guild does not exist
 var ErrGuildNotExist = errors.New("guild does not exist")
 
 type boltGuildAPI struct {

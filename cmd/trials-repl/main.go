@@ -16,7 +16,7 @@ var (
 func main() {
 	code, err := run()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s: %s\n", AppName, err) // nolint: gas
+		_, _ = fmt.Fprintf(os.Stderr, "%s: %s\n", AppName, err)
 	}
 
 	os.Exit(code)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/gsmcwhirter/discord-bot-lib/snowflake"
+	"github.com/gsmcwhirter/go-util/deferutil"
 	"github.com/pkg/errors"
 )
 
@@ -63,7 +64,7 @@ func dumpGuildSettings(deps *dependencies, gid snowflake.Snowflake) error {
 	if err != nil {
 		return errors.Wrap(err, "could not get settings transaction")
 	}
-	defer t.Rollback()
+	defer deferutil.CheckDefer(t.Rollback)
 
 	g, err := t.GetGuild(gid.ToString())
 	if err != nil {
@@ -80,7 +81,7 @@ func dumpGuildTrials(deps *dependencies, gid snowflake.Snowflake) error {
 	if err != nil {
 		return errors.Wrap(err, "could not get trials transaction")
 	}
-	defer t.Rollback()
+	defer deferutil.CheckDefer(t.Rollback)
 
 	for _, t := range t.GetTrials() {
 		fmt.Printf(`Name: %s

@@ -9,10 +9,10 @@ import (
 	"github.com/pkg/errors"
 )
 
-// ErrBadSetting TODOC
+// ErrBadSetting is the error returned if an unknown setting is accessed
 var ErrBadSetting = errors.New("bad setting")
 
-// GuildSettings TODOC
+// GuildSettings is the set of configuration settings for a guild
 type GuildSettings struct {
 	ControlSequence   string
 	AnnounceChannel   string
@@ -23,7 +23,7 @@ type GuildSettings struct {
 	ShowAfterWithdraw string
 }
 
-// PrettyString TODOC
+// PrettyString returns a multi-line string describing the settings
 func (s *GuildSettings) PrettyString() string {
 	return fmt.Sprintf(`
 %[1]s
@@ -40,7 +40,7 @@ GuildSettings{
 	`, "```", s.ControlSequence, s.AnnounceChannel, s.SignupChannel, s.AdminChannel, s.AnnounceTo, s.ShowAfterSignup, s.ShowAfterWithdraw)
 }
 
-// GetSettingString TODOC
+// GetSettingString gets the value of a setting
 func (s *GuildSettings) GetSettingString(name string) (string, error) {
 	switch strings.ToLower(name) {
 	case "controlsequence":
@@ -73,7 +73,7 @@ func normalizeTrueFalseString(val string) (string, error) {
 	}
 }
 
-// SetSettingString TODOC
+// SetSettingString sets the value of a setting
 func (s *GuildSettings) SetSettingString(name, val string) error {
 	switch strings.ToLower(name) {
 	case "controlsequence":
@@ -110,12 +110,12 @@ func (s *GuildSettings) SetSettingString(name, val string) error {
 	}
 }
 
-// GuildAPI TODOC
+// GuildAPI is the api for managing guild settings transactions
 type GuildAPI interface {
 	NewTransaction(writable bool) (GuildAPITx, error)
 }
 
-// GuildAPITx TODOC
+// GuildAPITx is the api for managing guild settings within a transaction
 type GuildAPITx interface {
 	Commit() error
 	Rollback() error
@@ -125,7 +125,7 @@ type GuildAPITx interface {
 	SaveGuild(guild Guild) error
 }
 
-// Guild TODOC
+// Guild is the api for managing guild settings for a particular guild
 type Guild interface {
 	GetName() string
 	GetSettings() GuildSettings

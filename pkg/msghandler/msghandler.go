@@ -23,7 +23,8 @@ import (
 
 var errUnauthorized = errors.New("unauthorized")
 
-// ErrNoResponse TODOC
+// ErrNoResponse is the error a command handler should return
+// if the bot should not produce a response
 var ErrNoResponse = errors.New("no response")
 
 type dependencies interface {
@@ -36,7 +37,7 @@ type dependencies interface {
 	BotSession() *session.Session
 }
 
-// Handlers TODOC
+// Handlers is the interface for a Handlers dependency that registers itself with a discrord bot
 type Handlers interface {
 	ConnectToBot(discordapi.DiscordBot)
 }
@@ -49,14 +50,14 @@ type handlers struct {
 	errorColor              int
 }
 
-// Options TODOC
+// Options provides a way to pass configuration to NewHandlers
 type Options struct {
 	DefaultCommandIndicator string
 	SuccessColor            int
 	ErrorColor              int
 }
 
-// NewHandlers TODOC
+// NewHandlers creates a new Handlers object
 func NewHandlers(deps dependencies, opts Options) Handlers {
 	h := handlers{
 		deps: deps,
@@ -79,11 +80,6 @@ func (h *handlers) channelGuild(cid snowflake.Snowflake) (gid snowflake.Snowflak
 	return
 }
 
-func (h *handlers) channelName(cid snowflake.Snowflake) (name string) {
-	name, _ = h.deps.BotSession().ChannelName(cid)
-	return
-}
-
 func (h *handlers) guildCommandIndicator(gid snowflake.Snowflake) string {
 	if gid == 0 {
 		return h.defaultCommandIndicator
@@ -101,25 +97,7 @@ func (h *handlers) guildCommandIndicator(gid snowflake.Snowflake) string {
 	return s.ControlSequence
 }
 
-func (h *handlers) guildAdminChannelID(gid snowflake.Snowflake) (snowflake.Snowflake, bool) {
-	if gid == 0 {
-		return 0, false
-	}
-
-	s, err := storage.GetSettings(h.deps.GuildAPI(), gid.ToString())
-	if err != nil {
-		return 0, false
-	}
-
-	g, err := h.deps.BotSession().Guild(gid)
-	if err != nil {
-		return 0, false
-	}
-
-	return g.ChannelWithName(s.AdminChannel)
-}
-
-func (h *handlers) attemptConfigAndAdminHandlers(msg *cmdhandler.SimpleMessage, req wsclient.WSMessage, cmdIndicator string, content string, m etfapi.Message, gid snowflake.Snowflake) (resp cmdhandler.Response, err error) {
+func (h *handlers) attemptConfigAndAdminHandlers(msg cmdhandler.Message, req wsclient.WSMessage, cmdIndicator string, content string, m etfapi.Message, gid snowflake.Snowflake) (resp cmdhandler.Response, err error) {
 	// TODO: check auth
 	logger := msglogging.WithMessage(msg, h.deps.Logger())
 
@@ -232,6 +210,4 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 	}
 
 	_ = level.Info(logger).Log("message", "successfully sent message to channel", "channel_id", sendTo.ToString())
-
-	return
 }

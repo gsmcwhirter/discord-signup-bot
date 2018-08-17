@@ -10,7 +10,7 @@ import (
 	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
 	"github.com/gsmcwhirter/discord-bot-lib/discordapi/session"
 	"github.com/gsmcwhirter/discord-bot-lib/snowflake"
-	"github.com/gsmcwhirter/discord-bot-lib/util"
+	"github.com/gsmcwhirter/go-util/deferutil"
 	"github.com/gsmcwhirter/go-util/parser"
 	"github.com/pkg/errors"
 
@@ -19,9 +19,6 @@ import (
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
 
-// ErrNoResponse TODOC
-var ErrNoResponse = errors.New("no response")
-
 type dependencies interface {
 	Logger() log.Logger
 	TrialAPI() storage.TrialAPI
@@ -29,7 +26,7 @@ type dependencies interface {
 	BotSession() *session.Session
 }
 
-// Options TODOC
+// Options is the way to specify the command indicator string
 type Options struct {
 	CmdIndicator string
 }
@@ -51,7 +48,7 @@ func (c *rootCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error)
 	if err != nil {
 		return r, err
 	}
-	defer util.CheckDefer(t.Rollback)
+	defer deferutil.CheckDefer(t.Rollback)
 
 	g, gerr := c.deps.BotSession().Guild(msg.GuildID())
 
@@ -98,7 +95,7 @@ func (c *rootCommands) show(msg cmdhandler.Message) (cmdhandler.Response, error)
 	if err != nil {
 		return r, err
 	}
-	defer util.CheckDefer(t.Rollback)
+	defer deferutil.CheckDefer(t.Rollback)
 
 	trial, err := t.GetTrial(trialName)
 	if err != nil {
@@ -141,7 +138,7 @@ func (c *rootCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, erro
 	if err != nil {
 		return r, err
 	}
-	defer util.CheckDefer(t.Rollback)
+	defer deferutil.CheckDefer(t.Rollback)
 
 	trial, err := t.GetTrial(trialName)
 	if err != nil {
@@ -212,7 +209,7 @@ func (c *rootCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, er
 	if err != nil {
 		return r, err
 	}
-	defer util.CheckDefer(t.Rollback)
+	defer deferutil.CheckDefer(t.Rollback)
 
 	trial, err := t.GetTrial(trialName)
 	if err != nil {
@@ -255,7 +252,7 @@ func (c *rootCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, er
 	return r, nil
 }
 
-// CommandHandler TODOC
+// CommandHandler creates a new command handler for !list, !show, !signup, and !withdraw
 func CommandHandler(deps dependencies, versionStr string, opts Options) (*cmdhandler.CommandHandler, error) {
 	p := parser.NewParser(parser.Options{
 		CmdIndicator: opts.CmdIndicator,
@@ -286,7 +283,7 @@ type configDependencies interface {
 	GuildAPI() storage.GuildAPI
 }
 
-// ConfigHandler TODOC
+// ConfigHandler creates a new command handler for !config-su
 func ConfigHandler(deps configDependencies, versionStr string, opts Options) (*cmdhandler.CommandHandler, error) {
 	p := parser.NewParser(parser.Options{
 		CmdIndicator: opts.CmdIndicator,
@@ -321,7 +318,7 @@ type adminDependencies interface {
 	BotSession() *session.Session
 }
 
-// AdminHandler TODOC
+// AdminHandler creates a new command handler for !admin
 func AdminHandler(deps adminDependencies, versionStr string, opts Options) (*cmdhandler.CommandHandler, error) {
 	p := parser.NewParser(parser.Options{
 		CmdIndicator: opts.CmdIndicator,
