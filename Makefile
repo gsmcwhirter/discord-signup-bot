@@ -18,8 +18,6 @@ Q = $(if $(filter 1,$V),,@)
 
 .DEFAULT_GOAL := help
 
-all: deps debug  ## Download dependencies and do a debug build
-
 build-debug: version generate
 	$Q go build -v -ldflags "-X main.AppName=$(APP_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(APP_NAME) -race $(PROJECT)/cmd/$(APP_NAME)
 	$Q go build -v -ldflags "-X main.AppName=$(REPL_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(REPL_NAME) -race $(PROJECT)/cmd/$(REPL_NAME)
@@ -30,7 +28,7 @@ build-release: version generate
 	$Q GOOS=linux go build -v -ldflags "-s -w -X main.AppName=$(REPL_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(REPL_NAME) $(PROJECT)/cmd/$(REPL_NAME)
 	$Q GOOS=linux go build -v -ldflags "-s -w -X main.AppName=$(DUMP_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(DUMP_NAME) $(PROJECT)/cmd/$(DUMP_NAME)
 
-generate:
+generate:  ## do a go generate
 	$Q go generate ./...
 
 build-release-bundles: build-release
@@ -50,9 +48,6 @@ release: generate test build-release-bundles  ## Release build: create a release
 
 deps:  ## Download dependencies
 	$Q go get ./...
-	$Q # for development and linting
-	$Q go get -u github.com/alecthomas/gometalinter
-	$Q # $Q gometalinter --install
 
 test:  ## Run the tests
 	$Q go test -cover ./...
@@ -61,10 +56,13 @@ version:  ## Print the version string and git sha that would be recorded if a re
 	$Q echo $(VERSION) $(GIT_SHA)
 
 vet:  ## Run the linter
-	$Q gometalinter -e S1008 --disable=gocyclo --disable=megacheck --disable=gas --disable=goconst --deadline 120s -s jsonapi $(GOPATH)/src/$(PROJECT)/cmd/...
-	$Q gometalinter -e S1008 --disable=gocyclo --disable=megacheck --disable=gas --disable=goconst --deadline 120s -s jsonapi $(GOPATH)/src/$(PROJECT)/pkg/...
+	$Q golint ./...
+	$Q go vet ./...
+	$Q gometalinter -D gas -D gocyclo -D goconst -e .pb.go -e _easyjson.go --warn-unmatched-nolint --enable-gc --deadline 180s ./...
 
 release-upload: release upload
+
+setup: deps generate  ## attempt to get everything set up to do a build (deps and generate)
 
 upload:
 	$Q scp $(CONF_FILE) $(SERVICE_FILE) $(INSTALLER) $(SERVER)
