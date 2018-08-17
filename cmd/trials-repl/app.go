@@ -15,11 +15,10 @@ import (
 )
 
 type config struct {
-	Database  string `mapstructure:"database"`
-	User      string `mapstructure:"user"`
-	Guild     string `mapstructure:"guild"`
-	Channel   string `mapstructure:"channel"`
-	TestThing string `mapstructure:"test_thing"`
+	Database string `mapstructure:"database"`
+	User     string `mapstructure:"user"`
+	Guild    string `mapstructure:"guild"`
+	Channel  string `mapstructure:"channel"`
 }
 
 func start(c config) error {
