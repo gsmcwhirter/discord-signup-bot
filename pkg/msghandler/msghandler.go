@@ -110,7 +110,7 @@ func (h *handlers) attemptConfigAndAdminHandlers(msg cmdhandler.Message, req wsc
 
 	_ = level.Debug(logger).Log("message", "admin trying to config")
 	cmdContent := h.deps.ConfigHandler().CommandIndicator() + strings.TrimPrefix(content, cmdIndicator)
-	resp, err = h.deps.ConfigHandler().HandleLine(cmdhandler.NewWithContents(msg, cmdContent))
+	resp, err = h.deps.ConfigHandler().HandleMessage(cmdhandler.NewWithContents(msg, cmdContent))
 
 	if err == nil {
 		return
@@ -122,7 +122,7 @@ func (h *handlers) attemptConfigAndAdminHandlers(msg cmdhandler.Message, req wsc
 
 	_ = level.Debug(logger).Log("message", "admin trying to admin")
 	cmdContent = h.deps.AdminHandler().CommandIndicator() + strings.TrimPrefix(content, cmdIndicator)
-	resp, err = h.deps.AdminHandler().HandleLine(cmdhandler.NewWithContents(msg, cmdContent))
+	resp, err = h.deps.AdminHandler().HandleMessage(cmdhandler.NewWithContents(msg, cmdContent))
 
 	return
 }
@@ -172,7 +172,7 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 	if err != nil && (err == errUnauthorized || err == parser.ErrUnknownCommand) {
 		_ = level.Debug(logger).Log("message", "admin not successful; processing as real message")
 		cmdContent := h.deps.CommandHandler().CommandIndicator() + strings.TrimPrefix(content, cmdIndicator)
-		resp, err = h.deps.CommandHandler().HandleLine(cmdhandler.NewWithContents(msg, cmdContent))
+		resp, err = h.deps.CommandHandler().HandleMessage(cmdhandler.NewWithContents(msg, cmdContent))
 	}
 
 	if err == ErrNoResponse {
