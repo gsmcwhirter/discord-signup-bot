@@ -2,6 +2,7 @@ package storage
 
 import (
 	"sort"
+	"strings"
 
 	"github.com/golang/protobuf/proto"
 )
@@ -92,11 +93,16 @@ func (b *boltTrial) SetState(state TrialState) {
 }
 
 func (b *boltTrial) AddSignup(name, role string) {
+	lowerRole := strings.ToLower(role)
 	s := b.GetSignups()
 	for _, su := range s {
-		if su.GetName() == name && su.GetRole() != role {
+		if su.GetName() == name && strings.ToLower(su.GetRole()) != lowerRole {
 			b.RemoveSignup(name)
 			break
+		}
+
+		if su.GetName() == name && strings.ToLower(su.GetRole()) == lowerRole {
+			return
 		}
 	}
 

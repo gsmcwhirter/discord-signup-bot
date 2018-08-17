@@ -181,11 +181,12 @@ func signupUser(trial storage.Trial, userMentionStr, role string) (overflow bool
 		return
 	}
 
+	trial.AddSignup(userMentionStr, role)
+
 	signups := trial.GetSignups()
 	roleSignups := signupsForRole(role, signups, false)
 
-	trial.AddSignup(userMentionStr, role)
-	overflow = uint64(len(roleSignups)) >= rc.GetCount()
+	overflow = uint64(len(roleSignups)) > rc.GetCount()
 
 	return
 }
