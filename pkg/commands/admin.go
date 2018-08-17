@@ -137,13 +137,13 @@ func (c *adminCommands) create(msg cmdhandler.Message) (cmdhandler.Response, err
 		trial.SetSignupChannel(v)
 	}
 
-	roleCtMap, err := parseRolesString(settingMap["roles"])
+	roleCtEmoList, err := parseRolesString(settingMap["roles"])
 	if err != nil {
 		return r, err
 	}
-	for role, ct := range roleCtMap {
-		if ct != 0 {
-			trial.SetRoleCount(role, ct)
+	for _, rce := range roleCtEmoList {
+		if rce.ct != 0 {
+			trial.SetRoleCount(rce.role, rce.emo, rce.ct)
 		}
 	}
 
@@ -219,15 +219,15 @@ func (c *adminCommands) edit(msg cmdhandler.Message) (cmdhandler.Response, error
 		trial.SetSignupChannel(v)
 	}
 
-	roleCtMap, err := parseRolesString(settingMap["roles"])
+	roleCtEmoList, err := parseRolesString(settingMap["roles"])
 	if err != nil {
 		return r, err
 	}
-	for role, ct := range roleCtMap {
-		if ct == 0 {
-			trial.RemoveRole(role)
+	for _, rce := range roleCtEmoList {
+		if rce.ct == 0 {
+			trial.RemoveRole(rce.role)
 		} else {
-			trial.SetRoleCount(role, ct)
+			trial.SetRoleCount(rce.role, rce.emo, rce.ct)
 		}
 	}
 

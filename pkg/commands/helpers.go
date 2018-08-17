@@ -92,28 +92,44 @@ func parseSettingDescriptionArgs(args string) (map[string]string, error) {
 	return argMap, nil
 }
 
-func parseRolesString(args string) (map[string]uint64, error) {
-	roleMap := map[string]uint64{}
+type roleCtEmo struct {
+	role string
+	ct   uint64
+	emo  string
+}
+
+func parseRolesString(args string) ([]roleCtEmo, error) {
 	roles := strings.Split(strings.TrimSpace(args), ",")
+	roleEmoCt := make([]roleCtEmo, 0, len(roles))
 
 	for _, roleStr := range roles {
 		if roleStr == "" {
 			continue
 		}
 
-		roleParts := strings.SplitN(roleStr, ":", 2)
+		roleParts := strings.SplitN(roleStr, ":", 3)
 		if len(roleParts) < 2 {
-			return roleMap, errors.New("could not parse roles")
+			return roleEmoCt, errors.New("could not parse roles")
 		}
 
 		roleCt, err := strconv.Atoi(roleParts[1])
 		if err != nil {
-			return roleMap, err
+			return roleEmoCt, err
 		}
-		roleMap[roleParts[0]] = uint64(roleCt)
+
+		var emo string
+		if len(roleParts) == 3 {
+			emo = roleParts[2]
+		}
+
+		roleEmoCt = append(roleEmoCt, roleCtEmo{
+			role: roleParts[0],
+			ct:   uint64(roleCt),
+			emo:  emo,
+		})
 	}
 
-	return roleMap, nil
+	return roleEmoCt, nil
 }
 
 func formatTrialDisplay(trial storage.Trial, withState bool) *cmdhandler.EmbedResponse {
@@ -151,19 +167,19 @@ func formatTrialDisplay(trial storage.Trial, withState bool) *cmdhandler.EmbedRe
 		if len(suNames) > 0 {
 			r.Fields = append(r.Fields, cmdhandler.EmbedField{
 				Name: fmt.Sprintf("*%s* (%d/%d)", rc.GetRole(), len(suNames), rc.GetCount()),
-				Val:  strings.Join(suNames, "\n") + "\n",
+				Val:  rc.GetEmoji() + strings.Join(suNames, fmt.Sprintf("\n%s", rc.GetEmoji())) + "\n_ _\n",
 			})
 		} else {
 			r.Fields = append(r.Fields, cmdhandler.EmbedField{
 				Name: fmt.Sprintf("*%s* (%d/%d)", rc.GetRole(), len(suNames), rc.GetCount()),
-				Val:  "(empty)",
+				Val:  "(empty)\n_ _\n",
 			})
 		}
 
 		if len(ofNames) > 0 {
 			overflowFields = append(overflowFields, cmdhandler.EmbedField{
 				Name: fmt.Sprintf("*Overflow %s* (%d)", rc.GetRole(), len(ofNames)),
-				Val:  strings.Join(ofNames, "\n") + "\n",
+				Val:  rc.GetEmoji() + strings.Join(ofNames, fmt.Sprintf("\n%s", rc.GetEmoji())) + "\n_ _\n",
 			})
 		}
 	}

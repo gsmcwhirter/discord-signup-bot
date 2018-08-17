@@ -46,7 +46,7 @@ type Trial interface {
 	SetState(state TrialState)
 	AddSignup(name, role string)
 	RemoveSignup(name string)
-	SetRoleCount(name string, ct uint64)
+	SetRoleCount(name, emoji string, ct uint64)
 	RemoveRole(name string)
 
 	Serialize() ([]byte, error)
@@ -62,4 +62,5 @@ type TrialSignup interface {
 type RoleCount interface {
 	GetRole() string
 	GetCount() uint64
+	GetEmoji() string
 }
