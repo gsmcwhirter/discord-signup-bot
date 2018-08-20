@@ -8,8 +8,7 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/discordapi/session"
-	"github.com/gsmcwhirter/discord-bot-lib/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/discordapi/etfapi"
 	"github.com/gsmcwhirter/go-util/deferutil"
 	"github.com/gsmcwhirter/go-util/parser"
 	"github.com/pkg/errors"
@@ -23,7 +22,7 @@ type dependencies interface {
 	Logger() log.Logger
 	TrialAPI() storage.TrialAPI
 	GuildAPI() storage.GuildAPI
-	BotSession() *session.Session
+	BotSession() *etfapi.Session
 }
 
 // Options is the way to specify the command indicator string
@@ -50,19 +49,16 @@ func (c *rootCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error)
 	}
 	defer deferutil.CheckDefer(t.Rollback)
 
-	g, gerr := c.deps.BotSession().Guild(msg.GuildID())
+	g, ok := c.deps.BotSession().Guild(msg.GuildID())
+	if !ok {
+		return r, ErrGuildNotFound
+	}
 
 	trials := t.GetTrials()
 	tNames := make([]string, 0, len(trials))
 	for _, trial := range trials {
 		if trial.GetState() != storage.TrialStateClosed {
-			var tscID snowflake.Snowflake
-			var ok bool
-			if gerr == nil {
-				tscID, ok = g.ChannelWithName(trial.GetSignupChannel())
-			}
-
-			if ok {
+			if tscID, ok := g.ChannelWithName(trial.GetSignupChannel()); ok {
 				tNames = append(tNames, fmt.Sprintf("%s (%s)", trial.GetName(), cmdhandler.ChannelMentionString(tscID)))
 			} else {
 				tNames = append(tNames, trial.GetName())
@@ -315,7 +311,7 @@ type adminDependencies interface {
 	Logger() log.Logger
 	GuildAPI() storage.GuildAPI
 	TrialAPI() storage.TrialAPI
-	BotSession() *session.Session
+	BotSession() *etfapi.Session
 }
 
 // AdminHandler creates a new command handler for !admin

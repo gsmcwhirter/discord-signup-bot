@@ -18,6 +18,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+// ErrGuildNotFound is the error returned when a guild is not known about
+// in a BotSession
+var ErrGuildNotFound = errors.New("guild not found")
+
 type adminCommands struct {
 	preCommand string
 	deps       adminDependencies
@@ -419,9 +423,9 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 		return r, err
 	}
 
-	sessionGuild, err := c.deps.BotSession().Guild(msg.GuildID())
-	if err != nil {
-		return r, err
+	sessionGuild, ok := c.deps.BotSession().Guild(msg.GuildID())
+	if !ok {
+		return r, ErrGuildNotFound
 	}
 
 	var signupCid snowflake.Snowflake
@@ -508,9 +512,9 @@ func (c *adminCommands) grouping(msg cmdhandler.Message) (cmdhandler.Response, e
 		return r, err
 	}
 
-	sessionGuild, err := c.deps.BotSession().Guild(msg.GuildID())
-	if err != nil {
-		return r, err
+	sessionGuild, ok := c.deps.BotSession().Guild(msg.GuildID())
+	if !ok {
+		return r, ErrGuildNotFound
 	}
 
 	var announceCid snowflake.Snowflake
@@ -594,9 +598,9 @@ func (c *adminCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, err
 		return r, errors.New("cannot sign up for a closed trial")
 	}
 
-	sessionGuild, err := c.deps.BotSession().Guild(msg.GuildID())
-	if err != nil {
-		return r, err
+	sessionGuild, ok := c.deps.BotSession().Guild(msg.GuildID())
+	if !ok {
+		return r, ErrGuildNotFound
 	}
 
 	var signupCid snowflake.Snowflake
@@ -723,9 +727,9 @@ func (c *adminCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, e
 		return r, errors.New("cannot withdraw from a closed trial")
 	}
 
-	sessionGuild, err := c.deps.BotSession().Guild(msg.GuildID())
-	if err != nil {
-		return r, err
+	sessionGuild, ok := c.deps.BotSession().Guild(msg.GuildID())
+	if !ok {
+		return r, ErrGuildNotFound
 	}
 
 	var signupCid snowflake.Snowflake

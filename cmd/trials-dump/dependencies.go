@@ -15,7 +15,7 @@ type dependencies struct {
 	db       *bolt.DB
 	trialAPI storage.TrialAPI
 	guildAPI storage.GuildAPI
-	// botSession *session.Session
+	// botSession *etfapi.Session
 }
 
 func createDependencies(conf config) (d *dependencies, err error) {
@@ -39,7 +39,7 @@ func createDependencies(conf config) (d *dependencies, err error) {
 		return
 	}
 
-	// d.botSession = session.NewSession()
+	// d.botSession = etfapi.NewSession()
 
 	return
 }
@@ -62,6 +62,6 @@ func (d *dependencies) GuildAPI() storage.GuildAPI {
 	return d.guildAPI
 }
 
-// func (d *dependencies) BotSession() *session.Session {
+// func (d *dependencies) BotSession() *etfapi.Session {
 // 	return d.botSession
 // }

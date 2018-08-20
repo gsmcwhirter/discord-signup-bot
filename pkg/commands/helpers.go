@@ -7,15 +7,15 @@ import (
 	"strings"
 
 	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/discordapi/session"
+	"github.com/gsmcwhirter/discord-bot-lib/discordapi/etfapi"
 	"github.com/pkg/errors"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
 
-func isAdminChannel(msg cmdhandler.Message, adminChannel string, session *session.Session) bool {
-	g, err := session.Guild(msg.GuildID())
-	if err != nil {
+func isAdminChannel(msg cmdhandler.Message, adminChannel string, session *etfapi.Session) bool {
+	g, ok := session.Guild(msg.GuildID())
+	if !ok {
 		return false
 	}
 
@@ -27,9 +27,9 @@ func isAdminChannel(msg cmdhandler.Message, adminChannel string, session *sessio
 	return cid == msg.ChannelID()
 }
 
-func isSignupChannel(msg cmdhandler.Message, signupChannel string, session *session.Session) bool {
-	g, err := session.Guild(msg.GuildID())
-	if err != nil {
+func isSignupChannel(msg cmdhandler.Message, signupChannel string, session *etfapi.Session) bool {
+	g, ok := session.Guild(msg.GuildID())
+	if !ok {
 		return false
 	}
 
