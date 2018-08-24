@@ -2,15 +2,13 @@ package main
 
 import (
 	"context"
-	"net/http"
-	"os"
-	"os/signal"
-	"time"
+
+	_ "net/http/pprof"
 
 	"github.com/go-kit/kit/log/level"
-	"golang.org/x/sync/errgroup"
 
 	"github.com/gsmcwhirter/discord-bot-lib/discordapi"
+	"github.com/gsmcwhirter/go-util/pprofsidecar"
 )
 
 type config struct {
@@ -57,46 +55,11 @@ func start(c config) error {
 
 	deps.MessageHandler().ConnectToBot(bot)
 
-	interrupt := make(chan os.Signal)
-	defer close(interrupt)
-	signal.Notify(interrupt, os.Interrupt)
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	g, ctx := errgroup.WithContext(ctx)
-	srv := &http.Server{Addr: c.PProfHostPort} // the pprof debug server
+	err = pprofsidecar.Run(ctx, c.PProfHostPort, nil, bot.Run)
 
-	// watches for interrupts
-	g.Go(func() error {
-		select {
-		case <-interrupt:
-			cancel()
-			return nil
-		case <-ctx.Done():
-			return ctx.Err()
-		}
-	})
-
-	// runs the bot
-	g.Go(func() error {
-		return bot.Run(ctx)
-	})
-
-	// runs the pprof server
-	g.Go(srv.ListenAndServe)
-
-	// kills the pprof server when necessary
-	g.Go(func() error {
-		<-ctx.Done() // something said we are done
-
-		shutdownCtx, cncl := context.WithTimeout(context.Background(), 2*time.Second)
-		defer cncl()
-
-		return srv.Shutdown(shutdownCtx)
-	})
-
-	err = g.Wait()
 	_ = level.Error(deps.Logger()).Log("message", "error in start; quitting", "err", err)
 	return err
 }

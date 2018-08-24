@@ -9,6 +9,7 @@ import (
 	bolt "github.com/coreos/bbolt"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
+	"github.com/gorilla/websocket"
 	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
 	"github.com/gsmcwhirter/discord-bot-lib/discordapi"
 	"github.com/gsmcwhirter/discord-bot-lib/discordapi/etfapi"
@@ -23,20 +24,26 @@ import (
 )
 
 type dependencies struct {
-	logger             log.Logger
-	db                 *bolt.DB
-	trialAPI           storage.TrialAPI
-	guildAPI           storage.GuildAPI
-	httpClient         httpclient.HTTPClient
-	wsClient           wsclient.WSClient
-	cmdHandler         *cmdhandler.CommandHandler
-	configHandler      *cmdhandler.CommandHandler
-	adminHandler       *cmdhandler.CommandHandler
-	discordMsgHandler  discordapi.DiscordMessageHandler
+	logger log.Logger
+
+	db       *bolt.DB
+	trialAPI storage.TrialAPI
+	guildAPI storage.GuildAPI
+
+	httpDoer   httpclient.Doer
+	httpClient httpclient.HTTPClient
+	wsDialer   wsclient.Dialer
+	wsClient   wsclient.WSClient
+
 	messageRateLimiter *rate.Limiter
 	connectRateLimiter *rate.Limiter
-	msgHandlers        msghandler.Handlers
 	botSession         *etfapi.Session
+
+	cmdHandler        *cmdhandler.CommandHandler
+	configHandler     *cmdhandler.CommandHandler
+	adminHandler      *cmdhandler.CommandHandler
+	discordMsgHandler discordapi.DiscordMessageHandler
+	msgHandlers       msghandler.Handlers
 }
 
 func createDependencies(conf config) (d *dependencies, err error) {
@@ -80,12 +87,14 @@ func createDependencies(conf config) (d *dependencies, err error) {
 		return
 	}
 
+	d.httpDoer = &http.Client{}
 	d.httpClient = httpclient.NewHTTPClient(d)
 	h := http.Header{}
 	h.Add("User-Agent", fmt.Sprintf("DiscordBot (%s, %s)", conf.ClientURL, BuildVersion))
 	h.Add("Authorization", fmt.Sprintf("Bot %s", conf.ClientToken))
 	d.httpClient.SetHeaders(h)
 
+	d.wsDialer = wsclient.WrapDialer(websocket.DefaultDialer)
 	d.wsClient = wsclient.NewWSClient(d, wsclient.Options{MaxConcurrentHandlers: conf.NumWorkers})
 
 	d.cmdHandler, err = commands.CommandHandler(d, conf.Version, commands.Options{CmdIndicator: " "})
@@ -126,54 +135,20 @@ func (d *dependencies) Close() {
 	}
 }
 
-func (d *dependencies) Logger() log.Logger {
-	return d.logger
-}
-
-func (d *dependencies) HTTPClient() httpclient.HTTPClient {
-	return d.httpClient
-}
-
-func (d *dependencies) CommandHandler() *cmdhandler.CommandHandler {
-	return d.cmdHandler
-}
-
-func (d *dependencies) ConfigHandler() *cmdhandler.CommandHandler {
-	return d.configHandler
-}
-
-func (d *dependencies) AdminHandler() *cmdhandler.CommandHandler {
-	return d.adminHandler
-}
-
-func (d *dependencies) MessageHandler() msghandler.Handlers {
-	return d.msgHandlers
-}
-
-func (d *dependencies) WSClient() wsclient.WSClient {
-	return d.wsClient
-}
-
-func (d *dependencies) GuildAPI() storage.GuildAPI {
-	return d.guildAPI
-}
-
-func (d *dependencies) TrialAPI() storage.TrialAPI {
-	return d.trialAPI
-}
-
-func (d *dependencies) MessageRateLimiter() *rate.Limiter {
-	return d.messageRateLimiter
-}
-
-func (d *dependencies) ConnectRateLimiter() *rate.Limiter {
-	return d.connectRateLimiter
-}
-
-func (d *dependencies) BotSession() *etfapi.Session {
-	return d.botSession
-}
-
+func (d *dependencies) Logger() log.Logger                         { return d.logger }
+func (d *dependencies) GuildAPI() storage.GuildAPI                 { return d.guildAPI }
+func (d *dependencies) TrialAPI() storage.TrialAPI                 { return d.trialAPI }
+func (d *dependencies) HTTPDoer() httpclient.Doer                  { return d.httpDoer }
+func (d *dependencies) HTTPClient() httpclient.HTTPClient          { return d.httpClient }
+func (d *dependencies) WSDialer() wsclient.Dialer                  { return d.wsDialer }
+func (d *dependencies) WSClient() wsclient.WSClient                { return d.wsClient }
+func (d *dependencies) MessageRateLimiter() *rate.Limiter          { return d.messageRateLimiter }
+func (d *dependencies) ConnectRateLimiter() *rate.Limiter          { return d.connectRateLimiter }
+func (d *dependencies) BotSession() *etfapi.Session                { return d.botSession }
+func (d *dependencies) CommandHandler() *cmdhandler.CommandHandler { return d.cmdHandler }
+func (d *dependencies) ConfigHandler() *cmdhandler.CommandHandler  { return d.configHandler }
+func (d *dependencies) AdminHandler() *cmdhandler.CommandHandler   { return d.adminHandler }
+func (d *dependencies) MessageHandler() msghandler.Handlers        { return d.msgHandlers }
 func (d *dependencies) DiscordMessageHandler() discordapi.DiscordMessageHandler {
 	return d.discordMsgHandler
 }

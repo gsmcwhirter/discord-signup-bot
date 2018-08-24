@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"os"
-
-	_ "net/http/pprof"
 )
 
 // build time variables
