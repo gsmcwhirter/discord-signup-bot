@@ -145,17 +145,18 @@ func (b *boltTrial) SetRoleCount(name, emoji string, ct uint64) {
 }
 
 func (b *boltTrial) RemoveRole(name string) {
+	lowerName := strings.ToLower(name)
 	if b.protoTrial.RoleCounts == nil && b.protoTrial.RoleCountMap == nil {
 		return
 	}
 
 	b.migrateRoleCounts()
 
-	if _, ok := b.protoTrial.RoleCountMap[name]; !ok {
+	if _, ok := b.protoTrial.RoleCountMap[lowerName]; !ok {
 		return
 	}
 
-	delete(b.protoTrial.RoleCountMap, name)
+	delete(b.protoTrial.RoleCountMap, lowerName)
 }
 
 func (b *boltTrial) Serialize() (out []byte, err error) {
