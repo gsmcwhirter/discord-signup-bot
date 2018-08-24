@@ -13,8 +13,7 @@ LimitNOFILE=999996
 ExecStart=/home/discordbot/eso-discord/trials-bot \
             --config /home/discordbot/eso-discord/trials-bot-config.toml \
             --database /home/discordbot/eso-discord/trialsbot.db \
-            --num_workers 20 \
-            --log_level info
+            --num_workers 20
 
 KillMode=mixed
 KillSignal=SIGTERM

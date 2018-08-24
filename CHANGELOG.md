@@ -1,5 +1,9 @@
 # Changelog
 
+## v0.9.1
+
+- Fix issue with removing roles from a trial
+
 ## v0.9.0
 
 - Add ability to have emoji with role displays
