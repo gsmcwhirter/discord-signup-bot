@@ -146,13 +146,13 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 	}
 
 	if m.MessageType() != etfapi.DefaultMessage {
-		_ = level.Debug(logger).Log("message", "message was not a default type")
+		_ = level.Info(logger).Log("message", "message was not a default type")
 		return
 	}
 
 	content := m.ContentString()
 	if len(content) == 0 {
-		_ = level.Debug(logger).Log("message", "message contents empty")
+		_ = level.Info(logger).Log("message", "message contents empty")
 		return
 	}
 
@@ -160,7 +160,7 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 	cmdIndicator := h.guildCommandIndicator(gid)
 
 	if !strings.HasPrefix(content, cmdIndicator) {
-		_ = level.Debug(logger).Log("message", "not a command")
+		_ = level.Info(logger).Log("message", "not a command")
 		return
 	}
 
