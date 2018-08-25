@@ -174,7 +174,7 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 		resp, err = h.deps.CommandHandler().HandleMessage(cmdhandler.NewWithContents(msg, cmdContent))
 	}
 
-	if err == ErrNoResponse {
+	if err == ErrNoResponse || err == parser.ErrUnknownCommand {
 		return
 	}
 
