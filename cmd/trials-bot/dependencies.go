@@ -10,11 +10,11 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/gorilla/websocket"
+	"github.com/gsmcwhirter/discord-bot-lib/bot"
 	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/discordapi"
-	"github.com/gsmcwhirter/discord-bot-lib/discordapi/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/discordapi/messagehandler"
+	"github.com/gsmcwhirter/discord-bot-lib/etfapi"
 	"github.com/gsmcwhirter/discord-bot-lib/httpclient"
+	"github.com/gsmcwhirter/discord-bot-lib/messagehandler"
 	"github.com/gsmcwhirter/discord-bot-lib/wsclient"
 	"golang.org/x/time/rate"
 
@@ -42,7 +42,7 @@ type dependencies struct {
 	cmdHandler        *cmdhandler.CommandHandler
 	configHandler     *cmdhandler.CommandHandler
 	adminHandler      *cmdhandler.CommandHandler
-	discordMsgHandler discordapi.DiscordMessageHandler
+	discordMsgHandler bot.DiscordMessageHandler
 	msgHandlers       msghandler.Handlers
 }
 
@@ -149,6 +149,6 @@ func (d *dependencies) CommandHandler() *cmdhandler.CommandHandler { return d.cm
 func (d *dependencies) ConfigHandler() *cmdhandler.CommandHandler  { return d.configHandler }
 func (d *dependencies) AdminHandler() *cmdhandler.CommandHandler   { return d.adminHandler }
 func (d *dependencies) MessageHandler() msghandler.Handlers        { return d.msgHandlers }
-func (d *dependencies) DiscordMessageHandler() discordapi.DiscordMessageHandler {
+func (d *dependencies) DiscordMessageHandler() bot.DiscordMessageHandler {
 	return d.discordMsgHandler
 }

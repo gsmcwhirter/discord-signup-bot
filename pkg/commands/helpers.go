@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/discordapi/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/etfapi"
 	"github.com/pkg/errors"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"

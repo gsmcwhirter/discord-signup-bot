@@ -7,7 +7,7 @@ import (
 	bolt "github.com/coreos/bbolt"
 	"github.com/go-kit/kit/log"
 
-	"github.com/gsmcwhirter/discord-bot-lib/discordapi/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/etfapi"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
 

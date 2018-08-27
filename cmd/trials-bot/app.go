@@ -6,9 +6,9 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/go-kit/kit/log/level"
-
-	"github.com/gsmcwhirter/discord-bot-lib/discordapi"
 	"github.com/gsmcwhirter/go-util/pprofsidecar"
+
+	"github.com/gsmcwhirter/discord-bot-lib/bot"
 )
 
 type config struct {
@@ -34,7 +34,7 @@ func start(c config) error {
 	}
 	defer deps.Close()
 
-	botConfig := discordapi.BotConfig{
+	botConfig := bot.BotConfig{
 		ClientID:     c.ClientID,
 		ClientSecret: c.ClientSecret,
 		BotToken:     c.ClientToken,
@@ -46,7 +46,7 @@ func start(c config) error {
 		BotPresence: c.BotPresence,
 	}
 
-	bot := discordapi.NewDiscordBot(deps, botConfig)
+	bot := bot.NewDiscordBot(deps, botConfig)
 	err = bot.AuthenticateAndConnect()
 	if err != nil {
 		return err

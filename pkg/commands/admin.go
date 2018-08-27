@@ -9,13 +9,14 @@ import (
 
 	"github.com/go-kit/kit/log/level"
 	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/logging"
 	"github.com/gsmcwhirter/discord-bot-lib/snowflake"
-	"github.com/gsmcwhirter/discord-signup-bot/pkg/logging"
-	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
-	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 	"github.com/gsmcwhirter/go-util/deferutil"
 	"github.com/gsmcwhirter/go-util/parser"
 	"github.com/pkg/errors"
+
+	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
+	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
 
 // ErrGuildNotFound is the error returned when a guild is not known about
@@ -34,7 +35,7 @@ func (c *adminCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error
 
 	logger := logging.WithMessage(msg, c.deps.Logger())
 
-	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID().ToString())
+	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
 		return r, err
 	}
@@ -97,7 +98,7 @@ func (c *adminCommands) create(msg cmdhandler.Message) (cmdhandler.Response, err
 
 	logger := logging.WithMessage(msg, c.deps.Logger())
 
-	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID().ToString())
+	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
 		return r, err
 	}
@@ -183,7 +184,7 @@ func (c *adminCommands) edit(msg cmdhandler.Message) (cmdhandler.Response, error
 
 	logger := logging.WithMessage(msg, c.deps.Logger())
 
-	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID().ToString())
+	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
 		return r, err
 	}
@@ -258,7 +259,7 @@ func (c *adminCommands) open(msg cmdhandler.Message) (cmdhandler.Response, error
 
 	logger := logging.WithMessage(msg, c.deps.Logger())
 
-	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID().ToString())
+	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
 		return r, err
 	}
@@ -306,7 +307,7 @@ func (c *adminCommands) close(msg cmdhandler.Message) (cmdhandler.Response, erro
 
 	logger := logging.WithMessage(msg, c.deps.Logger())
 
-	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID().ToString())
+	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
 		return r, err
 	}
@@ -354,7 +355,7 @@ func (c *adminCommands) delete(msg cmdhandler.Message) (cmdhandler.Response, err
 
 	logger := logging.WithMessage(msg, c.deps.Logger())
 
-	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID().ToString())
+	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
 		return r, err
 	}
@@ -400,7 +401,7 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 
 	logger := logging.WithMessage(msg, c.deps.Logger())
 
-	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID().ToString())
+	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
 		return r, err
 	}
@@ -489,7 +490,7 @@ func (c *adminCommands) grouping(msg cmdhandler.Message) (cmdhandler.Response, e
 
 	logger := logging.WithMessage(msg, c.deps.Logger())
 
-	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID().ToString())
+	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
 		return r, err
 	}
@@ -545,7 +546,7 @@ func (c *adminCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, err
 
 	logger := logging.WithMessage(msg, c.deps.Logger())
 
-	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID().ToString())
+	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
 		return r, err
 	}
@@ -675,7 +676,7 @@ func (c *adminCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, e
 
 	logger := logging.WithMessage(msg, c.deps.Logger())
 
-	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID().ToString())
+	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
 		return r, err
 	}

@@ -8,12 +8,12 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/discordapi/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/logging"
 	"github.com/gsmcwhirter/go-util/deferutil"
 	"github.com/gsmcwhirter/go-util/parser"
 	"github.com/pkg/errors"
 
-	"github.com/gsmcwhirter/discord-signup-bot/pkg/logging"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
@@ -125,7 +125,7 @@ func (c *rootCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, erro
 
 	trialName, role := argParts[0], argParts[1]
 
-	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID().ToString())
+	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
 		return r, err
 	}
@@ -196,7 +196,7 @@ func (c *rootCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, er
 	logger := logging.WithMessage(msg, c.deps.Logger())
 	_ = level.Info(logger).Log("message", "handling rootCommand", "command", "withdraw", "trial_name", trialName)
 
-	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID().ToString())
+	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
 		return r, err
 	}

@@ -8,10 +8,11 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
-	"github.com/gsmcwhirter/discord-signup-bot/pkg/logging"
-	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
+	"github.com/gsmcwhirter/discord-bot-lib/logging"
 	"github.com/gsmcwhirter/go-util/deferutil"
 	"github.com/gsmcwhirter/go-util/parser"
+
+	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
 
 type configCommands struct {
