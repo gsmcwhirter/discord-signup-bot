@@ -47,7 +47,13 @@ type dependencies struct {
 }
 
 func createDependencies(conf config) (d *dependencies, err error) {
-	d = &dependencies{}
+	d = &dependencies{
+		httpDoer:           &http.Client{},
+		wsDialer:           wsclient.WrapDialer(websocket.DefaultDialer),
+		connectRateLimiter: rate.NewLimiter(rate.Every(5*time.Second), 1),
+		messageRateLimiter: rate.NewLimiter(rate.Every(60*time.Second), 120),
+		botSession:         etfapi.NewSession(),
+	}
 
 	var logger log.Logger
 	if conf.LogFormat == "json" {
@@ -87,14 +93,12 @@ func createDependencies(conf config) (d *dependencies, err error) {
 		return
 	}
 
-	d.httpDoer = &http.Client{}
 	d.httpClient = httpclient.NewHTTPClient(d)
 	h := http.Header{}
 	h.Add("User-Agent", fmt.Sprintf("DiscordBot (%s, %s)", conf.ClientURL, BuildVersion))
 	h.Add("Authorization", fmt.Sprintf("Bot %s", conf.ClientToken))
 	d.httpClient.SetHeaders(h)
 
-	d.wsDialer = wsclient.WrapDialer(websocket.DefaultDialer)
 	d.wsClient = wsclient.NewWSClient(d, wsclient.Options{MaxConcurrentHandlers: conf.NumWorkers})
 
 	d.cmdHandler, err = commands.CommandHandler(d, conf.Version, commands.Options{CmdIndicator: " "})
@@ -110,11 +114,7 @@ func createDependencies(conf config) (d *dependencies, err error) {
 		return
 	}
 
-	d.connectRateLimiter = rate.NewLimiter(rate.Every(5*time.Second), 1)
-	d.messageRateLimiter = rate.NewLimiter(rate.Every(60*time.Second), 120)
-
 	d.discordMsgHandler = messagehandler.NewDiscordMessageHandler(d)
-	d.botSession = etfapi.NewSession()
 
 	d.msgHandlers = msghandler.NewHandlers(d, msghandler.Options{
 		DefaultCommandIndicator: "!",
