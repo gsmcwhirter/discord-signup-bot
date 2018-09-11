@@ -67,10 +67,17 @@ func (c *rootCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error)
 	}
 	sort.Strings(tNames)
 
+	var listContent string
+	if len(tNames) > 0 {
+		listContent = strings.Join(tNames, "\n")
+	} else {
+		listContent = "(none yet)"
+	}
+
 	r.Fields = []cmdhandler.EmbedField{
 		{
 			Name: "*Available Trials*",
-			Val:  strings.Join(tNames, "\n"),
+			Val:  listContent,
 		},
 	}
 
