@@ -57,9 +57,9 @@ func createDependencies(conf config) (d *dependencies, err error) {
 
 	var logger log.Logger
 	if conf.LogFormat == "json" {
-		logger = log.NewJSONLogger(log.NewSyncWriter(os.Stdout))
+		logger = log.NewJSONLogger(log.NewSyncWriter(os.Stderr))
 	} else {
-		logger = log.NewLogfmtLogger(log.NewSyncWriter(os.Stdout))
+		logger = log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
 	}
 
 	switch conf.LogLevel {

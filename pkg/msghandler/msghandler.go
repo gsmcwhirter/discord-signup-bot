@@ -95,11 +95,68 @@ func (h *handlers) guildCommandIndicator(gid snowflake.Snowflake) string {
 	return s.ControlSequence
 }
 
-func (h *handlers) attemptConfigAndAdminHandlers(msg cmdhandler.Message, req wsclient.WSMessage, cmdIndicator string, content string, m etfapi.Message, gid snowflake.Snowflake) (resp cmdhandler.Response, err error) {
-	// TODO: check auth
+func (h *handlers) hasAdminRole(msg cmdhandler.Message, m etfapi.Message, gid snowflake.Snowflake) bool {
 	logger := logging.WithMessage(msg, h.deps.Logger())
 
-	if !h.deps.BotSession().IsGuildAdmin(gid, m.AuthorID()) {
+	s, err := storage.GetSettings(h.deps.GuildAPI(), gid)
+	if err != nil {
+		_ = level.Error(logger).Log("message", "could not retrieve guild settings", "err", err)
+		return false
+	}
+
+	if s.AdminRole == "" {
+		return false
+	}
+
+	rid, err := snowflake.FromString(s.AdminRole)
+	if err != nil {
+		_ = level.Error(logger).Log("message", "could not parse AdminRole", "admin_role", s.AdminRole, "err", err)
+		return false
+	}
+
+	g, ok := h.deps.BotSession().Guild(gid)
+	if !ok {
+		_ = level.Error(logger).Log("message", "could not find guild in session")
+	}
+
+	return g.HasRole(m.AuthorID(), rid)
+}
+
+func (h *handlers) isAdminChannel(msg cmdhandler.Message, m etfapi.Message, gid snowflake.Snowflake) bool {
+	logger := logging.WithMessage(msg, h.deps.Logger())
+
+	s, err := storage.GetSettings(h.deps.GuildAPI(), gid)
+	if err != nil {
+		_ = level.Error(logger).Log("message", "could not retrieve guild settings", "err", err)
+		return false
+	}
+
+	g, ok := h.deps.BotSession().Guild(gid)
+	if !ok {
+		_ = level.Error(logger).Log("message", "could not find guild in session")
+	}
+
+	if s.AdminChannel == "" {
+		return true
+	}
+
+	cid, ok := g.ChannelWithName(s.AdminChannel)
+	if !ok {
+		return false
+	}
+
+	return cid == m.ChannelID()
+
+}
+
+func (h *handlers) attemptConfigAndAdminHandlers(msg cmdhandler.Message, req wsclient.WSMessage, cmdIndicator string, content string, m etfapi.Message, gid snowflake.Snowflake) (resp cmdhandler.Response, err error) {
+	logger := logging.WithMessage(msg, h.deps.Logger())
+
+	authorized := false
+	authorized = authorized || h.deps.BotSession().IsGuildAdmin(gid, m.AuthorID())
+	authorized = authorized || h.hasAdminRole(msg, m, gid)
+
+	if !authorized {
 		_ = level.Debug(logger).Log("message", "non-admin trying to config")
 
 		err = errUnauthorized
@@ -115,6 +172,11 @@ func (h *handlers) attemptConfigAndAdminHandlers(msg cmdhandler.Message, req wsc
 	}
 
 	if err != errUnauthorized && err != parser.ErrUnknownCommand {
+		return
+	}
+
+	if !h.isAdminChannel(msg, m, gid) {
+		err = errUnauthorized
 		return
 	}
 

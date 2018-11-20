@@ -21,23 +21,24 @@ type GuildSettings struct {
 	AnnounceTo        string
 	ShowAfterSignup   string
 	ShowAfterWithdraw string
+	AdminRole         string
 }
 
 // PrettyString returns a multi-line string describing the settings
 func (s *GuildSettings) PrettyString() string {
 	return fmt.Sprintf(`
-%[1]s
-GuildSettings{
-	ControlSequence: '%[2]s',
-	AnnounceChannel: '#%[3]s',
-	SignupChannel: '#%[4]s',
-	AdminChannel: '#%[5]s',
-	AnnounceTo: '%[6]s', 
-	ShowAfterSignup: '%[7]s',
-	ShowAfterWithdraw: '%[8]s',
-}
-%[1]s
-	`, "```", s.ControlSequence, s.AnnounceChannel, s.SignupChannel, s.AdminChannel, s.AnnounceTo, s.ShowAfterSignup, s.ShowAfterWithdraw)
+GuildSettings:
+
+	- ControlSequence: '%[2]s',
+	- AnnounceChannel: '#%[3]s',
+	- SignupChannel: '#%[4]s',
+	- AdminChannel: '#%[5]s',
+	- AnnounceTo: '%[6]s', 
+	- ShowAfterSignup: '%[7]s',
+	- ShowAfterWithdraw: '%[8]s',
+	- AdminRole: '<@&%[9]s>',
+
+	`, "```", s.ControlSequence, s.AnnounceChannel, s.SignupChannel, s.AdminChannel, s.AnnounceTo, s.ShowAfterSignup, s.ShowAfterWithdraw, s.AdminRole)
 }
 
 // GetSettingString gets the value of a setting
@@ -57,6 +58,8 @@ func (s *GuildSettings) GetSettingString(name string) (string, error) {
 		return s.ShowAfterSignup, nil
 	case "showafterwithdraw":
 		return s.ShowAfterWithdraw, nil
+	case "adminrole":
+		return s.AdminRole, nil
 	default:
 		return "", ErrBadSetting
 	}
@@ -104,6 +107,9 @@ func (s *GuildSettings) SetSettingString(name, val string) error {
 			return errors.Wrap(err, "could not set ShowAfterWithdraw")
 		}
 		s.ShowAfterWithdraw = v
+		return nil
+	case "adminrole":
+		s.AdminRole = val
 		return nil
 	default:
 		return ErrBadSetting

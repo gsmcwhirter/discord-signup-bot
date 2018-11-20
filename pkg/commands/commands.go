@@ -284,6 +284,7 @@ func CommandHandler(deps dependencies, versionStr string, opts Options) (*cmdhan
 type configDependencies interface {
 	Logger() log.Logger
 	GuildAPI() storage.GuildAPI
+	BotSession() *etfapi.Session
 }
 
 // ConfigHandler creates a new command handler for !config-su

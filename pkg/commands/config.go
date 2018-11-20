@@ -115,10 +115,28 @@ func (c *configCommands) set(msg cmdhandler.Message) (cmdhandler.Response, error
 		if len(argPairList) != 2 {
 			return r, fmt.Errorf("could not parse setting '%s'", arg)
 		}
-		argPairs = append(argPairs, argPair{
+
+		ap := argPair{
 			key: argPairList[0],
-			val: argPairList[1],
-		})
+		}
+
+		switch strings.ToLower(argPairList[0]) {
+		case "adminrole":
+			g, ok := c.deps.BotSession().Guild(msg.GuildID())
+			if !ok {
+				return r, errors.New("could not find guild to look up role")
+			}
+			rid, ok := g.RoleWithName(argPairList[1])
+			if !ok {
+				return r, fmt.Errorf("could not find role with name '%s'", argPairList[1])
+			}
+
+			ap.val = rid.ToString()
+		default:
+			ap.val = argPairList[1]
+		}
+
+		argPairs = append(argPairs, ap)
 	}
 
 	if len(argPairs) == 0 {
