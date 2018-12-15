@@ -6,39 +6,28 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/go-kit/kit/log"
 	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
 	"github.com/gsmcwhirter/discord-bot-lib/etfapi"
 	"github.com/pkg/errors"
 
+	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
 
-func isAdminChannel(msg cmdhandler.Message, adminChannel string, session *etfapi.Session) bool {
-	g, ok := session.Guild(msg.GuildID())
-	if !ok {
+var isAdminAuthorized = msghandler.IsAdminAuthorized
+var isAdminChannel = msghandler.IsAdminChannel
+
+func isSignupChannel(logger log.Logger, msg cmdhandler.Message, signupChannel, adminChannel, adminRole string, session *etfapi.Session) bool {
+	if msghandler.IsSignupChannel(msg, signupChannel, session) {
+		return true
+	}
+
+	if !isAdminChannel(logger, msg, adminChannel, session) {
 		return false
 	}
 
-	cid, ok := g.ChannelWithName(adminChannel)
-	if !ok {
-		return false
-	}
-
-	return cid == msg.ChannelID()
-}
-
-func isSignupChannel(msg cmdhandler.Message, signupChannel string, session *etfapi.Session) bool {
-	g, ok := session.Guild(msg.GuildID())
-	if !ok {
-		return false
-	}
-
-	cid, ok := g.ChannelWithName(signupChannel)
-	if !ok {
-		return false
-	}
-
-	return cid == msg.ChannelID()
+	return isAdminAuthorized(logger, msg, adminRole, session)
 }
 
 func signupsForRole(role string, signups []storage.TrialSignup, sorted bool) []string {
@@ -68,11 +57,10 @@ func roleCountByName(role string, roleCounts []storage.RoleCount) (storage.RoleC
 	return nil, false
 }
 
-func parseSettingDescriptionArgs(args string) (map[string]string, error) {
+func parseSettingDescriptionArgs(args []string) (map[string]string, error) {
 	argMap := map[string]string{}
-	parts := strings.Split(strings.TrimSpace(args), " ")
 
-	for i, pair := range parts {
+	for _, pair := range args {
 		if pair == "" {
 			continue
 		}
@@ -82,10 +70,11 @@ func parseSettingDescriptionArgs(args string) (map[string]string, error) {
 			return argMap, errors.New("could not parse arguments")
 		}
 
-		if strings.ToLower(pairParts[0]) == "description" {
-			argMap[strings.ToLower(pairParts[0])] = fmt.Sprintf("%s %s", pairParts[1], strings.Join(parts[i+1:], " "))
-			break
-		}
+		// if strings.ToLower(pairParts[0]) == "description" {
+		// 	argMap[strings.ToLower(pairParts[0])] = fmt.Sprintf("%s %s", pairParts[1], strings.Join(parts[i+1:], " "))
+		// 	break
+		// }
+
 		argMap[strings.ToLower(pairParts[0])] = pairParts[1]
 	}
 
@@ -132,6 +121,25 @@ func parseRolesString(args string) ([]roleCtEmo, error) {
 	return roleEmoCt, nil
 }
 
+func getTrialRoleSignups(signups []storage.TrialSignup, rc storage.RoleCount) ([]string, []string) {
+	lowerRole := strings.ToLower(rc.GetRole())
+	suNames := make([]string, 0, len(signups))
+	ofNames := make([]string, 0, len(signups))
+	for _, su := range signups {
+		if strings.ToLower(su.GetRole()) != lowerRole {
+			continue
+		}
+
+		if uint64(len(suNames)) < rc.GetCount() {
+			suNames = append(suNames, su.GetName())
+		} else {
+			ofNames = append(ofNames, su.GetName())
+		}
+	}
+
+	return suNames, ofNames
+}
+
 func formatTrialDisplay(trial storage.Trial, withState bool) *cmdhandler.EmbedResponse {
 	r := &cmdhandler.EmbedResponse{}
 
@@ -149,20 +157,7 @@ func formatTrialDisplay(trial storage.Trial, withState bool) *cmdhandler.EmbedRe
 	signups := trial.GetSignups()
 
 	for _, rc := range roleCounts {
-		lowerRole := strings.ToLower(rc.GetRole())
-		suNames := make([]string, 0, len(signups))
-		ofNames := make([]string, 0, len(signups))
-		for _, su := range signups {
-			if strings.ToLower(su.GetRole()) != lowerRole {
-				continue
-			}
-
-			if uint64(len(suNames)) < rc.GetCount() {
-				suNames = append(suNames, su.GetName())
-			} else {
-				ofNames = append(ofNames, su.GetName())
-			}
-		}
+		suNames, ofNames := getTrialRoleSignups(signups, rc)
 
 		if len(suNames) > 0 {
 			r.Fields = append(r.Fields, cmdhandler.EmbedField{

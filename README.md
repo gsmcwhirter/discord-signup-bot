@@ -10,3 +10,6 @@ on using the bot.
 ## TODO
 
 - working REPL (need to mock guild state to force admin)
+- dealing with long messages (2000 char limit?)
+- update documentation
+- more context cancellation follow-through

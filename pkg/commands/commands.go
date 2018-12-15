@@ -43,6 +43,10 @@ func (c *rootCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error)
 	logger := logging.WithMessage(msg, c.deps.Logger())
 	_ = level.Info(logger).Log("message", "handling rootCommand", "command", "list")
 
+	if msg.ContentErr() != nil {
+		return r, msg.ContentErr()
+	}
+
 	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), false)
 	if err != nil {
 		return r, err
@@ -89,10 +93,23 @@ func (c *rootCommands) show(msg cmdhandler.Message) (cmdhandler.Response, error)
 		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
-	trialName := strings.TrimSpace(msg.Contents())
-
 	logger := logging.WithMessage(msg, c.deps.Logger())
-	_ = level.Info(logger).Log("message", "handling rootCommand", "command", "show", "trial_name", trialName)
+	_ = level.Info(logger).Log("message", "handling rootCommand", "command", "show", "trial_name", msg.Contents())
+
+	if msg.ContentErr() != nil {
+		return r, msg.ContentErr()
+	}
+
+	if len(msg.Contents()) != 1 {
+		return r, errors.New("you must supply exactly 1 argument -- trial name; are you missing quotes?")
+	}
+
+	trialName := strings.TrimSpace(msg.Contents()[0])
+
+	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID())
+	if err != nil {
+		return r, err
+	}
 
 	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), false)
 	if err != nil {
@@ -105,7 +122,7 @@ func (c *rootCommands) show(msg cmdhandler.Message) (cmdhandler.Response, error)
 		return r, err
 	}
 
-	if !isSignupChannel(msg, trial.GetSignupChannel(), c.deps.BotSession()) {
+	if !isSignupChannel(logger, msg, trial.GetSignupChannel(), gsettings.AdminChannel, gsettings.AdminRole, c.deps.BotSession()) {
 		_ = level.Info(logger).Log("message", "command not in signup channel", "signup_channel", trial.GetSignupChannel())
 		return r, msghandler.ErrNoResponse
 	}
@@ -121,16 +138,22 @@ func (c *rootCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, erro
 		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
-	argParts := strings.SplitN(strings.TrimSpace(msg.Contents()), " ", 2)
-
 	logger := logging.WithMessage(msg, c.deps.Logger())
-	_ = level.Info(logger).Log("message", "handling rootCommand", "command", "signup", "trial_and_role", argParts)
+	_ = level.Info(logger).Log("message", "handling rootCommand", "command", "signup", "trial_and_role", msg.Contents())
 
-	if len(argParts) < 2 {
+	if msg.ContentErr() != nil {
+		return r, msg.ContentErr()
+	}
+
+	if len(msg.Contents()) < 2 {
 		return r, errors.New("missing role")
 	}
 
-	trialName, role := argParts[0], argParts[1]
+	if len(msg.Contents()) > 3 {
+		return r, errors.New("too many arguments")
+	}
+
+	trialName, role := msg.Contents()[0], msg.Contents()[1]
 
 	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
@@ -148,7 +171,7 @@ func (c *rootCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, erro
 		return r, err
 	}
 
-	if !isSignupChannel(msg, trial.GetSignupChannel(), c.deps.BotSession()) {
+	if !isSignupChannel(logger, msg, trial.GetSignupChannel(), gsettings.AdminChannel, gsettings.AdminRole, c.deps.BotSession()) {
 		_ = level.Info(logger).Log("message", "command not in signup channel", "signup_channel", trial.GetSignupChannel())
 		return r, msghandler.ErrNoResponse
 	}
@@ -198,10 +221,18 @@ func (c *rootCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, er
 		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
-	trialName := strings.TrimSpace(msg.Contents())
-
 	logger := logging.WithMessage(msg, c.deps.Logger())
-	_ = level.Info(logger).Log("message", "handling rootCommand", "command", "withdraw", "trial_name", trialName)
+	_ = level.Info(logger).Log("message", "handling rootCommand", "command", "withdraw", "trial_name", msg.Contents())
+
+	if msg.ContentErr() != nil {
+		return r, msg.ContentErr()
+	}
+
+	if len(msg.Contents()) < 1 {
+		return r, errors.New("missing event name")
+	}
+
+	trialName := strings.TrimSpace(msg.Contents()[0])
 
 	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
@@ -219,7 +250,7 @@ func (c *rootCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, er
 		return r, err
 	}
 
-	if !isSignupChannel(msg, trial.GetSignupChannel(), c.deps.BotSession()) {
+	if !isSignupChannel(logger, msg, trial.GetSignupChannel(), gsettings.AdminChannel, gsettings.AdminRole, c.deps.BotSession()) {
 		_ = level.Info(logger).Log("message", "command not in signup channel", "signup_channel", trial.GetSignupChannel())
 		return r, msghandler.ErrNoResponse
 	}
@@ -284,6 +315,7 @@ func CommandHandler(deps dependencies, versionStr string, opts Options) (*cmdhan
 type configDependencies interface {
 	Logger() log.Logger
 	GuildAPI() storage.GuildAPI
+	TrialAPI() storage.TrialAPI
 	BotSession() *etfapi.Session
 }
 

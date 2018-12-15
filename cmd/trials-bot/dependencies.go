@@ -101,15 +101,15 @@ func createDependencies(conf config) (d *dependencies, err error) {
 
 	d.wsClient = wsclient.NewWSClient(d, wsclient.Options{MaxConcurrentHandlers: conf.NumWorkers})
 
-	d.cmdHandler, err = commands.CommandHandler(d, conf.Version, commands.Options{CmdIndicator: " "})
+	d.cmdHandler, err = commands.CommandHandler(d, conf.Version, commands.Options{CmdIndicator: "!"})
 	if err != nil {
 		return
 	}
-	d.configHandler, err = commands.ConfigHandler(d, conf.Version, commands.Options{CmdIndicator: " "})
+	d.configHandler, err = commands.ConfigHandler(d, conf.Version, commands.Options{CmdIndicator: "!"})
 	if err != nil {
 		return
 	}
-	d.adminHandler, err = commands.AdminHandler(d, conf.Version, commands.Options{CmdIndicator: " "})
+	d.adminHandler, err = commands.AdminHandler(d, conf.Version, commands.Options{CmdIndicator: "!"})
 	if err != nil {
 		return
 	}

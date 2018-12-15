@@ -17,6 +17,7 @@ message ProtoTrial {
     string name = 1;
     string state = 2;
     string announce_channel = 3;
+    string announce_to = 9;
     string signup_channel = 4;
     string description = 7;
 

@@ -33,6 +33,7 @@ type TrialAPITx interface {
 type Trial interface {
 	GetName() string
 	GetDescription() string
+	GetAnnounceTo() string
 	GetAnnounceChannel() string
 	GetSignupChannel() string
 	GetState() TrialState
@@ -41,6 +42,7 @@ type Trial interface {
 
 	SetName(name string)
 	SetDescription(d string)
+	SetAnnounceTo(val string)
 	SetAnnounceChannel(val string)
 	SetSignupChannel(val string)
 	SetState(state TrialState)
@@ -48,6 +50,8 @@ type Trial interface {
 	RemoveSignup(name string)
 	SetRoleCount(name, emoji string, ct uint64)
 	RemoveRole(name string)
+
+	ClearSignups()
 
 	Serialize() ([]byte, error)
 }

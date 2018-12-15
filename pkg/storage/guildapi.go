@@ -119,6 +119,7 @@ func (s *GuildSettings) SetSettingString(name, val string) error {
 // GuildAPI is the api for managing guild settings transactions
 type GuildAPI interface {
 	NewTransaction(writable bool) (GuildAPITx, error)
+	AllGuilds() ([]string, error)
 }
 
 // GuildAPITx is the api for managing guild settings within a transaction

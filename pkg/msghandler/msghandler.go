@@ -1,7 +1,6 @@
 package msghandler
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/gsmcwhirter/discord-bot-lib/snowflake"
 	"github.com/gsmcwhirter/discord-bot-lib/wsclient"
 	"github.com/gsmcwhirter/go-util/parser"
+	"github.com/pkg/errors"
 	"golang.org/x/time/rate"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
@@ -58,7 +58,7 @@ type Options struct {
 // NewHandlers creates a new Handlers object
 func NewHandlers(deps dependencies, opts Options) Handlers {
 	h := handlers{
-		deps: deps,
+		deps:                    deps,
 		defaultCommandIndicator: opts.DefaultCommandIndicator,
 		successColor:            opts.SuccessColor,
 		errorColor:              opts.ErrorColor,
@@ -95,69 +95,16 @@ func (h *handlers) guildCommandIndicator(gid snowflake.Snowflake) string {
 	return s.ControlSequence
 }
 
-func (h *handlers) hasAdminRole(msg cmdhandler.Message, m etfapi.Message, gid snowflake.Snowflake) bool {
+func (h *handlers) attemptConfigAndAdminHandlers(msg cmdhandler.Message, req wsclient.WSMessage, cmdIndicator string, content string) (resp cmdhandler.Response, err error) {
 	logger := logging.WithMessage(msg, h.deps.Logger())
 
-	s, err := storage.GetSettings(h.deps.GuildAPI(), gid)
+	s, err := storage.GetSettings(h.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
 		_ = level.Error(logger).Log("message", "could not retrieve guild settings", "err", err)
-		return false
 	}
 
-	if s.AdminRole == "" {
-		return false
-	}
-
-	rid, err := snowflake.FromString(s.AdminRole)
-	if err != nil {
-		_ = level.Error(logger).Log("message", "could not parse AdminRole", "admin_role", s.AdminRole, "err", err)
-		return false
-	}
-
-	g, ok := h.deps.BotSession().Guild(gid)
-	if !ok {
-		_ = level.Error(logger).Log("message", "could not find guild in session")
-	}
-
-	return g.HasRole(m.AuthorID(), rid)
-}
-
-func (h *handlers) isAdminChannel(msg cmdhandler.Message, m etfapi.Message, gid snowflake.Snowflake) bool {
-	logger := logging.WithMessage(msg, h.deps.Logger())
-
-	s, err := storage.GetSettings(h.deps.GuildAPI(), gid)
-	if err != nil {
-		_ = level.Error(logger).Log("message", "could not retrieve guild settings", "err", err)
-		return false
-	}
-
-	g, ok := h.deps.BotSession().Guild(gid)
-	if !ok {
-		_ = level.Error(logger).Log("message", "could not find guild in session")
-	}
-
-	if s.AdminChannel == "" {
-		return true
-	}
-
-	cid, ok := g.ChannelWithName(s.AdminChannel)
-	if !ok {
-		return false
-	}
-
-	return cid == m.ChannelID()
-
-}
-
-func (h *handlers) attemptConfigAndAdminHandlers(msg cmdhandler.Message, req wsclient.WSMessage, cmdIndicator string, content string, m etfapi.Message, gid snowflake.Snowflake) (resp cmdhandler.Response, err error) {
-	logger := logging.WithMessage(msg, h.deps.Logger())
-
-	authorized := false
-	authorized = authorized || h.deps.BotSession().IsGuildAdmin(gid, m.AuthorID())
-	authorized = authorized || h.hasAdminRole(msg, m, gid)
-
-	if !authorized {
-		_ = level.Debug(logger).Log("message", "non-admin trying to config")
+	if !IsAdminAuthorized(logger, msg, s.AdminRole, h.deps.BotSession()) {
+		_ = level.Info(logger).Log("message", "non-admin trying to config")
 
 		err = errUnauthorized
 		return
@@ -165,6 +112,7 @@ func (h *handlers) attemptConfigAndAdminHandlers(msg cmdhandler.Message, req wsc
 
 	_ = level.Debug(logger).Log("message", "admin trying to config")
 	cmdContent := h.deps.ConfigHandler().CommandIndicator() + strings.TrimPrefix(content, cmdIndicator)
+	_ = level.Info(logger).Log("message", "processing command", "cmdContent", fmt.Sprintf("%q", cmdContent), "rawCmd", fmt.Sprintf("%q", content))
 	resp, err = h.deps.ConfigHandler().HandleMessage(cmdhandler.NewWithContents(msg, cmdContent))
 
 	if err == nil {
@@ -175,7 +123,7 @@ func (h *handlers) attemptConfigAndAdminHandlers(msg cmdhandler.Message, req wsc
 		return
 	}
 
-	if !h.isAdminChannel(msg, m, gid) {
+	if !IsAdminChannel(logger, msg, s.AdminChannel, h.deps.BotSession()) {
 		err = errUnauthorized
 		return
 	}
@@ -225,9 +173,11 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 		return
 	}
 
+	content = strings.TrimSpace(content)
+
 	msg := cmdhandler.NewSimpleMessage(req.Ctx, m.AuthorID(), gid, m.ChannelID(), m.ID(), "")
 	logger = logging.WithMessage(msg, h.deps.Logger())
-	resp, err := h.attemptConfigAndAdminHandlers(msg, req, cmdIndicator, content, m, gid)
+	resp, err := h.attemptConfigAndAdminHandlers(msg, req, cmdIndicator, content)
 
 	if err != nil && (err == errUnauthorized || err == parser.ErrUnknownCommand) {
 		_ = level.Debug(logger).Log("message", "admin not successful; processing as real message")
@@ -250,12 +200,6 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 		resp.SetColor(h.successColor)
 	}
 
-	err = h.deps.MessageRateLimiter().Wait(req.Ctx)
-	if err != nil {
-		_ = level.Error(logger).Log("message", "error waiting for ratelimiting", "err", err)
-		return
-	}
-
 	_ = level.Info(logger).Log("message", "sending message", "resp", fmt.Sprintf("%+v", resp))
 
 	sendTo := resp.Channel()
@@ -263,11 +207,21 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 		sendTo = m.ChannelID()
 	}
 
-	sendResp, body, err := h.bot.SendMessage(req.Ctx, sendTo, resp.ToMessage())
-	if err != nil {
-		_ = level.Error(logger).Log("message", "could not send message", "err", err, "resp_body", string(body), "status_code", sendResp.StatusCode)
-		return
+	splitResp := resp.Split()
+
+	for _, res := range splitResp {
+		err = h.deps.MessageRateLimiter().Wait(req.Ctx)
+		if err != nil {
+			_ = level.Error(logger).Log("message", "error waiting for ratelimiting", "err", err)
+			return
+		}
+
+		sendResp, body, err := h.bot.SendMessage(req.Ctx, sendTo, res.ToMessage())
+		if err != nil {
+			_ = level.Error(logger).Log("message", "could not send message", "err", err, "resp_body", string(body), "status_code", sendResp.StatusCode)
+			return
+		}
 	}
 
-	_ = level.Info(logger).Log("message", "successfully sent message to channel", "channel_id", sendTo.ToString())
+	_ = level.Info(logger).Log("message", "successfully sent message(s) to channel", "channel_id", sendTo.ToString(), "message_ct", len(splitResp))
 }

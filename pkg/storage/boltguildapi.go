@@ -1,6 +1,8 @@
 package storage
 
 import (
+	"bytes"
+
 	bolt "github.com/coreos/bbolt"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
@@ -8,6 +10,8 @@ import (
 
 // ErrGuildNotExist is the error returned if a guild does not exist
 var ErrGuildNotExist = errors.New("guild does not exist")
+
+var settingsBucket = []byte("GuildRecords")
 
 type boltGuildAPI struct {
 	db         *bolt.DB
@@ -18,7 +22,7 @@ type boltGuildAPI struct {
 func NewBoltGuildAPI(db *bolt.DB) (GuildAPI, error) {
 	b := boltGuildAPI{
 		db:         db,
-		bucketName: []byte("GuildRecords"),
+		bucketName: settingsBucket,
 	}
 
 	err := db.Update(func(tx *bolt.Tx) error {
@@ -34,6 +38,26 @@ func NewBoltGuildAPI(db *bolt.DB) (GuildAPI, error) {
 	}
 
 	return &b, nil
+}
+
+func (b *boltGuildAPI) AllGuilds() ([]string, error) {
+	var guilds []string
+
+	err := b.db.View(func(tx *bolt.Tx) error {
+		return tx.ForEach(func(bucketName []byte, b *bolt.Bucket) error {
+			if !bytes.Equal(bucketName, settingsBucket) {
+				guilds = append(guilds, string(bucketName))
+			}
+
+			return nil
+		})
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return guilds, nil
 }
 
 func (b *boltGuildAPI) NewTransaction(writable bool) (GuildAPITx, error) {

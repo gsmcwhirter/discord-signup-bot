@@ -1,5 +1,34 @@
 # Changelog
 
+## v0.11.0
+
+- Add `!admin clear [trialname]`
+- s/trial/event/ in (at least some) places that it can be seen by users
+- Enable normal commands working in the admin channel when used by admin users
+- Add `!config-su website`, `!config-su discord`, and `!config-su stats`
+- Changed the `!admin grouping` output to only mention those signed up and not display a full layout
+
+## v0.10.0
+
+- Add AdminRole functionality and proper AdminChannel filtering
+
+## v0.9.5
+
+- Make !list work when there are no events
+- Internal improvements
+
+## v0.9.4
+
+- No longer respond to unknown commands by default (plays better with other bots)
+
+## v0.9.3
+
+- More improved logging
+
+## v0.9.2
+
+- Internal cleanups and improved logging
+
 ## v0.9.1
 
 - Fix issue with removing roles from a trial

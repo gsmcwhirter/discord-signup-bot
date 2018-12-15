@@ -30,7 +30,31 @@ func (c *configCommands) version(msg cmdhandler.Message) (cmdhandler.Response, e
 	logger := logging.WithMessage(msg, c.deps.Logger())
 	_ = level.Info(logger).Log("message", "handling configCommand", "command", "version")
 
-	return r, nil
+	return r, msg.ContentErr()
+}
+
+func (c *configCommands) website(msg cmdhandler.Message) (cmdhandler.Response, error) {
+	r := &cmdhandler.SimpleEmbedResponse{
+		To:          cmdhandler.UserMentionString(msg.UserID()),
+		Description: "https://www.evogames.org/bots/eso-signup-bot/",
+	}
+
+	logger := logging.WithMessage(msg, c.deps.Logger())
+	_ = level.Info(logger).Log("message", "handling configCommand", "command", "website")
+
+	return r, msg.ContentErr()
+}
+
+func (c *configCommands) discord(msg cmdhandler.Message) (cmdhandler.Response, error) {
+	r := &cmdhandler.SimpleEmbedResponse{
+		To:          cmdhandler.UserMentionString(msg.UserID()),
+		Description: "https://discord.gg/BgkvvbN",
+	}
+
+	logger := logging.WithMessage(msg, c.deps.Logger())
+	_ = level.Info(logger).Log("message", "handling configCommand", "command", "discord")
+
+	return r, msg.ContentErr()
 }
 
 func (c *configCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error) {
@@ -40,6 +64,10 @@ func (c *configCommands) list(msg cmdhandler.Message) (cmdhandler.Response, erro
 
 	logger := logging.WithMessage(msg, c.deps.Logger())
 	_ = level.Info(logger).Log("message", "handling configCommand", "command", "list")
+
+	if msg.ContentErr() != nil {
+		return r, msg.ContentErr()
+	}
 
 	t, err := c.deps.GuildAPI().NewTransaction(false)
 	if err != nil {
@@ -62,10 +90,22 @@ func (c *configCommands) get(msg cmdhandler.Message) (cmdhandler.Response, error
 		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
-	settingName := strings.TrimSpace(msg.Contents())
-
 	logger := logging.WithMessage(msg, c.deps.Logger())
-	_ = level.Info(logger).Log("message", "handling adminCommand", "command", "get", "setting_name", settingName)
+	_ = level.Info(logger).Log("message", "handling adminCommand", "command", "get", "args", msg.Contents())
+
+	if msg.ContentErr() != nil {
+		return r, msg.ContentErr()
+	}
+
+	if len(msg.Contents()) < 1 {
+		return r, errors.New("missing setting name")
+	}
+
+	if len(msg.Contents()) > 1 {
+		return r, errors.New("too many arguments")
+	}
+
+	settingName := strings.TrimSpace(msg.Contents()[0])
 
 	t, err := c.deps.GuildAPI().NewTransaction(false)
 	if err != nil {
@@ -97,16 +137,16 @@ func (c *configCommands) set(msg cmdhandler.Message) (cmdhandler.Response, error
 		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
 
-	args := strings.TrimSpace(msg.Contents())
-
-	argList := strings.Split(args, " ")
-
 	logger := logging.WithMessage(msg, c.deps.Logger())
-	_ = level.Info(logger).Log("message", "handling adminCommand", "command", "set", "set_args", argList)
+	_ = level.Info(logger).Log("message", "handling adminCommand", "command", "set", "set_args", msg.Contents())
 
-	argPairs := make([]argPair, 0, len(argList))
+	if msg.ContentErr() != nil {
+		return r, msg.ContentErr()
+	}
 
-	for _, arg := range argList {
+	argPairs := make([]argPair, 0, len(msg.Contents()))
+
+	for _, arg := range msg.Contents() {
 		if arg == "" {
 			continue
 		}
@@ -184,6 +224,10 @@ func (c *configCommands) reset(msg cmdhandler.Message) (cmdhandler.Response, err
 	logger := logging.WithMessage(msg, c.deps.Logger())
 	_ = level.Info(logger).Log("message", "handling adminCommand", "command", "reset")
 
+	if msg.ContentErr() != nil {
+		return r, msg.ContentErr()
+	}
+
 	t, err := c.deps.GuildAPI().NewTransaction(true)
 	if err != nil {
 		return r, err
@@ -211,10 +255,73 @@ func (c *configCommands) reset(msg cmdhandler.Message) (cmdhandler.Response, err
 	return c.list(msg)
 }
 
+type stat struct {
+	trials int
+	open   int
+	closed int
+}
+
+func (c *configCommands) collectStats(gid string) (stat, error) {
+	s := stat{}
+
+	t, err := c.deps.TrialAPI().NewTransaction(gid, false)
+	if err != nil {
+		return s, err
+	}
+	defer deferutil.CheckDefer(t.Rollback)
+
+	trials := t.GetTrials()
+
+	for _, trial := range trials {
+		s.trials++
+		if trial.GetState() == storage.TrialStateClosed {
+			s.closed++
+		} else {
+			s.open++
+		}
+	}
+
+	return s, nil
+}
+
+func (c *configCommands) stats(msg cmdhandler.Message) (cmdhandler.Response, error) {
+	r := &cmdhandler.SimpleEmbedResponse{
+		To: cmdhandler.UserMentionString(msg.UserID()),
+	}
+
+	logger := logging.WithMessage(msg, c.deps.Logger())
+	_ = level.Info(logger).Log("message", "handling adminCommand", "command", "stats")
+
+	if msg.ContentErr() != nil {
+		return r, msg.ContentErr()
+	}
+
+	allGuilds, err := c.deps.GuildAPI().AllGuilds()
+	if err != nil {
+		return r, err
+	}
+
+	s := stat{}
+
+	for _, guild := range allGuilds {
+		stat, err := c.collectStats(guild)
+		if err != nil {
+			return r, err
+		}
+
+		s.trials += stat.trials
+		s.open += stat.open
+		s.closed += stat.closed
+	}
+
+	r.Description = fmt.Sprintf("Total guilds: %d\nTotal events: %d\nCurrently open: %d\nCurrently closed: %d\n", len(allGuilds), s.trials, s.open, s.closed)
+	return r, nil
+}
+
 // ConfigCommandHandler creates a new command handler for !config-su commands
 func ConfigCommandHandler(deps configDependencies, versionStr, preCommand string) (*cmdhandler.CommandHandler, error) {
 	p := parser.NewParser(parser.Options{
-		CmdIndicator: " ",
+		CmdIndicator: "",
 	})
 	cc := configCommands{
 		preCommand: preCommand,
@@ -236,6 +343,9 @@ func ConfigCommandHandler(deps configDependencies, versionStr, preCommand string
 	ch.SetHandler("set", cmdhandler.NewMessageHandler(cc.set))
 	ch.SetHandler("reset", cmdhandler.NewMessageHandler(cc.reset))
 	ch.SetHandler("version", cmdhandler.NewMessageHandler(cc.version))
+	ch.SetHandler("website", cmdhandler.NewMessageHandler(cc.website))
+	ch.SetHandler("discord", cmdhandler.NewMessageHandler(cc.discord))
+	ch.SetHandler("stats", cmdhandler.NewMessageHandler(cc.stats))
 
 	return ch, err
 }

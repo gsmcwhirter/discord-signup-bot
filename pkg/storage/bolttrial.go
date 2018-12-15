@@ -24,6 +24,10 @@ func (b *boltTrial) GetDescription() string {
 	return b.protoTrial.Description
 }
 
+func (b *boltTrial) GetAnnounceTo() string {
+	return b.protoTrial.AnnounceTo
+}
+
 func (b *boltTrial) GetAnnounceChannel() string {
 	return b.protoTrial.AnnounceChannel
 }
@@ -87,6 +91,10 @@ func (b *boltTrial) SetAnnounceChannel(val string) {
 	b.protoTrial.AnnounceChannel = val
 }
 
+func (b *boltTrial) SetAnnounceTo(val string) {
+	b.protoTrial.AnnounceTo = val
+}
+
 func (b *boltTrial) SetSignupChannel(val string) {
 	b.protoTrial.SignupChannel = val
 }
@@ -122,6 +130,10 @@ func (b *boltTrial) RemoveSignup(name string) {
 			b.protoTrial.Signups[i].State = signupCanceled
 		}
 	}
+}
+
+func (b *boltTrial) ClearSignups() {
+	b.protoTrial.Signups = nil
 }
 
 func (b *boltTrial) SetRoleCount(name, emoji string, ct uint64) {
