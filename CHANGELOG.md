@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.11.1
+
+- Fix `!admin edit trial announceto=...`
+- Add `!admin show trialname`
+
 ## v0.11.0
 
 - Add `!admin clear [trialname]`
