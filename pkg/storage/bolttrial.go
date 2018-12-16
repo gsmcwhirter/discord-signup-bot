@@ -1,6 +1,7 @@
 package storage
 
 import (
+	fmt "fmt"
 	"sort"
 	"strings"
 
@@ -77,6 +78,32 @@ func (b *boltTrial) GetRoleCounts() []RoleCount {
 	}
 
 	return s
+}
+
+func (b *boltTrial) PrettyRoles(indent string) string {
+	var lines []string
+	for _, rc := range b.GetRoleCounts() {
+		lines = append(lines, fmt.Sprintf("%s%s: %d", rc.GetEmoji(), rc.GetRole(), rc.GetCount()))
+	}
+
+	return strings.Join(lines, "\n"+indent)
+}
+
+func (b *boltTrial) PrettySettings() string {
+	return fmt.Sprintf(`
+Event settings:
+
+	- State: '%[4]s',
+	- AnnounceChannel: '#%[1]s',
+	- SignupChannel: '#%[2]s',
+	- AnnounceTo: '%[3]s', 
+	- Roles:
+		%[5]s
+
+Description:
+%s
+
+	`, b.GetAnnounceChannel(), b.GetSignupChannel(), b.GetAnnounceTo(), b.GetState(), b.PrettyRoles("    "), b.GetDescription())
 }
 
 func (b *boltTrial) SetName(name string) {

@@ -39,6 +39,7 @@ type Trial interface {
 	GetState() TrialState
 	GetSignups() []TrialSignup
 	GetRoleCounts() []RoleCount
+	PrettySettings() string
 
 	SetName(name string)
 	SetDescription(d string)

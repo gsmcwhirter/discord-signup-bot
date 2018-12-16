@@ -226,7 +226,7 @@ func (c *adminCommands) edit(msg cmdhandler.Message) (cmdhandler.Response, error
 	}
 
 	if v, ok := settingMap["announceto"]; ok {
-		trial.SetAnnounceChannel(v)
+		trial.SetAnnounceTo(v)
 	}
 
 	if v, ok := settingMap["signupchannel"]; ok {
@@ -524,6 +524,56 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 	_ = level.Info(logger).Log("message", "trial announced", "trial_name", trialName, "announce_channel", r2.ToChannel.ToString(), "announce_to", r2.To)
 
 	return r2, nil
+}
+
+func (c *adminCommands) show(msg cmdhandler.Message) (cmdhandler.Response, error) {
+	r := &cmdhandler.SimpleEmbedResponse{
+		To: cmdhandler.UserMentionString(msg.UserID()),
+	}
+
+	logger := logging.WithMessage(msg, c.deps.Logger())
+	_ = level.Info(logger).Log("message", "handling adminCommand", "command", "show", "args", msg.Contents())
+
+	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID())
+	if err != nil {
+		return r, err
+	}
+
+	if !isAdminChannel(logger, msg, gsettings.AdminChannel, c.deps.BotSession()) {
+		_ = level.Info(logger).Log("message", "command not in admin channel", "admin_channel", gsettings.AdminChannel)
+		return r, msghandler.ErrNoResponse
+	}
+
+	if msg.ContentErr() != nil {
+		return r, msg.ContentErr()
+	}
+
+	if len(msg.Contents()) < 1 {
+		return r, errors.New("need event name")
+	}
+
+	if len(msg.Contents()) > 1 {
+		return r, errors.New("too many arguments")
+	}
+
+	trialName := msg.Contents()[0]
+
+	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), false)
+	if err != nil {
+		return r, err
+	}
+	defer deferutil.CheckDefer(t.Rollback)
+
+	trial, err := t.GetTrial(trialName)
+	if err != nil {
+		return r, err
+	}
+
+	r.Description = trial.PrettySettings()
+
+	_ = level.Info(logger).Log("message", "trial shown", "trial_name", trialName)
+
+	return r, nil
 }
 
 func (c *adminCommands) grouping(msg cmdhandler.Message) (cmdhandler.Response, error) {
@@ -955,6 +1005,7 @@ func AdminCommandHandler(deps adminDependencies, preCommand string) (*cmdhandler
 	ch.SetHandler("withdraw", cmdhandler.NewMessageHandler(cc.withdraw))
 	ch.SetHandler("wd", cmdhandler.NewMessageHandler(cc.withdraw))
 	ch.SetHandler("clear", cmdhandler.NewMessageHandler(cc.clear))
+	ch.SetHandler("show", cmdhandler.NewMessageHandler(cc.show))
 
 	return ch, nil
 }
