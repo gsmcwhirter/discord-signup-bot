@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.11.2
+
+- Make the bot aware of channel creations and renames more reliably
+- Fix the `!admin grouping` command output
+- Fix some other crash-causing issues
+
 ## v0.11.1
 
 - Fix `!admin edit trial announceto=...`
