@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/hashicorp/go-multierror"
+	multierror "github.com/hashicorp/go-multierror"
 
 	"github.com/go-kit/kit/log/level"
 	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
@@ -603,7 +603,7 @@ func (c *adminCommands) grouping(msg cmdhandler.Message) (cmdhandler.Response, e
 	}
 
 	trialName := msg.Contents()[0]
-	phrase := "Grouping now!"
+	phrase := fmt.Sprintf("Grouping now for %s!", trialName)
 	if len(msg.Contents()) > 1 {
 		phrase = strings.Join(msg.Contents()[1:], " ")
 	}
@@ -638,23 +638,15 @@ func (c *adminCommands) grouping(msg cmdhandler.Message) (cmdhandler.Response, e
 		suNames, ofNames := getTrialRoleSignups(signups, rc)
 
 		for _, u := range suNames {
-			s, err := snowflake.FromString(u)
-			if err != nil {
-				continue
-			}
-
-			userMentions = append(userMentions, cmdhandler.UserMentionString(s))
+			userMentions = append(userMentions, u)
 		}
 
 		for _, u := range ofNames {
-			s, err := snowflake.FromString(u)
-			if err != nil {
-				continue
-			}
-
-			userMentions = append(userMentions, cmdhandler.UserMentionString(s))
+			userMentions = append(userMentions, u)
 		}
 	}
+
+	fmt.Printf("** %v\n", userMentions)
 
 	toStr := strings.Join(userMentions, ", ")
 
