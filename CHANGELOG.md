@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.12.0
+
+- Add the ability to signup for multiple events with `!su Event1 Role1 Event2 Role2`
+- Attempt to understand more than just straight-quotes (") when tokenizing. Now treat ", “, ”, «, », and „ equivalently.
+
 ## v0.11.2
 
 - Make the bot aware of channel creations and renames more reliably
