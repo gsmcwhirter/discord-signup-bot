@@ -209,6 +209,8 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 
 	splitResp := resp.Split()
 
+	_ = level.Info(logger).Log("message", "sending message split", "split_count", len(splitResp))
+
 	for _, res := range splitResp {
 		err = h.deps.MessageRateLimiter().Wait(req.Ctx)
 		if err != nil {
@@ -218,7 +220,11 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 
 		sendResp, body, err := h.bot.SendMessage(req.Ctx, sendTo, res.ToMessage())
 		if err != nil {
-			_ = level.Error(logger).Log("message", "could not send message", "err", err, "resp_body", string(body), "status_code", sendResp.StatusCode)
+			var bodyStr string
+			if body != nil {
+				bodyStr = string(body)
+			}
+			_ = level.Error(logger).Log("message", "could not send message", "err", err, "resp_body", bodyStr, "status_code", sendResp.StatusCode)
 			return
 		}
 	}

@@ -47,7 +47,7 @@ func (c *adminCommands) edit(msg cmdhandler.Message) (cmdhandler.Response, error
 	}
 	defer deferutil.CheckDefer(t.Rollback)
 
-	trial, err := t.AddTrial(trialName)
+	trial, err := t.GetTrial(trialName)
 	if err != nil {
 		return r, err
 	}

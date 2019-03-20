@@ -1,5 +1,10 @@
 # Changelog
 
+## v0.12.1
+
+- Fix `!admin edit` creating new events unintentionally
+- Improve logging for error diagnosis
+
 ## v0.12.0
 
 - Add the ability to signup for multiple events with `!su Event1 Role1 Event2 Role2`
