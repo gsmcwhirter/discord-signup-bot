@@ -19,7 +19,7 @@ import (
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
 
-var errUnauthorized = errors.New("unauthorized")
+var ErrUnauthorized = errors.New("unauthorized")
 
 // ErrNoResponse is the error a command handler should return
 // if the bot should not produce a response
@@ -106,7 +106,7 @@ func (h *handlers) attemptConfigAndAdminHandlers(msg cmdhandler.Message, req wsc
 	if !IsAdminAuthorized(logger, msg, s.AdminRole, h.deps.BotSession()) {
 		_ = level.Info(logger).Log("message", "non-admin trying to config")
 
-		err = errUnauthorized
+		err = ErrUnauthorized
 		return
 	}
 
@@ -119,12 +119,7 @@ func (h *handlers) attemptConfigAndAdminHandlers(msg cmdhandler.Message, req wsc
 		return
 	}
 
-	if err != errUnauthorized && err != parser.ErrUnknownCommand {
-		return
-	}
-
-	if !IsAdminChannel(logger, msg, s.AdminChannel, h.deps.BotSession()) {
-		err = errUnauthorized
+	if err != ErrUnauthorized && err != parser.ErrUnknownCommand {
 		return
 	}
 
@@ -179,7 +174,7 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 	logger = logging.WithMessage(msg, h.deps.Logger())
 	resp, err := h.attemptConfigAndAdminHandlers(msg, req, cmdIndicator, content)
 
-	if err != nil && (err == errUnauthorized || err == parser.ErrUnknownCommand) {
+	if err != nil && (err == ErrUnauthorized || err == parser.ErrUnknownCommand) {
 		_ = level.Debug(logger).Log("message", "admin not successful; processing as real message")
 		cmdContent := h.deps.CommandHandler().CommandIndicator() + strings.TrimPrefix(content, cmdIndicator)
 		resp, err = h.deps.CommandHandler().HandleMessage(cmdhandler.NewWithContents(msg, cmdContent))

@@ -27,7 +27,7 @@ func (c *adminCommands) open(msg cmdhandler.Message) (cmdhandler.Response, error
 
 	if !isAdminChannel(logger, msg, gsettings.AdminChannel, c.deps.BotSession()) {
 		_ = level.Info(logger).Log("message", "command not in admin channel", "admin_channel", gsettings.AdminChannel)
-		return r, msghandler.ErrNoResponse
+		return nil, msghandler.ErrUnauthorized
 	}
 
 	if msg.ContentErr() != nil {

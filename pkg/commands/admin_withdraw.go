@@ -51,7 +51,7 @@ func (c *adminCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, e
 
 	if !isSignupChannel(logger, msg, trial.GetSignupChannel(), gsettings.AdminChannel, gsettings.AdminRole, c.deps.BotSession()) {
 		_ = level.Info(logger).Log("message", "command not in admin or signup channel", "signup_channel", trial.GetSignupChannel())
-		return r, msghandler.ErrNoResponse
+		return nil, msghandler.ErrUnauthorized
 	}
 
 	userMentions := make([]string, 0, len(msg.Contents())-2)
