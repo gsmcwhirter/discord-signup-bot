@@ -74,7 +74,7 @@ func ConfigHandler(deps configDependencies, versionStr string, opts Options) (*c
 		return nil, err
 	}
 
-	cch, err := ConfigCommandHandler(deps, versionStr, fmt.Sprintf("%sconfig", opts.CmdIndicator))
+	cch, err := ConfigCommandHandler(deps, versionStr, fmt.Sprintf("%sconfig-su", opts.CmdIndicator))
 	if err != nil {
 		return nil, err
 	}

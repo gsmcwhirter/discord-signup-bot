@@ -19,6 +19,8 @@ import (
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
 
+// ErrUnauthorized is the error a command handler should return if the user does
+// not have permission to perform the requested action
 var ErrUnauthorized = errors.New("unauthorized")
 
 // ErrNoResponse is the error a command handler should return
