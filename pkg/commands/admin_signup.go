@@ -28,11 +28,6 @@ func (c *adminCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, err
 		return r, err
 	}
 
-	if !isAdminChannel(logger, msg, gsettings.AdminChannel, c.deps.BotSession()) {
-		_ = level.Info(logger).Log("message", "command not in admin channel", "admin_channel", gsettings.AdminChannel)
-		return r, msghandler.ErrNoResponse
-	}
-
 	if msg.ContentErr() != nil {
 		return r, msg.ContentErr()
 	}
@@ -42,6 +37,23 @@ func (c *adminCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, err
 	}
 
 	trialName := msg.Contents()[0]
+
+	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), true)
+	if err != nil {
+		return r, err
+	}
+	defer deferutil.CheckDefer(t.Rollback)
+
+	trial, err := t.GetTrial(trialName)
+	if err != nil {
+		return r, err
+	}
+
+	if !isSignupChannel(logger, msg, trial.GetSignupChannel(), gsettings.AdminChannel, gsettings.AdminRole, c.deps.BotSession()) {
+		_ = level.Info(logger).Log("message", "command not in admin or signup channel", "signup_channel", trial.GetSignupChannel())
+		return r, msghandler.ErrNoResponse
+	}
+
 	role := msg.Contents()[1]
 	userMentions := make([]string, 0, len(msg.Contents())-2)
 
@@ -62,17 +74,6 @@ func (c *adminCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, err
 
 	if len(userMentions) == 0 {
 		return r, errors.New("you must mention one or more users that you are trying to sign up (@...)")
-	}
-
-	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), true)
-	if err != nil {
-		return r, err
-	}
-	defer deferutil.CheckDefer(t.Rollback)
-
-	trial, err := t.GetTrial(trialName)
-	if err != nil {
-		return r, err
 	}
 
 	if trial.GetState() != storage.TrialStateOpen {
