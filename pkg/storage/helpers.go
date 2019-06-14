@@ -1,27 +1,26 @@
 package storage
 
 import (
-	"github.com/gsmcwhirter/discord-bot-lib/snowflake"
-	"github.com/gsmcwhirter/go-util/deferutil"
+	"github.com/gsmcwhirter/go-util/v2/deferutil"
 	"github.com/pkg/errors"
+
+	"github.com/gsmcwhirter/discord-bot-lib/v6/snowflake"
 )
 
 // GetSettings is a wrapper to get the configuration settings for a guild
 //
 // NOTE: this cannot be called after another transaction has been started
-func GetSettings(gapi GuildAPI, gid snowflake.Snowflake) (s GuildSettings, err error) {
+func GetSettings(gapi GuildAPI, gid snowflake.Snowflake) (GuildSettings, error) {
 	t, err := gapi.NewTransaction(false)
 	if err != nil {
-		return
+		return GuildSettings{}, err
 	}
 	defer deferutil.CheckDefer(t.Rollback)
 
 	bGuild, err := t.AddGuild(gid.ToString())
 	if err != nil {
-		err = errors.Wrap(err, "unable to find guild")
-		return
+		return GuildSettings{}, errors.Wrap(err, "unable to find guild")
 	}
 
-	s = bGuild.GetSettings()
-	return
+	return bGuild.GetSettings(), nil
 }

@@ -10,13 +10,14 @@ import (
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/gorilla/websocket"
-	"github.com/gsmcwhirter/discord-bot-lib/bot"
-	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/httpclient"
-	"github.com/gsmcwhirter/discord-bot-lib/messagehandler"
-	"github.com/gsmcwhirter/discord-bot-lib/wsclient"
 	"golang.org/x/time/rate"
+
+	"github.com/gsmcwhirter/discord-bot-lib/v6/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v6/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v6/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v6/httpclient"
+	"github.com/gsmcwhirter/discord-bot-lib/v6/messagehandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v6/wsclient"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/commands"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
@@ -46,8 +47,10 @@ type dependencies struct {
 	msgHandlers       msghandler.Handlers
 }
 
-func createDependencies(conf config) (d *dependencies, err error) {
-	d = &dependencies{
+func createDependencies(conf config) (*dependencies, error) {
+	var err error
+
+	d := &dependencies{
 		httpDoer:           &http.Client{},
 		wsDialer:           wsclient.WrapDialer(websocket.DefaultDialer),
 		connectRateLimiter: rate.NewLimiter(rate.Every(5*time.Second), 1),
@@ -80,17 +83,17 @@ func createDependencies(conf config) (d *dependencies, err error) {
 
 	d.db, err = bolt.Open(conf.Database, 0660, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
-		return
+		return d, err
 	}
 
 	d.trialAPI, err = storage.NewBoltTrialAPI(d.db)
 	if err != nil {
-		return
+		return d, err
 	}
 
 	d.guildAPI, err = storage.NewBoltGuildAPI(d.db)
 	if err != nil {
-		return
+		return d, err
 	}
 
 	d.httpClient = httpclient.NewHTTPClient(d)
@@ -103,15 +106,15 @@ func createDependencies(conf config) (d *dependencies, err error) {
 
 	d.cmdHandler, err = commands.CommandHandler(d, conf.Version, commands.Options{CmdIndicator: "!"})
 	if err != nil {
-		return
+		return d, err
 	}
 	d.configHandler, err = commands.ConfigHandler(d, conf.Version, commands.Options{CmdIndicator: "!"})
 	if err != nil {
-		return
+		return d, err
 	}
 	d.adminHandler, err = commands.AdminHandler(d, conf.Version, commands.Options{CmdIndicator: "!"})
 	if err != nil {
-		return
+		return d, err
 	}
 
 	d.discordMsgHandler = messagehandler.NewDiscordMessageHandler(d)
@@ -122,7 +125,7 @@ func createDependencies(conf config) (d *dependencies, err error) {
 		SuccessColor:            0xaa63ff,
 	})
 
-	return
+	return d, nil
 }
 
 func (d *dependencies) Close() {

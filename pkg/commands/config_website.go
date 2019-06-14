@@ -2,8 +2,9 @@ package commands
 
 import (
 	"github.com/go-kit/kit/log/level"
-	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/logging"
+
+	"github.com/gsmcwhirter/discord-bot-lib/v6/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v6/logging"
 )
 
 func (c *configCommands) website(msg cmdhandler.Message) (cmdhandler.Response, error) {

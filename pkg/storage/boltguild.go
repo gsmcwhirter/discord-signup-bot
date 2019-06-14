@@ -16,18 +16,19 @@ func (g *boltGuild) SetName(name string) {
 	g.protoGuild.Name = name
 }
 
-func (g *boltGuild) Serialize() (out []byte, err error) {
-	out, err = proto.Marshal(g.protoGuild)
-	return
+func (g *boltGuild) Serialize() ([]byte, error) {
+	return proto.Marshal(g.protoGuild)
 }
 
-func (g *boltGuild) GetSettings() (s GuildSettings) {
-	s.ControlSequence = g.protoGuild.CommandIndicator
-	s.AnnounceChannel = g.protoGuild.AnnounceChannel
-	s.AdminChannel = g.protoGuild.AdminChannel
-	s.SignupChannel = g.protoGuild.SignupChannel
-	s.AnnounceTo = g.protoGuild.AnnounceTo
-	s.AdminRole = g.protoGuild.AdminRole
+func (g *boltGuild) GetSettings() GuildSettings {
+	s := GuildSettings{
+		ControlSequence: g.protoGuild.CommandIndicator,
+		AnnounceChannel: g.protoGuild.AnnounceChannel,
+		AdminChannel:    g.protoGuild.AdminChannel,
+		SignupChannel:   g.protoGuild.SignupChannel,
+		AnnounceTo:      g.protoGuild.AnnounceTo,
+		AdminRole:       g.protoGuild.AdminRole,
+	}
 
 	if g.protoGuild.ShowAfterSignup {
 		s.ShowAfterSignup = "true"
@@ -40,7 +41,7 @@ func (g *boltGuild) GetSettings() (s GuildSettings) {
 	} else {
 		s.ShowAfterWithdraw = "false"
 	}
-	return
+	return s
 }
 
 func (g *boltGuild) SetSettings(s GuildSettings) {

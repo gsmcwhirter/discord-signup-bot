@@ -10,7 +10,7 @@ import (
 
 const (
 	signupCanceled string = "canceled"
-	signupOk              = "ok"
+	signupOk       string = "ok"
 )
 
 type boltTrial struct {
@@ -81,8 +81,10 @@ func (b *boltTrial) GetRoleCounts() []RoleCount {
 }
 
 func (b *boltTrial) PrettyRoles(indent string) string {
-	var lines []string
-	for _, rc := range b.GetRoleCounts() {
+	rcs := b.GetRoleCounts()
+	lines := make([]string, 0, len(rcs))
+
+	for _, rc := range rcs {
 		lines = append(lines, fmt.Sprintf("%s%s: %d", rc.GetEmoji(), rc.GetRole(), rc.GetCount()))
 	}
 

@@ -1,8 +1,9 @@
 package commands
 
 import (
-	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
-	"github.com/gsmcwhirter/go-util/parser"
+	"github.com/gsmcwhirter/go-util/v2/parser"
+
+	"github.com/gsmcwhirter/discord-bot-lib/v6/cmdhandler"
 )
 
 type configCommands struct {

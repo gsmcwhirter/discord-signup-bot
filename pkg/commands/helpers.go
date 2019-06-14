@@ -7,13 +7,16 @@ import (
 	"strings"
 
 	"github.com/go-kit/kit/log"
-	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/etfapi"
 	"github.com/pkg/errors"
+
+	"github.com/gsmcwhirter/discord-bot-lib/v6/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v6/etfapi"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
+
+var ErrUnknownRole = errors.New("unknown role")
 
 var isAdminAuthorized = msghandler.IsAdminAuthorized
 var isAdminChannel = msghandler.IsAdminChannel
@@ -184,12 +187,11 @@ func formatTrialDisplay(trial storage.Trial, withState bool) *cmdhandler.EmbedRe
 	return r
 }
 
-func signupUser(trial storage.Trial, userMentionStr, role string) (overflow bool, err error) {
+func signupUser(trial storage.Trial, userMentionStr, role string) (bool, error) {
 	roleCounts := trial.GetRoleCounts() // already sorted by name
 	rc, known := roleCountByName(role, roleCounts)
 	if !known {
-		err = errors.New("unknown role")
-		return
+		return false, ErrUnknownRole
 	}
 
 	trial.AddSignup(userMentionStr, role)
@@ -197,7 +199,7 @@ func signupUser(trial storage.Trial, userMentionStr, role string) (overflow bool
 	signups := trial.GetSignups()
 	roleSignups := signupsForRole(role, signups, false)
 
-	overflow = uint64(len(roleSignups)) > rc.GetCount()
+	overflow := uint64(len(roleSignups)) > rc.GetCount()
 
-	return
+	return overflow, nil
 }

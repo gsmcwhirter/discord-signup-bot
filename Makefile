@@ -13,6 +13,8 @@ CONF_FILE := ./trials-bot-config.toml
 SERVICE_FILE := ./eso-trials-bot.service
 INSTALLER := ./trials-bot-install.sh
 
+GOPROXY ?= https://proxy.golang.org
+
 # can specify V=1 on the line with `make` to get verbose output
 V ?= 0
 Q = $(if $(filter 1,$V),,@)
@@ -20,19 +22,19 @@ Q = $(if $(filter 1,$V),,@)
 .DEFAULT_GOAL := help
 
 build-debug: version generate
-	$Q go build -v -ldflags "-X main.AppName=$(APP_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(APP_NAME) -race $(PROJECT)/cmd/$(APP_NAME)
-	$Q go build -v -ldflags "-X main.AppName=$(REPL_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(REPL_NAME) -race $(PROJECT)/cmd/$(REPL_NAME)
-	$Q go build -v -ldflags "-X main.AppName=$(DUMP_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(DUMP_NAME) -race $(PROJECT)/cmd/$(DUMP_NAME)
-	$Q go build -v -ldflags "-X main.AppName=$(DUMP_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(CLEANUP_NAME) -race $(PROJECT)/cmd/$(CLEANUP_NAME)
+	$Q GOPROXY=$(GOPROXY) go build -v -ldflags "-X main.AppName=$(APP_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(APP_NAME) -race $(PROJECT)/cmd/$(APP_NAME)
+	$Q GOPROXY=$(GOPROXY) go build -v -ldflags "-X main.AppName=$(REPL_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(REPL_NAME) -race $(PROJECT)/cmd/$(REPL_NAME)
+	$Q GOPROXY=$(GOPROXY) go build -v -ldflags "-X main.AppName=$(DUMP_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(DUMP_NAME) -race $(PROJECT)/cmd/$(DUMP_NAME)
+	$Q GOPROXY=$(GOPROXY) go build -v -ldflags "-X main.AppName=$(DUMP_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(CLEANUP_NAME) -race $(PROJECT)/cmd/$(CLEANUP_NAME)
 
 build-release: version generate
-	$Q GOOS=linux go build -v -ldflags "-s -w -X main.AppName=$(APP_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(APP_NAME) $(PROJECT)/cmd/$(APP_NAME)
-	$Q GOOS=linux go build -v -ldflags "-s -w -X main.AppName=$(REPL_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(REPL_NAME) $(PROJECT)/cmd/$(REPL_NAME)
-	$Q GOOS=linux go build -v -ldflags "-s -w -X main.AppName=$(DUMP_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(DUMP_NAME) $(PROJECT)/cmd/$(DUMP_NAME)
-	$Q GOOS=linux go build -v -ldflags "-s -w -X main.AppName=$(DUMP_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(CLEANUP_NAME) $(PROJECT)/cmd/$(CLEANUP_NAME)
+	$Q GOPROXY=$(GOPROXY) GOOS=linux go build -v -ldflags "-s -w -X main.AppName=$(APP_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(APP_NAME) $(PROJECT)/cmd/$(APP_NAME)
+	$Q GOPROXY=$(GOPROXY) GOOS=linux go build -v -ldflags "-s -w -X main.AppName=$(REPL_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(REPL_NAME) $(PROJECT)/cmd/$(REPL_NAME)
+	$Q GOPROXY=$(GOPROXY) GOOS=linux go build -v -ldflags "-s -w -X main.AppName=$(DUMP_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(DUMP_NAME) $(PROJECT)/cmd/$(DUMP_NAME)
+	$Q GOPROXY=$(GOPROXY) GOOS=linux go build -v -ldflags "-s -w -X main.AppName=$(DUMP_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(CLEANUP_NAME) $(PROJECT)/cmd/$(CLEANUP_NAME)
 
 generate:  ## do a go generate
-	$Q go generate ./...
+	$Q GOPROXY=$(GOPROXY) go generate ./...
 
 build-release-bundles: build-release
 	$Q gzip -k -f bin/$(APP_NAME)
@@ -51,19 +53,25 @@ debug: generate test build-debug  ## Debug build: create a dev build (enable rac
 
 release: generate test build-release-bundles  ## Release build: create a release build (disable race detection, strip symbols)
 
-deps:  ## Download dependencies
-	$Q go get ./...
+deps:  ## download dependencies
+	$Q GOPROXY=$(GOPROXY) go mod download
+	$Q GOPROXY=$(GOPROXY) go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.17.1
+	$Q GOPROXY=$(GOPROXY) go get github.com/mailru/easyjson/easyjson
+	$Q GOPROXY=$(GOPROXY) go get github.com/valyala/quicktemplate/qtc
+	$Q GOPROXY=$(GOPROXY) go get golang.org/x/tools/cmd/stringer
+	$Q GOPROXY=$(GOPROXY) go get golang.org/x/tools/cmd/goimports
 
 test:  ## Run the tests
-	$Q go test -cover ./...
+	$Q GOPROXY=$(GOPROXY) go test -cover ./...
 
 version:  ## Print the version string and git sha that would be recorded if a release was built now
 	$Q echo $(VERSION) $(GIT_SHA)
 
-vet:  ## Run the linter
-	$Q golint ./...
-	$Q go vet ./...
-	$Q gometalinter -D gas -D gocyclo -D goconst -e .pb.go -e _easyjson.go --warn-unmatched-nolint --enable-gc --deadline 180s ./...
+vet: deps generate ## run various linters and vetters
+	$Q bash -c 'for d in $$(go list -f {{.Dir}} ./...); do gofmt -s -w $$d/*.go; done'
+	$Q bash -c 'for d in $$(go list -f {{.Dir}} ./...); do goimports -w -local $(PROJECT) $$d/*.go; done'
+	$Q golangci-lint run -E golint,gosimple,staticcheck ./...
+	$Q golangci-lint run -E deadcode,depguard,errcheck,gocritic,gofmt,goimports,gosec,govet,ineffassign,nakedret,prealloc,structcheck,typecheck,unconvert,varcheck ./...
 
 release-upload: release upload
 

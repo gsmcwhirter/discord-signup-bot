@@ -6,9 +6,10 @@ import (
 	_ "net/http/pprof"
 
 	"github.com/go-kit/kit/log/level"
-	"github.com/gsmcwhirter/go-util/pprofsidecar"
+	"github.com/gsmcwhirter/go-util/v2/deferutil"
+	"github.com/gsmcwhirter/go-util/v2/pprofsidecar"
 
-	"github.com/gsmcwhirter/discord-bot-lib/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v6/bot"
 )
 
 type config struct {
@@ -34,7 +35,7 @@ func start(c config) error {
 	}
 	defer deps.Close()
 
-	botConfig := bot.BotConfig{
+	botConfig := bot.Config{
 		ClientID:     c.ClientID,
 		ClientSecret: c.ClientSecret,
 		BotToken:     c.ClientToken,
@@ -46,19 +47,19 @@ func start(c config) error {
 		BotPresence: c.BotPresence,
 	}
 
-	bot := bot.NewDiscordBot(deps, botConfig)
-	err = bot.AuthenticateAndConnect()
+	b := bot.NewDiscordBot(deps, botConfig)
+	err = b.AuthenticateAndConnect()
 	if err != nil {
 		return err
 	}
-	defer bot.Disconnect() // nolint: errcheck
+	defer deferutil.CheckDefer(b.Disconnect)
 
-	deps.MessageHandler().ConnectToBot(bot)
+	deps.MessageHandler().ConnectToBot(b)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	err = pprofsidecar.Run(ctx, c.PProfHostPort, nil, bot.Run)
+	err = pprofsidecar.Run(ctx, c.PProfHostPort, nil, b.Run)
 
 	_ = level.Error(deps.Logger()).Log("message", "error in start; quitting", "err", err)
 	return err

@@ -5,13 +5,15 @@ import (
 	"strings"
 
 	"github.com/go-kit/kit/log/level"
-	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/logging"
-	"github.com/gsmcwhirter/discord-bot-lib/snowflake"
+	"github.com/gsmcwhirter/go-util/v2/deferutil"
+	"github.com/pkg/errors"
+
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
-	"github.com/gsmcwhirter/go-util/deferutil"
-	"github.com/pkg/errors"
+
+	"github.com/gsmcwhirter/discord-bot-lib/v6/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v6/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v6/snowflake"
 )
 
 func (c *adminCommands) grouping(msg cmdhandler.Message) (cmdhandler.Response, error) {
@@ -75,13 +77,8 @@ func (c *adminCommands) grouping(msg cmdhandler.Message) (cmdhandler.Response, e
 	for _, rc := range roleCounts {
 		suNames, ofNames := getTrialRoleSignups(signups, rc)
 
-		for _, u := range suNames {
-			userMentions = append(userMentions, u)
-		}
-
-		for _, u := range ofNames {
-			userMentions = append(userMentions, u)
-		}
+		userMentions = append(userMentions, suNames...)
+		userMentions = append(userMentions, ofNames...)
 	}
 
 	fmt.Printf("** %v\n", userMentions)

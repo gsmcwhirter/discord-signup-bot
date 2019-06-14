@@ -5,14 +5,16 @@ import (
 	"strings"
 
 	"github.com/go-kit/kit/log/level"
-	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/logging"
-	"github.com/gsmcwhirter/discord-bot-lib/snowflake"
-	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
-	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
-	"github.com/gsmcwhirter/go-util/deferutil"
+	"github.com/gsmcwhirter/go-util/v2/deferutil"
 	multierror "github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
+
+	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
+	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
+
+	"github.com/gsmcwhirter/discord-bot-lib/v6/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v6/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v6/snowflake"
 )
 
 func (c *adminCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, error) {

@@ -4,9 +4,10 @@ import (
 	"fmt"
 
 	"github.com/go-kit/kit/log"
-	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/etfapi"
-	"github.com/gsmcwhirter/go-util/parser"
+	"github.com/gsmcwhirter/go-util/v2/parser"
+
+	"github.com/gsmcwhirter/discord-bot-lib/v6/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v6/etfapi"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )

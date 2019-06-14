@@ -6,15 +6,16 @@ import (
 
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	"github.com/gsmcwhirter/discord-bot-lib/bot"
-	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/logging"
-	"github.com/gsmcwhirter/discord-bot-lib/snowflake"
-	"github.com/gsmcwhirter/discord-bot-lib/wsclient"
-	"github.com/gsmcwhirter/go-util/parser"
+	"github.com/gsmcwhirter/go-util/v2/parser"
 	"github.com/pkg/errors"
 	"golang.org/x/time/rate"
+
+	"github.com/gsmcwhirter/discord-bot-lib/v6/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v6/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v6/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v6/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v6/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v6/wsclient"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
@@ -69,10 +70,10 @@ func NewHandlers(deps dependencies, opts Options) Handlers {
 	return &h
 }
 
-func (h *handlers) ConnectToBot(bot bot.DiscordBot) {
-	h.bot = bot
+func (h *handlers) ConnectToBot(b bot.DiscordBot) {
+	h.bot = b
 
-	bot.AddMessageHandler("MESSAGE_CREATE", h.handleMessage)
+	b.AddMessageHandler("MESSAGE_CREATE", h.handleMessage)
 }
 
 func (h *handlers) channelGuild(cid snowflake.Snowflake) (gid snowflake.Snowflake) {
@@ -97,7 +98,7 @@ func (h *handlers) guildCommandIndicator(gid snowflake.Snowflake) string {
 	return s.ControlSequence
 }
 
-func (h *handlers) attemptConfigAndAdminHandlers(msg cmdhandler.Message, req wsclient.WSMessage, cmdIndicator string, content string) (resp cmdhandler.Response, err error) {
+func (h *handlers) attemptConfigAndAdminHandlers(msg cmdhandler.Message, req wsclient.WSMessage, cmdIndicator, content string) (cmdhandler.Response, error) {
 	logger := logging.WithMessage(msg, h.deps.Logger())
 
 	s, err := storage.GetSettings(h.deps.GuildAPI(), msg.GuildID())
@@ -107,29 +108,25 @@ func (h *handlers) attemptConfigAndAdminHandlers(msg cmdhandler.Message, req wsc
 
 	if !IsAdminAuthorized(logger, msg, s.AdminRole, h.deps.BotSession()) {
 		_ = level.Info(logger).Log("message", "non-admin trying to config")
-
-		err = ErrUnauthorized
-		return
+		return nil, ErrUnauthorized
 	}
 
 	_ = level.Debug(logger).Log("message", "admin trying to config")
 	cmdContent := h.deps.ConfigHandler().CommandIndicator() + strings.TrimPrefix(content, cmdIndicator)
 	_ = level.Info(logger).Log("message", "processing command", "cmdContent", fmt.Sprintf("%q", cmdContent), "rawCmd", fmt.Sprintf("%q", content))
-	resp, err = h.deps.ConfigHandler().HandleMessage(cmdhandler.NewWithContents(msg, cmdContent))
+	resp, err := h.deps.ConfigHandler().HandleMessage(cmdhandler.NewWithContents(msg, cmdContent))
 
 	if err == nil {
-		return
+		return resp, nil
 	}
 
 	if err != ErrUnauthorized && err != parser.ErrUnknownCommand {
-		return
+		return resp, err
 	}
 
 	_ = level.Debug(logger).Log("message", "admin trying to admin")
 	cmdContent = h.deps.AdminHandler().CommandIndicator() + strings.TrimPrefix(content, cmdIndicator)
-	resp, err = h.deps.AdminHandler().HandleMessage(cmdhandler.NewWithContents(msg, cmdContent))
-
-	return
+	return h.deps.AdminHandler().HandleMessage(cmdhandler.NewWithContents(msg, cmdContent))
 }
 
 func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, respChan chan<- wsclient.WSMessage) {
@@ -157,7 +154,7 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 	}
 
 	content := m.ContentString()
-	if len(content) == 0 {
+	if content == "" {
 		_ = level.Info(logger).Log("message", "message contents empty")
 		return
 	}

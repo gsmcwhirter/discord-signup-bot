@@ -3,9 +3,10 @@ package main
 import (
 	"fmt"
 
-	"github.com/gsmcwhirter/discord-bot-lib/snowflake"
-	"github.com/gsmcwhirter/go-util/deferutil"
+	"github.com/gsmcwhirter/go-util/v2/deferutil"
 	"github.com/pkg/errors"
+
+	"github.com/gsmcwhirter/discord-bot-lib/v6/snowflake"
 )
 
 type config struct {
@@ -44,11 +45,11 @@ func start(c config) error {
 		return dumpAllGuilds(deps)
 	}
 
-	if err = dumpGuildSettings(deps, gid); err != nil {
+	if err := dumpGuildSettings(deps, gid); err != nil {
 		return err
 	}
 
-	if err = dumpGuildTrials(deps, gid); err != nil {
+	if err := dumpGuildTrials(deps, gid); err != nil {
 		return err
 	}
 

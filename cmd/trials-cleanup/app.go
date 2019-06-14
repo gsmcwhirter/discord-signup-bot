@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 
-	"github.com/gsmcwhirter/discord-bot-lib/snowflake"
-	"github.com/gsmcwhirter/go-util/deferutil"
+	"github.com/gsmcwhirter/discord-bot-lib/v6/snowflake"
+	"github.com/gsmcwhirter/go-util/v2/deferutil"
 	"github.com/pkg/errors"
 )
 
@@ -30,7 +30,7 @@ func start(c config) error {
 		return errors.Wrap(err, "could not parse guild id")
 	}
 
-	if err = cleanupGuildTrials(deps, gid, 200); err != nil {
+	if err := cleanupGuildTrials(deps, gid, 200); err != nil {
 		return err
 	}
 

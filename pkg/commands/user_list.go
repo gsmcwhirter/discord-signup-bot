@@ -6,10 +6,12 @@ import (
 	"strings"
 
 	"github.com/go-kit/kit/log/level"
-	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/logging"
+	"github.com/gsmcwhirter/go-util/v2/deferutil"
+
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
-	"github.com/gsmcwhirter/go-util/deferutil"
+
+	"github.com/gsmcwhirter/discord-bot-lib/v6/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v6/logging"
 )
 
 func (c *userCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error) {

@@ -4,12 +4,14 @@ import (
 	"fmt"
 
 	"github.com/go-kit/kit/log/level"
-	"github.com/gsmcwhirter/discord-bot-lib/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/logging"
+	"github.com/gsmcwhirter/go-util/v2/deferutil"
+	"github.com/pkg/errors"
+
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
-	"github.com/gsmcwhirter/go-util/deferutil"
-	"github.com/pkg/errors"
+
+	"github.com/gsmcwhirter/discord-bot-lib/v6/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v6/logging"
 )
 
 func (c *adminCommands) create(msg cmdhandler.Message) (cmdhandler.Response, error) {
