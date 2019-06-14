@@ -1,12 +1,11 @@
 package msghandler
 
 import (
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
-
-	"github.com/gsmcwhirter/discord-bot-lib/v6/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v6/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/v6/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/snowflake"
+	log "github.com/gsmcwhirter/go-util/v3/logging"
+	"github.com/gsmcwhirter/go-util/v3/logging/level"
 )
 
 // IsAdminAuthorized determines if a user can take admin actions with the bot (ignoring channel)
@@ -23,7 +22,7 @@ func IsAdminChannel(logger log.Logger, msg cmdhandler.Message, adminChannel stri
 
 	g, ok := session.Guild(msg.GuildID())
 	if !ok {
-		_ = level.Error(logger).Log("message", "could not find guild in session")
+		level.Error(logger).Message("could not find guild in session")
 		return false
 	}
 
@@ -62,13 +61,13 @@ func HasAdminRole(logger log.Logger, msg cmdhandler.Message, adminRole string, s
 
 	rid, err := snowflake.FromString(adminRole)
 	if err != nil {
-		_ = level.Error(logger).Log("message", "could not parse AdminRole", "admin_role", adminRole, "err", err)
+		level.Error(logger).Err("could not parse AdminRole", err, "admin_role", adminRole)
 		return false
 	}
 
 	g, ok := session.Guild(msg.GuildID())
 	if !ok {
-		_ = level.Error(logger).Log("message", "could not find guild in session")
+		level.Error(logger).Message("could not find guild in session")
 		return false
 	}
 

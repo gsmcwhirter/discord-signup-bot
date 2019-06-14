@@ -4,18 +4,18 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
-	"github.com/gsmcwhirter/go-util/v2/parser"
-	"github.com/pkg/errors"
+	"github.com/gsmcwhirter/go-util/v3/errors"
+	log "github.com/gsmcwhirter/go-util/v3/logging"
+	"github.com/gsmcwhirter/go-util/v3/logging/level"
+	"github.com/gsmcwhirter/go-util/v3/parser"
 	"golang.org/x/time/rate"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v6/bot"
-	"github.com/gsmcwhirter/discord-bot-lib/v6/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v6/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/v6/logging"
-	"github.com/gsmcwhirter/discord-bot-lib/v6/snowflake"
-	"github.com/gsmcwhirter/discord-bot-lib/v6/wsclient"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/wsclient"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
@@ -103,17 +103,17 @@ func (h *handlers) attemptConfigAndAdminHandlers(msg cmdhandler.Message, req wsc
 
 	s, err := storage.GetSettings(h.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
-		_ = level.Error(logger).Log("message", "could not retrieve guild settings", "err", err)
+		level.Error(logger).Err("could not retrieve guild settings", err)
 	}
 
 	if !IsAdminAuthorized(logger, msg, s.AdminRole, h.deps.BotSession()) {
-		_ = level.Info(logger).Log("message", "non-admin trying to config")
+		level.Info(logger).Message("non-admin trying to config")
 		return nil, ErrUnauthorized
 	}
 
-	_ = level.Debug(logger).Log("message", "admin trying to config")
+	level.Debug(logger).Message("admin trying to config")
 	cmdContent := h.deps.ConfigHandler().CommandIndicator() + strings.TrimPrefix(content, cmdIndicator)
-	_ = level.Info(logger).Log("message", "processing command", "cmdContent", fmt.Sprintf("%q", cmdContent), "rawCmd", fmt.Sprintf("%q", content))
+	level.Info(logger).Message("processing command", "cmdContent", fmt.Sprintf("%q", cmdContent), "rawCmd", fmt.Sprintf("%q", content))
 	resp, err := h.deps.ConfigHandler().HandleMessage(cmdhandler.NewWithContents(msg, cmdContent))
 
 	if err == nil {
@@ -124,7 +124,7 @@ func (h *handlers) attemptConfigAndAdminHandlers(msg cmdhandler.Message, req wsc
 		return resp, err
 	}
 
-	_ = level.Debug(logger).Log("message", "admin trying to admin")
+	level.Debug(logger).Message("admin trying to admin")
 	cmdContent = h.deps.AdminHandler().CommandIndicator() + strings.TrimPrefix(content, cmdIndicator)
 	return h.deps.AdminHandler().HandleMessage(cmdhandler.NewWithContents(msg, cmdContent))
 }
@@ -144,18 +144,18 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 
 	m, err := etfapi.MessageFromElementMap(p.Data)
 	if err != nil {
-		_ = level.Error(logger).Log("message", "error inflating message", "err", err)
+		level.Error(logger).Err("error inflating message", err)
 		return
 	}
 
 	if m.MessageType() != etfapi.DefaultMessage {
-		_ = level.Info(logger).Log("message", "message was not a default type")
+		level.Info(logger).Message("message was not a default type")
 		return
 	}
 
 	content := m.ContentString()
 	if content == "" {
-		_ = level.Info(logger).Log("message", "message contents empty")
+		level.Info(logger).Message("message contents empty")
 		return
 	}
 
@@ -163,7 +163,7 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 	cmdIndicator := h.guildCommandIndicator(gid)
 
 	if !strings.HasPrefix(content, cmdIndicator) {
-		_ = level.Info(logger).Log("message", "not a command")
+		level.Info(logger).Message("not a command")
 		return
 	}
 
@@ -174,7 +174,7 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 	resp, err := h.attemptConfigAndAdminHandlers(msg, req, cmdIndicator, content)
 
 	if err != nil && (err == ErrUnauthorized || err == parser.ErrUnknownCommand) {
-		_ = level.Debug(logger).Log("message", "admin not successful; processing as real message")
+		level.Debug(logger).Message("admin not successful; processing as real message")
 		cmdContent := h.deps.CommandHandler().CommandIndicator() + strings.TrimPrefix(content, cmdIndicator)
 		resp, err = h.deps.CommandHandler().HandleMessage(cmdhandler.NewWithContents(msg, cmdContent))
 	}
@@ -184,7 +184,7 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 	}
 
 	if err != nil {
-		_ = level.Error(logger).Log("message", "error handling command", "contents", content, "err", err)
+		level.Error(logger).Err("error handling command", err, "contents", content)
 		resp.IncludeError(err)
 	}
 
@@ -194,7 +194,7 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 		resp.SetColor(h.successColor)
 	}
 
-	_ = level.Info(logger).Log("message", "sending message", "resp", fmt.Sprintf("%+v", resp))
+	level.Info(logger).Message("sending message", "resp", fmt.Sprintf("%+v", resp))
 
 	sendTo := resp.Channel()
 	if sendTo == 0 {
@@ -203,12 +203,12 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 
 	splitResp := resp.Split()
 
-	_ = level.Info(logger).Log("message", "sending message split", "split_count", len(splitResp))
+	level.Info(logger).Message("sending message split", "split_count", len(splitResp))
 
 	for _, res := range splitResp {
 		err = h.deps.MessageRateLimiter().Wait(req.Ctx)
 		if err != nil {
-			_ = level.Error(logger).Log("message", "error waiting for ratelimiting", "err", err)
+			level.Error(logger).Err("error waiting for ratelimiting", err)
 			return
 		}
 
@@ -218,10 +218,10 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 			if body != nil {
 				bodyStr = string(body)
 			}
-			_ = level.Error(logger).Log("message", "could not send message", "err", err, "resp_body", bodyStr, "status_code", sendResp.StatusCode)
+			level.Error(logger).Err("could not send message", err, "resp_body", bodyStr, "status_code", sendResp.StatusCode)
 			return
 		}
 	}
 
-	_ = level.Info(logger).Log("message", "successfully sent message(s) to channel", "channel_id", sendTo.ToString(), "message_ct", len(splitResp))
+	level.Info(logger).Message("successfully sent message(s) to channel", "channel_id", sendTo.ToString(), "message_ct", len(splitResp))
 }

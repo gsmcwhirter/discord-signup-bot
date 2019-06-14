@@ -5,14 +5,14 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/go-kit/kit/log/level"
-	"github.com/gsmcwhirter/go-util/v2/deferutil"
+	"github.com/gsmcwhirter/go-util/v3/deferutil"
+	"github.com/gsmcwhirter/go-util/v3/logging/level"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v6/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v6/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/logging"
 )
 
 func (c *adminCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error) {
@@ -21,7 +21,7 @@ func (c *adminCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error
 	}
 
 	logger := logging.WithMessage(msg, c.deps.Logger())
-	_ = level.Info(logger).Log("message", "handling adminCommand", "command", "list")
+	level.Info(logger).Message("handling adminCommand", "command", "list")
 
 	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
@@ -29,7 +29,7 @@ func (c *adminCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error
 	}
 
 	if !isAdminChannel(logger, msg, gsettings.AdminChannel, c.deps.BotSession()) {
-		_ = level.Info(logger).Log("message", "command not in admin channel", "admin_channel", gsettings.AdminChannel)
+		level.Info(logger).Message("command not in admin channel", "admin_channel", gsettings.AdminChannel)
 		return nil, msghandler.ErrUnauthorized
 	}
 

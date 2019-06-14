@@ -4,16 +4,16 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/go-kit/kit/log/level"
-	"github.com/gsmcwhirter/go-util/v2/deferutil"
-	"github.com/pkg/errors"
+	"github.com/gsmcwhirter/go-util/v3/deferutil"
+	"github.com/gsmcwhirter/go-util/v3/errors"
+	"github.com/gsmcwhirter/go-util/v3/logging/level"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v6/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v6/logging"
-	"github.com/gsmcwhirter/discord-bot-lib/v6/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/snowflake"
 )
 
 func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, error) {
@@ -22,7 +22,7 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 	}
 
 	logger := logging.WithMessage(msg, c.deps.Logger())
-	_ = level.Info(logger).Log("message", "handling adminCommand", "command", "announce", "args", msg.Contents())
+	level.Info(logger).Message("handling adminCommand", "command", "announce", "args", msg.Contents())
 
 	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
@@ -30,7 +30,7 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 	}
 
 	if !isAdminChannel(logger, msg, gsettings.AdminChannel, c.deps.BotSession()) {
-		_ = level.Info(logger).Log("message", "command not in admin channel", "admin_channel", gsettings.AdminChannel)
+		level.Info(logger).Message("command not in admin channel", "admin_channel", gsettings.AdminChannel)
 		return nil, msghandler.ErrUnauthorized
 	}
 
@@ -108,7 +108,7 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 		})
 	}
 
-	_ = level.Info(logger).Log("message", "trial announced", "trial_name", trialName, "announce_channel", r2.ToChannel.ToString(), "announce_to", r2.To)
+	level.Info(logger).Message("trial announced", "trial_name", trialName, "announce_channel", r2.ToChannel.ToString(), "announce_to", r2.To)
 
 	return r2, nil
 }

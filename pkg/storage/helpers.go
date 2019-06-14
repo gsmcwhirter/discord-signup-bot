@@ -1,10 +1,10 @@
 package storage
 
 import (
-	"github.com/gsmcwhirter/go-util/v2/deferutil"
-	"github.com/pkg/errors"
+	"github.com/gsmcwhirter/go-util/v3/deferutil"
+	"github.com/gsmcwhirter/go-util/v3/errors"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v6/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/snowflake"
 )
 
 // GetSettings is a wrapper to get the configuration settings for a guild

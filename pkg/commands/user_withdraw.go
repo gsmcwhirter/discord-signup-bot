@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/go-kit/kit/log/level"
-	"github.com/gsmcwhirter/go-util/v2/deferutil"
-	"github.com/pkg/errors"
+	"github.com/gsmcwhirter/go-util/v3/deferutil"
+	"github.com/gsmcwhirter/go-util/v3/errors"
+	"github.com/gsmcwhirter/go-util/v3/logging/level"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v6/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v6/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/logging"
 )
 
 func (c *userCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, error) {
@@ -21,7 +21,7 @@ func (c *userCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, er
 	}
 
 	logger := logging.WithMessage(msg, c.deps.Logger())
-	_ = level.Info(logger).Log("message", "handling rootCommand", "command", "withdraw", "trial_name", msg.Contents())
+	level.Info(logger).Message("handling rootCommand", "command", "withdraw", "trial_name", msg.Contents())
 
 	if msg.ContentErr() != nil {
 		return r, msg.ContentErr()
@@ -50,7 +50,7 @@ func (c *userCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, er
 	}
 
 	if !isSignupChannel(logger, msg, trial.GetSignupChannel(), gsettings.AdminChannel, gsettings.AdminRole, c.deps.BotSession()) {
-		_ = level.Info(logger).Log("message", "command not in signup channel", "signup_channel", trial.GetSignupChannel())
+		level.Info(logger).Message("command not in signup channel", "signup_channel", trial.GetSignupChannel())
 		return r, msghandler.ErrNoResponse
 	}
 
@@ -68,11 +68,11 @@ func (c *userCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, er
 		return r, errors.Wrap(err, "could not save trial withdraw")
 	}
 
-	_ = level.Info(logger).Log("message", "withdrew", "trial_name", trialName)
+	level.Info(logger).Message("withdrew", "trial_name", trialName)
 	descStr := fmt.Sprintf("Withdrew from %s", trialName)
 
 	if gsettings.ShowAfterWithdraw == "true" {
-		_ = level.Debug(logger).Log("message", "auto-show after withdraw", "trial_name", trialName)
+		level.Debug(logger).Message("auto-show after withdraw", "trial_name", trialName)
 
 		r2 := formatTrialDisplay(trial, true)
 		r2.To = cmdhandler.UserMentionString(msg.UserID())

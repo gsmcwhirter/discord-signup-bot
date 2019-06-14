@@ -5,10 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/pkg/errors"
-
-	"github.com/gsmcwhirter/discord-bot-lib/v6/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v6/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/snowflake"
+	"github.com/gsmcwhirter/go-util/v3/errors"
 
 	gread "github.com/steven-ferrer/gonsole"
 

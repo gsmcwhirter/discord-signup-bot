@@ -1,15 +1,14 @@
 package main
 
 import (
-	"os"
 	"time"
 
 	bolt "github.com/coreos/bbolt"
-	"github.com/go-kit/kit/log"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v6/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/etfapi"
+	log "github.com/gsmcwhirter/go-util/v3/logging"
 )
 
 type dependencies struct {
@@ -24,7 +23,7 @@ func createDependencies(conf config) (*dependencies, error) {
 	var err error
 
 	d := &dependencies{}
-	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
+	logger := log.NewLogfmtLogger()
 	logger = log.With(logger, "timestamp", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
 	d.logger = logger
 

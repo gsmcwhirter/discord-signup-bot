@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/go-kit/kit/log/level"
-	"github.com/gsmcwhirter/go-util/v2/deferutil"
+	"github.com/gsmcwhirter/go-util/v3/deferutil"
+	"github.com/gsmcwhirter/go-util/v3/errors"
+	"github.com/gsmcwhirter/go-util/v3/logging/level"
 	multierror "github.com/hashicorp/go-multierror"
-	"github.com/pkg/errors"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v6/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v6/logging"
-	"github.com/gsmcwhirter/discord-bot-lib/v6/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/snowflake"
 )
 
 func (c *adminCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, error) {
@@ -23,7 +23,7 @@ func (c *adminCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, err
 	}
 
 	logger := logging.WithMessage(msg, c.deps.Logger())
-	_ = level.Info(logger).Log("message", "handling adminCommand", "command", "signup", "args", msg.Contents())
+	level.Info(logger).Message("handling adminCommand", "command", "signup", "args", msg.Contents())
 
 	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
@@ -52,7 +52,7 @@ func (c *adminCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, err
 	}
 
 	if !isSignupChannel(logger, msg, trial.GetSignupChannel(), gsettings.AdminChannel, gsettings.AdminRole, c.deps.BotSession()) {
-		_ = level.Info(logger).Log("message", "command not in admin or signup channel", "signup_channel", trial.GetSignupChannel())
+		level.Info(logger).Message("command not in admin or signup channel", "signup_channel", trial.GetSignupChannel())
 		return nil, msghandler.ErrUnauthorized
 	}
 
@@ -61,13 +61,13 @@ func (c *adminCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, err
 
 	for _, m := range msg.Contents()[2:] {
 		if !cmdhandler.IsUserMention(m) {
-			_ = level.Warn(logger).Log("message", "skipping signup user", "reason", "not user mention")
+			level.Info(logger).Message("skipping signup user", "reason", "not user mention")
 			continue
 		}
 
 		m, err = cmdhandler.ForceUserNicknameMention(m)
 		if err != nil {
-			_ = level.Warn(logger).Log("message", "skipping signup user", "reason", err)
+			level.Info(logger).Message("skipping signup user", "reason", err)
 			continue
 		}
 
@@ -132,7 +132,7 @@ func (c *adminCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, err
 	}
 
 	if gsettings.ShowAfterSignup == "true" {
-		_ = level.Debug(logger).Log("message", "auto-show after signup", "trial_name", trialName)
+		level.Debug(logger).Message("auto-show after signup", "trial_name", trialName)
 
 		r2 := formatTrialDisplay(trial, true)
 		r2.To = strings.Join(userMentions, ", ")
@@ -145,7 +145,7 @@ func (c *adminCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, err
 	r.ToChannel = signupCid
 	r.Description = descStr
 
-	_ = level.Info(logger).Log("message", "admin signup complete", "trial_name", trialName, "signup_users", userMentions, "overflows", overflows, "role", role, "signup_channel", r.ToChannel.ToString())
+	level.Info(logger).Message("admin signup complete", "trial_name", trialName, "signup_users", userMentions, "overflows", overflows, "role", role, "signup_channel", r.ToChannel.ToString())
 
 	return r, nil
 }

@@ -5,7 +5,7 @@ import (
 
 	bolt "github.com/coreos/bbolt"
 	"github.com/golang/protobuf/proto"
-	"github.com/pkg/errors"
+	"github.com/gsmcwhirter/go-util/v3/errors"
 )
 
 // ErrGuildNotExist is the error returned if a guild does not exist

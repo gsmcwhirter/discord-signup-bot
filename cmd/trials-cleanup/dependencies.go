@@ -1,11 +1,11 @@
 package main
 
 import (
-	"os"
 	"time"
 
 	bolt "github.com/coreos/bbolt"
-	"github.com/go-kit/kit/log"
+
+	log "github.com/gsmcwhirter/go-util/v3/logging"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
@@ -22,7 +22,7 @@ func createDependencies(conf config) (*dependencies, error) {
 	var err error
 
 	d := &dependencies{}
-	logger := log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
+	logger := log.NewLogfmtLogger()
 	logger = log.With(logger, "timestamp", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
 	d.logger = logger
 

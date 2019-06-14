@@ -5,11 +5,11 @@ import (
 
 	_ "net/http/pprof"
 
-	"github.com/go-kit/kit/log/level"
-	"github.com/gsmcwhirter/go-util/v2/deferutil"
-	"github.com/gsmcwhirter/go-util/v2/pprofsidecar"
+	"github.com/gsmcwhirter/go-util/v3/deferutil"
+	"github.com/gsmcwhirter/go-util/v3/logging/level"
+	"github.com/gsmcwhirter/go-util/v3/pprofsidecar"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v6/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/bot"
 )
 
 type config struct {
@@ -61,6 +61,6 @@ func start(c config) error {
 
 	err = pprofsidecar.Run(ctx, c.PProfHostPort, nil, b.Run)
 
-	_ = level.Error(deps.Logger()).Log("message", "error in start; quitting", "err", err)
+	level.Error(deps.Logger()).Err("error in start; quitting", err)
 	return err
 }

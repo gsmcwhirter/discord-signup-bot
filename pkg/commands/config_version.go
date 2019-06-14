@@ -1,10 +1,9 @@
 package commands
 
 import (
-	"github.com/go-kit/kit/log/level"
-
-	"github.com/gsmcwhirter/discord-bot-lib/v6/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v6/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/logging"
+	"github.com/gsmcwhirter/go-util/v3/logging/level"
 )
 
 func (c *configCommands) version(msg cmdhandler.Message) (cmdhandler.Response, error) {
@@ -14,7 +13,7 @@ func (c *configCommands) version(msg cmdhandler.Message) (cmdhandler.Response, e
 	}
 
 	logger := logging.WithMessage(msg, c.deps.Logger())
-	_ = level.Info(logger).Log("message", "handling configCommand", "command", "version")
+	level.Info(logger).Message("handling configCommand", "command", "version")
 
 	return r, msg.ContentErr()
 }

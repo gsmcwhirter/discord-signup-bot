@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v6/snowflake"
-	"github.com/gsmcwhirter/go-util/v2/deferutil"
-	"github.com/pkg/errors"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/snowflake"
+	"github.com/gsmcwhirter/go-util/v3/deferutil"
+	"github.com/gsmcwhirter/go-util/v3/errors"
 )
 
 type config struct {

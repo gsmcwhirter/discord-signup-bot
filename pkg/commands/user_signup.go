@@ -3,15 +3,15 @@ package commands
 import (
 	"fmt"
 
-	"github.com/go-kit/kit/log/level"
-	"github.com/gsmcwhirter/go-util/v2/deferutil"
-	"github.com/pkg/errors"
+	"github.com/gsmcwhirter/go-util/v3/deferutil"
+	"github.com/gsmcwhirter/go-util/v3/errors"
+	"github.com/gsmcwhirter/go-util/v3/logging/level"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v6/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v6/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/logging"
 )
 
 func (c *userCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, error) {
@@ -20,7 +20,7 @@ func (c *userCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, erro
 	}
 
 	logger := logging.WithMessage(msg, c.deps.Logger())
-	_ = level.Info(logger).Log("message", "handling rootCommand", "command", "signup", "trial_and_role", msg.Contents())
+	level.Info(logger).Message("handling rootCommand", "command", "signup", "trial_and_role", msg.Contents())
 
 	if msg.ContentErr() != nil {
 		return r, msg.ContentErr()
@@ -57,7 +57,7 @@ func (c *userCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, erro
 		}
 
 		if !isSignupChannel(logger, msg, trial.GetSignupChannel(), gsettings.AdminChannel, gsettings.AdminRole, c.deps.BotSession()) {
-			_ = level.Info(logger).Log("message", "command not in signup channel", "signup_channel", trial.GetSignupChannel())
+			level.Info(logger).Message("command not in signup channel", "signup_channel", trial.GetSignupChannel())
 			return r, msghandler.ErrNoResponse
 		}
 
@@ -75,10 +75,10 @@ func (c *userCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, erro
 		}
 
 		if overflow {
-			_ = level.Info(logger).Log("message", "signed up", "overflow", true, "role", role, "trial_name", trialName)
+			level.Info(logger).Message("signed up", "overflow", true, "role", role, "trial_name", trialName)
 			descStr += fmt.Sprintf("Signed up as OVERFLOW for %s in %s\n", role, trialName)
 		} else {
-			_ = level.Info(logger).Log("message", "signed up", "overflow", false, "role", role, "trial_name", trialName)
+			level.Info(logger).Message("signed up", "overflow", false, "role", role, "trial_name", trialName)
 			descStr += fmt.Sprintf("Signed up for %s in %s\n", role, trialName)
 		}
 

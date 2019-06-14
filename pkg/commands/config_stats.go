@@ -3,13 +3,13 @@ package commands
 import (
 	"fmt"
 
-	"github.com/go-kit/kit/log/level"
-	"github.com/gsmcwhirter/go-util/v2/deferutil"
+	"github.com/gsmcwhirter/go-util/v3/deferutil"
+	"github.com/gsmcwhirter/go-util/v3/logging/level"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v6/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v6/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/logging"
 )
 
 func (c *configCommands) collectStats(gid string) (stat, error) {
@@ -41,7 +41,7 @@ func (c *configCommands) stats(msg cmdhandler.Message) (cmdhandler.Response, err
 	}
 
 	logger := logging.WithMessage(msg, c.deps.Logger())
-	_ = level.Info(logger).Log("message", "handling adminCommand", "command", "stats")
+	level.Info(logger).Message("handling configCommand", "command", "stats")
 
 	if msg.ContentErr() != nil {
 		return r, msg.ContentErr()

@@ -3,21 +3,19 @@ package main
 import (
 	"fmt"
 	"net/http"
-	"os"
 	"time"
 
 	bolt "github.com/coreos/bbolt"
-	"github.com/go-kit/kit/log"
-	"github.com/go-kit/kit/log/level"
 	"github.com/gorilla/websocket"
 	"golang.org/x/time/rate"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v6/bot"
-	"github.com/gsmcwhirter/discord-bot-lib/v6/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v6/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/v6/httpclient"
-	"github.com/gsmcwhirter/discord-bot-lib/v6/messagehandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v6/wsclient"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/httpclient"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/messagehandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v7/wsclient"
+	log "github.com/gsmcwhirter/go-util/v3/logging"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/commands"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
@@ -60,24 +58,12 @@ func createDependencies(conf config) (*dependencies, error) {
 
 	var logger log.Logger
 	if conf.LogFormat == "json" {
-		logger = log.NewJSONLogger(log.NewSyncWriter(os.Stderr))
+		logger = log.NewJSONLogger()
 	} else {
-		logger = log.NewLogfmtLogger(log.NewSyncWriter(os.Stderr))
+		logger = log.NewLogfmtLogger()
 	}
 
-	switch conf.LogLevel {
-	case "debug":
-		logger = level.NewFilter(logger, level.AllowDebug())
-	case "info":
-		logger = level.NewFilter(logger, level.AllowInfo())
-	case "warn":
-		logger = level.NewFilter(logger, level.AllowWarn())
-	case "error":
-		logger = level.NewFilter(logger, level.AllowError())
-	default:
-		logger = level.NewFilter(logger, level.AllowAll())
-	}
-
+	logger = log.WithLevel(logger, conf.LogLevel)
 	logger = log.With(logger, "timestamp", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
 	d.logger = logger
 
