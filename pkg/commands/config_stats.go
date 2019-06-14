@@ -8,8 +8,8 @@ import (
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v7/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v7/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v8/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v8/logging"
 )
 
 func (c *configCommands) collectStats(gid string) (stat, error) {

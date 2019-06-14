@@ -9,14 +9,16 @@ import (
 	"github.com/gorilla/websocket"
 	"golang.org/x/time/rate"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v7/bot"
-	"github.com/gsmcwhirter/discord-bot-lib/v7/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v7/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/v7/httpclient"
-	"github.com/gsmcwhirter/discord-bot-lib/v7/messagehandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v7/wsclient"
+	"github.com/gsmcwhirter/discord-bot-lib/v8/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v8/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v8/errreport"
+	"github.com/gsmcwhirter/discord-bot-lib/v8/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v8/httpclient"
+	"github.com/gsmcwhirter/discord-bot-lib/v8/messagehandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v8/wsclient"
 	log "github.com/gsmcwhirter/go-util/v3/logging"
 
+	"github.com/gsmcwhirter/discord-signup-bot/pkg/bugsnag"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/commands"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
@@ -43,6 +45,8 @@ type dependencies struct {
 	adminHandler      *cmdhandler.CommandHandler
 	discordMsgHandler bot.DiscordMessageHandler
 	msgHandlers       msghandler.Handlers
+
+	rep bugsnag.Reporter
 }
 
 func createDependencies(conf config) (*dependencies, error) {
@@ -66,6 +70,8 @@ func createDependencies(conf config) (*dependencies, error) {
 	logger = log.WithLevel(logger, conf.LogLevel)
 	logger = log.With(logger, "timestamp", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
 	d.logger = logger
+
+	d.rep = bugsnag.NewReporter(logger, conf.BugsnagAPIKey, BuildVersion, conf.BugsnagReleaseStage)
 
 	d.db, err = bolt.Open(conf.Database, 0660, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
@@ -141,3 +147,4 @@ func (d *dependencies) MessageHandler() msghandler.Handlers        { return d.ms
 func (d *dependencies) DiscordMessageHandler() bot.DiscordMessageHandler {
 	return d.discordMsgHandler
 }
+func (d *dependencies) ErrReporter() errreport.Reporter { return d.rep }

@@ -9,23 +9,25 @@ import (
 	"github.com/gsmcwhirter/go-util/v3/logging/level"
 	"github.com/gsmcwhirter/go-util/v3/pprofsidecar"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v7/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v8/bot"
 )
 
 type config struct {
-	BotName       string `mapstructure:"bot_name"`
-	BotPresence   string `mapstructure:"bot_presence"`
-	DiscordAPI    string `mapstructure:"discord_api"`
-	ClientID      string `mapstructure:"client_id"`
-	ClientSecret  string `mapstructure:"client_secret"`
-	ClientToken   string `mapstructure:"client_token"`
-	Database      string `mapstructure:"database"`
-	ClientURL     string `mapstructure:"client_url"`
-	LogFormat     string `mapstructure:"log_format"`
-	LogLevel      string `mapstructure:"log_level"`
-	PProfHostPort string `mapstructure:"pprof_hostport"`
-	Version       string `mapstructure:"-"`
-	NumWorkers    int    `mapstructure:"num_workers"`
+	BotName             string `mapstructure:"bot_name"`
+	BotPresence         string `mapstructure:"bot_presence"`
+	DiscordAPI          string `mapstructure:"discord_api"`
+	ClientID            string `mapstructure:"client_id"`
+	ClientSecret        string `mapstructure:"client_secret"`
+	ClientToken         string `mapstructure:"client_token"`
+	Database            string `mapstructure:"database"`
+	ClientURL           string `mapstructure:"client_url"`
+	LogFormat           string `mapstructure:"log_format"`
+	LogLevel            string `mapstructure:"log_level"`
+	PProfHostPort       string `mapstructure:"pprof_hostport"`
+	Version             string `mapstructure:"-"`
+	NumWorkers          int    `mapstructure:"num_workers"`
+	BugsnagAPIKey       string `mapstructure:"bugsnag_api_key"`
+	BugsnagReleaseStage string `mapstructure:"bugsnag_release_stage"`
 }
 
 func start(c config) error {

@@ -1,9 +1,9 @@
 package msghandler
 
 import (
-	"github.com/gsmcwhirter/discord-bot-lib/v7/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v7/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/v7/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v8/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v8/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v8/snowflake"
 	log "github.com/gsmcwhirter/go-util/v3/logging"
 	"github.com/gsmcwhirter/go-util/v3/logging/level"
 )

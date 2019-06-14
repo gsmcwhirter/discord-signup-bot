@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v7/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v7/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v8/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v8/snowflake"
 	"github.com/gsmcwhirter/go-util/v3/errors"
 
 	gread "github.com/steven-ferrer/gonsole"

@@ -6,8 +6,8 @@ import (
 	log "github.com/gsmcwhirter/go-util/v3/logging"
 	"github.com/gsmcwhirter/go-util/v3/parser"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v7/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v7/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v8/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v8/etfapi"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )

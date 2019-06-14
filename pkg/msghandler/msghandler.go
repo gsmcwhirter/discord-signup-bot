@@ -10,12 +10,12 @@ import (
 	"github.com/gsmcwhirter/go-util/v3/parser"
 	"golang.org/x/time/rate"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v7/bot"
-	"github.com/gsmcwhirter/discord-bot-lib/v7/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v7/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/v7/logging"
-	"github.com/gsmcwhirter/discord-bot-lib/v7/snowflake"
-	"github.com/gsmcwhirter/discord-bot-lib/v7/wsclient"
+	"github.com/gsmcwhirter/discord-bot-lib/v8/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v8/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v8/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v8/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v8/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v8/wsclient"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )

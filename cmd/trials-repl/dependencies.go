@@ -7,7 +7,7 @@ import (
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v7/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v8/etfapi"
 	log "github.com/gsmcwhirter/go-util/v3/logging"
 )
 
