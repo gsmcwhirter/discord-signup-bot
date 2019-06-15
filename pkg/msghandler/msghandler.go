@@ -218,7 +218,13 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 			if body != nil {
 				bodyStr = string(body)
 			}
-			level.Error(logger).Err("could not send message", err, "resp_body", bodyStr, "status_code", sendResp.StatusCode)
+
+			status := 0
+			if sendResp != nil {
+				status = sendResp.StatusCode
+			}
+
+			level.Error(logger).Err("could not send message", err, "resp_body", bodyStr, "status_code", status)
 			return
 		}
 	}
