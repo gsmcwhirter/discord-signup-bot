@@ -12,7 +12,7 @@ require (
 	github.com/golang/protobuf v1.3.1
 	github.com/golangci/golangci-lint v1.17.1
 	github.com/gorilla/websocket v1.4.0
-	github.com/gsmcwhirter/discord-bot-lib/v8 v8.0.2
+	github.com/gsmcwhirter/discord-bot-lib/v8 v8.0.3
 	github.com/gsmcwhirter/go-util/v3 v3.0.0
 	github.com/hashicorp/go-multierror v1.0.0
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0 // indirect
