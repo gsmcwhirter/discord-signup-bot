@@ -41,20 +41,29 @@ func (b *boltTrial) GetState() TrialState {
 	return TrialState(b.protoTrial.State)
 }
 
-func (b *boltTrial) GetSignups() []TrialSignup {
+func (b *boltTrial) getSignups(raw bool) []TrialSignup {
 	s := make([]TrialSignup, 0, len(b.protoTrial.Signups))
 	for _, ps := range b.protoTrial.Signups {
 		if ps.State == signupCanceled {
 			continue
 		}
 
+		name := ps.Name
+		if !raw {
+			name = userMentionOverflowFix(name)
+		}
+
 		s = append(s, &boltTrialSignup{
-			name: ps.Name,
+			name: name,
 			role: ps.Role,
 		})
 	}
 
 	return s
+}
+
+func (b *boltTrial) GetSignups() []TrialSignup {
+	return b.getSignups(false)
 }
 
 func (b *boltTrial) GetRoleCounts() []RoleCount {
@@ -132,16 +141,20 @@ func (b *boltTrial) SetState(state TrialState) {
 	b.protoTrial.State = string(state)
 }
 
+func isSameUser(dbName, argName string) bool {
+	return dbName == argName || userMentionOverflowFix(dbName) == argName
+}
+
 func (b *boltTrial) AddSignup(name, role string) {
 	lowerRole := strings.ToLower(role)
-	s := b.GetSignups()
+	s := b.getSignups(true)
 	for _, su := range s {
-		if su.GetName() == name && strings.ToLower(su.GetRole()) != lowerRole {
-			b.RemoveSignup(name)
+		if isSameUser(su.GetName(), name) && strings.ToLower(su.GetRole()) != lowerRole {
+			b.RemoveSignup(su.GetName())
 			break
 		}
 
-		if su.GetName() == name && strings.ToLower(su.GetRole()) == lowerRole {
+		if isSameUser(su.GetName(), name) && strings.ToLower(su.GetRole()) == lowerRole {
 			return
 		}
 	}
@@ -155,7 +168,7 @@ func (b *boltTrial) AddSignup(name, role string) {
 
 func (b *boltTrial) RemoveSignup(name string) {
 	for i := 0; i < len(b.protoTrial.Signups); i++ {
-		if b.protoTrial.Signups[i].Name == name {
+		if isSameUser(b.protoTrial.Signups[i].Name, name) {
 			b.protoTrial.Signups[i].State = signupCanceled
 		}
 	}
