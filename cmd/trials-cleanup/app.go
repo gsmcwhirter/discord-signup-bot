@@ -1,11 +1,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v8/snowflake"
-	"github.com/gsmcwhirter/go-util/v3/deferutil"
-	"github.com/gsmcwhirter/go-util/v3/errors"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/snowflake"
+	"github.com/gsmcwhirter/go-util/v4/deferutil"
+	"github.com/gsmcwhirter/go-util/v4/errors"
 )
 
 type config struct {
@@ -38,25 +39,28 @@ func start(c config) error {
 }
 
 func cleanupGuildTrials(deps *dependencies, gid snowflake.Snowflake, maxlen int) error {
-	tx, err := deps.TrialAPI().NewTransaction(gid.ToString(), true)
+	ctx := context.Background()
+
+	tx, err := deps.TrialAPI().NewTransaction(ctx, gid.ToString(), true)
 	if err != nil {
 		return errors.Wrap(err, "could not get trials transaction")
 	}
-	defer deferutil.CheckDefer(tx.Rollback)
+	defer deferutil.CheckDefer(func() error { return tx.Rollback(ctx) })
 
 	ct := 0
-	trials := tx.GetTrials()
+	trials := tx.GetTrials(ctx)
 	for _, t := range trials {
-		if len(t.GetName()) > maxlen {
-			fmt.Printf("Deleting `%s`\n", t.GetName())
-			if err := tx.DeleteTrial(t.GetName()); err != nil {
+		tName := t.GetName(ctx)
+		if len(tName) > maxlen {
+			fmt.Printf("Deleting `%s`\n", tName)
+			if err := tx.DeleteTrial(ctx, tName); err != nil {
 				return errors.Wrap(err, "could not delete trial")
 			}
 			ct++
 		}
 	}
 
-	if err := tx.Commit(); err != nil {
+	if err := tx.Commit(ctx); err != nil {
 		return errors.Wrap(err, "could not commit deletes")
 	}
 

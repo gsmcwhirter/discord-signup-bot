@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gsmcwhirter/go-util/v3/deferutil"
-	"github.com/gsmcwhirter/go-util/v3/errors"
-	"github.com/gsmcwhirter/go-util/v3/logging/level"
+	"github.com/gsmcwhirter/go-util/v4/deferutil"
+	"github.com/gsmcwhirter/go-util/v4/errors"
+	"github.com/gsmcwhirter/go-util/v4/logging/level"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v8/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v8/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/logging"
 )
 
 type argPair struct {
@@ -17,6 +17,10 @@ type argPair struct {
 }
 
 func (c *configCommands) set(msg cmdhandler.Message) (cmdhandler.Response, error) {
+	ctx, span := c.deps.Census().StartSpan(msg.Context(), "configCommands.set")
+	defer span.End()
+	msg = cmdhandler.NewWithContext(ctx, msg)
+
 	r := &cmdhandler.SimpleEmbedResponse{
 		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
@@ -67,32 +71,32 @@ func (c *configCommands) set(msg cmdhandler.Message) (cmdhandler.Response, error
 		return r, errors.New("no settings to save")
 	}
 
-	t, err := c.deps.GuildAPI().NewTransaction(true)
+	t, err := c.deps.GuildAPI().NewTransaction(msg.Context(), true)
 	if err != nil {
 		return r, err
 	}
-	defer deferutil.CheckDefer(t.Rollback)
+	defer deferutil.CheckDefer(func() error { return t.Rollback(msg.Context()) })
 
-	bGuild, err := t.AddGuild(msg.GuildID().ToString())
+	bGuild, err := t.AddGuild(msg.Context(), msg.GuildID().ToString())
 	if err != nil {
 		return r, errors.Wrap(err, "unable to find guild")
 	}
 
-	s := bGuild.GetSettings()
+	s := bGuild.GetSettings(msg.Context())
 	for _, ap := range argPairs {
-		err = s.SetSettingString(ap.key, ap.val)
+		err = s.SetSettingString(msg.Context(), ap.key, ap.val)
 		if err != nil {
 			return r, err
 		}
 	}
-	bGuild.SetSettings(s)
+	bGuild.SetSettings(msg.Context(), s)
 
-	err = t.SaveGuild(bGuild)
+	err = t.SaveGuild(msg.Context(), bGuild)
 	if err != nil {
 		return r, errors.Wrap(err, "could not save guild settings")
 	}
 
-	err = t.Commit()
+	err = t.Commit(msg.Context())
 	if err != nil {
 		return r, errors.Wrap(err, "could not save guild settings")
 	}

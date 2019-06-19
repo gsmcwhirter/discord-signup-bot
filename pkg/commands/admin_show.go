@@ -1,18 +1,22 @@
 package commands
 
 import (
-	"github.com/gsmcwhirter/go-util/v3/deferutil"
-	"github.com/gsmcwhirter/go-util/v3/errors"
-	"github.com/gsmcwhirter/go-util/v3/logging/level"
+	"github.com/gsmcwhirter/go-util/v4/deferutil"
+	"github.com/gsmcwhirter/go-util/v4/errors"
+	"github.com/gsmcwhirter/go-util/v4/logging/level"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v8/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v8/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/logging"
 )
 
 func (c *adminCommands) show(msg cmdhandler.Message) (cmdhandler.Response, error) {
+	ctx, span := c.deps.Census().StartSpan(msg.Context(), "adminCommands.show")
+	defer span.End()
+	msg = cmdhandler.NewWithContext(ctx, msg)
+
 	r := &cmdhandler.SimpleEmbedResponse{
 		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
@@ -20,7 +24,7 @@ func (c *adminCommands) show(msg cmdhandler.Message) (cmdhandler.Response, error
 	logger := logging.WithMessage(msg, c.deps.Logger())
 	level.Info(logger).Message("handling adminCommand", "command", "show", "args", msg.Contents())
 
-	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID())
+	gsettings, err := storage.GetSettings(msg.Context(), c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
 		return r, err
 	}
@@ -44,18 +48,18 @@ func (c *adminCommands) show(msg cmdhandler.Message) (cmdhandler.Response, error
 
 	trialName := msg.Contents()[0]
 
-	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), false)
+	t, err := c.deps.TrialAPI().NewTransaction(msg.Context(), msg.GuildID().ToString(), false)
 	if err != nil {
 		return r, err
 	}
-	defer deferutil.CheckDefer(t.Rollback)
+	defer deferutil.CheckDefer(func() error { return t.Rollback(msg.Context()) })
 
-	trial, err := t.GetTrial(trialName)
+	trial, err := t.GetTrial(msg.Context(), trialName)
 	if err != nil {
 		return r, err
 	}
 
-	r.Description = trial.PrettySettings()
+	r.Description = trial.PrettySettings(msg.Context())
 
 	level.Info(logger).Message("trial shown", "trial_name", trialName)
 

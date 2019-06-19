@@ -3,7 +3,6 @@ VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo v0.0
 GIT_SHA := $(shell git rev-parse HEAD)
 
 APP_NAME := trials-bot
-REPL_NAME := trials-repl
 DUMP_NAME := trials-dump
 CLEANUP_NAME := trials-cleanup
 PROJECT := github.com/gsmcwhirter/discord-signup-bot
@@ -11,6 +10,7 @@ PROJECT := github.com/gsmcwhirter/discord-signup-bot
 SERVER := discordbot@evogames.org:~/eso-discord/
 CONF_FILE := ./trials-bot-config.toml
 SERVICE_FILE := ./eso-trials-bot.service
+START_SCRIPT := ./start-bot.sh
 INSTALLER := ./trials-bot-install.sh
 
 GOPROXY ?= https://proxy.golang.org
@@ -23,13 +23,11 @@ Q = $(if $(filter 1,$V),,@)
 
 build-debug: version generate
 	$Q GOPROXY=$(GOPROXY) go build -v -ldflags "-X main.AppName=$(APP_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(APP_NAME) -race $(PROJECT)/cmd/$(APP_NAME)
-	$Q GOPROXY=$(GOPROXY) go build -v -ldflags "-X main.AppName=$(REPL_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(REPL_NAME) -race $(PROJECT)/cmd/$(REPL_NAME)
 	$Q GOPROXY=$(GOPROXY) go build -v -ldflags "-X main.AppName=$(DUMP_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(DUMP_NAME) -race $(PROJECT)/cmd/$(DUMP_NAME)
 	$Q GOPROXY=$(GOPROXY) go build -v -ldflags "-X main.AppName=$(DUMP_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(CLEANUP_NAME) -race $(PROJECT)/cmd/$(CLEANUP_NAME)
 
 build-release: version generate
 	$Q GOPROXY=$(GOPROXY) GOOS=linux go build -v -ldflags "-s -w -X main.AppName=$(APP_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(APP_NAME) $(PROJECT)/cmd/$(APP_NAME)
-	$Q GOPROXY=$(GOPROXY) GOOS=linux go build -v -ldflags "-s -w -X main.AppName=$(REPL_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(REPL_NAME) $(PROJECT)/cmd/$(REPL_NAME)
 	$Q GOPROXY=$(GOPROXY) GOOS=linux go build -v -ldflags "-s -w -X main.AppName=$(DUMP_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(DUMP_NAME) $(PROJECT)/cmd/$(DUMP_NAME)
 	$Q GOPROXY=$(GOPROXY) GOOS=linux go build -v -ldflags "-s -w -X main.AppName=$(DUMP_NAME) -X main.BuildVersion=$(VERSION) -X main.BuildSHA=$(GIT_SHA) -X main.BuildDate=$(BUILD_DATE)" -o bin/$(CLEANUP_NAME) $(PROJECT)/cmd/$(CLEANUP_NAME)
 
@@ -39,8 +37,6 @@ generate:  ## do a go generate
 build-release-bundles: build-release
 	$Q gzip -k -f bin/$(APP_NAME)
 	$Q cp bin/$(APP_NAME).gz bin/$(APP_NAME)-$(VERSION).gz
-	$Q gzip -k -f bin/$(REPL_NAME)
-	$Q cp bin/$(REPL_NAME).gz bin/$(REPL_NAME)-$(VERSION).gz
 	$Q gzip -k -f bin/$(DUMP_NAME)
 	$Q cp bin/$(DUMP_NAME).gz bin/$(DUMP_NAME)-$(VERSION).gz
 	$Q gzip -k -f bin/$(CLEANUP_NAME)
@@ -78,9 +74,8 @@ release-upload: release upload
 setup: deps generate  ## attempt to get everything set up to do a build (deps and generate)
 
 upload:
-	$Q scp $(CONF_FILE) $(SERVICE_FILE) $(INSTALLER) $(SERVER)
+	$Q scp $(CONF_FILE) $(SERVICE_FILE) $(START_SCRIPT) $(INSTALLER) $(SERVER)
 	$Q scp  ./bin/$(APP_NAME).gz ./bin/$(APP_NAME)-$(VERSION).gz $(SERVER)
-	$Q scp ./bin/$(REPL_NAME).gz ./bin/$(REPL_NAME)-$(VERSION).gz $(SERVER)
 	$Q scp ./bin/$(DUMP_NAME).gz ./bin/$(DUMP_NAME)-$(VERSION).gz $(SERVER)
 	$Q scp ./bin/$(CLEANUP_NAME).gz ./bin/$(CLEANUP_NAME)-$(VERSION).gz $(SERVER)
 

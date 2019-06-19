@@ -3,11 +3,12 @@ package commands
 import (
 	"fmt"
 
-	log "github.com/gsmcwhirter/go-util/v3/logging"
-	"github.com/gsmcwhirter/go-util/v3/parser"
+	"github.com/gsmcwhirter/go-util/v4/census"
+	log "github.com/gsmcwhirter/go-util/v4/logging"
+	"github.com/gsmcwhirter/go-util/v4/parser"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v8/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v8/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/etfapi"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
@@ -17,6 +18,7 @@ type dependencies interface {
 	TrialAPI() storage.TrialAPI
 	GuildAPI() storage.GuildAPI
 	BotSession() *etfapi.Session
+	Census() *census.OpenCensus
 }
 
 // Options is the way to specify the command indicator string
@@ -60,6 +62,7 @@ type configDependencies interface {
 	GuildAPI() storage.GuildAPI
 	TrialAPI() storage.TrialAPI
 	BotSession() *etfapi.Session
+	Census() *census.OpenCensus
 }
 
 // ConfigHandler creates a new command handler for !config-su
@@ -95,6 +98,7 @@ type adminDependencies interface {
 	GuildAPI() storage.GuildAPI
 	TrialAPI() storage.TrialAPI
 	BotSession() *etfapi.Session
+	Census() *census.OpenCensus
 }
 
 // AdminHandler creates a new command handler for !admin

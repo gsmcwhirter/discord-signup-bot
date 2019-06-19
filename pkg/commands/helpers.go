@@ -1,15 +1,16 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strconv"
 	"strings"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v8/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v8/etfapi"
-	"github.com/gsmcwhirter/go-util/v3/errors"
-	log "github.com/gsmcwhirter/go-util/v3/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/etfapi"
+	"github.com/gsmcwhirter/go-util/v4/errors"
+	log "github.com/gsmcwhirter/go-util/v4/logging"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
@@ -32,12 +33,12 @@ func isSignupChannel(logger log.Logger, msg cmdhandler.Message, signupChannel, a
 	return isAdminAuthorized(logger, msg, adminRole, session)
 }
 
-func signupsForRole(role string, signups []storage.TrialSignup, sorted bool) []string {
+func signupsForRole(ctx context.Context, role string, signups []storage.TrialSignup, sorted bool) []string {
 	roleLower := strings.ToLower(role)
 	t := make([]string, 0, len(signups))
 	for _, s := range signups {
-		if strings.ToLower(s.GetRole()) == roleLower {
-			t = append(t, s.GetName())
+		if strings.ToLower(s.GetRole(ctx)) == roleLower {
+			t = append(t, s.GetName(ctx))
 		}
 	}
 
@@ -48,10 +49,10 @@ func signupsForRole(role string, signups []storage.TrialSignup, sorted bool) []s
 	return t
 }
 
-func roleCountByName(role string, roleCounts []storage.RoleCount) (storage.RoleCount, bool) {
+func roleCountByName(ctx context.Context, role string, roleCounts []storage.RoleCount) (storage.RoleCount, bool) {
 	roleLower := strings.ToLower(role)
 	for _, rc := range roleCounts {
-		if strings.ToLower(rc.GetRole()) == roleLower {
+		if strings.ToLower(rc.GetRole(ctx)) == roleLower {
 			return rc, true
 		}
 	}
@@ -123,60 +124,60 @@ func parseRolesString(args string) ([]roleCtEmo, error) {
 	return roleEmoCt, nil
 }
 
-func getTrialRoleSignups(signups []storage.TrialSignup, rc storage.RoleCount) ([]string, []string) {
-	lowerRole := strings.ToLower(rc.GetRole())
+func getTrialRoleSignups(ctx context.Context, signups []storage.TrialSignup, rc storage.RoleCount) ([]string, []string) {
+	lowerRole := strings.ToLower(rc.GetRole(ctx))
 	suNames := make([]string, 0, len(signups))
 	ofNames := make([]string, 0, len(signups))
 	for _, su := range signups {
-		if strings.ToLower(su.GetRole()) != lowerRole {
+		if strings.ToLower(su.GetRole(ctx)) != lowerRole {
 			continue
 		}
 
-		if uint64(len(suNames)) < rc.GetCount() {
-			suNames = append(suNames, su.GetName())
+		if uint64(len(suNames)) < rc.GetCount(ctx) {
+			suNames = append(suNames, su.GetName(ctx))
 		} else {
-			ofNames = append(ofNames, su.GetName())
+			ofNames = append(ofNames, su.GetName(ctx))
 		}
 	}
 
 	return suNames, ofNames
 }
 
-func formatTrialDisplay(trial storage.Trial, withState bool) *cmdhandler.EmbedResponse {
+func formatTrialDisplay(ctx context.Context, trial storage.Trial, withState bool) *cmdhandler.EmbedResponse {
 	r := &cmdhandler.EmbedResponse{}
 
 	if withState {
-		r.Title = fmt.Sprintf("__%s__ (%s)", trial.GetName(), string(trial.GetState()))
+		r.Title = fmt.Sprintf("__%s__ (%s)", trial.GetName(ctx), string(trial.GetState(ctx)))
 	} else {
-		r.Title = fmt.Sprintf("__%s__", trial.GetName())
+		r.Title = fmt.Sprintf("__%s__", trial.GetName(ctx))
 	}
-	r.Description = trial.GetDescription()
+	r.Description = trial.GetDescription(ctx)
 	r.Fields = []cmdhandler.EmbedField{}
 
 	overflowFields := []cmdhandler.EmbedField{}
 
-	roleCounts := trial.GetRoleCounts() // already sorted by name
-	signups := trial.GetSignups()
+	roleCounts := trial.GetRoleCounts(ctx) // already sorted by name
+	signups := trial.GetSignups(ctx)
 
 	for _, rc := range roleCounts {
-		suNames, ofNames := getTrialRoleSignups(signups, rc)
+		suNames, ofNames := getTrialRoleSignups(ctx, signups, rc)
 
 		if len(suNames) > 0 {
 			r.Fields = append(r.Fields, cmdhandler.EmbedField{
-				Name: fmt.Sprintf("*%s* (%d/%d)", rc.GetRole(), len(suNames), rc.GetCount()),
-				Val:  rc.GetEmoji() + strings.Join(suNames, fmt.Sprintf("\n%s", rc.GetEmoji())) + "\n_ _\n",
+				Name: fmt.Sprintf("*%s* (%d/%d)", rc.GetRole(ctx), len(suNames), rc.GetCount(ctx)),
+				Val:  rc.GetEmoji(ctx) + strings.Join(suNames, fmt.Sprintf("\n%s", rc.GetEmoji(ctx))) + "\n_ _\n",
 			})
 		} else {
 			r.Fields = append(r.Fields, cmdhandler.EmbedField{
-				Name: fmt.Sprintf("*%s* (%d/%d)", rc.GetRole(), len(suNames), rc.GetCount()),
+				Name: fmt.Sprintf("*%s* (%d/%d)", rc.GetRole(ctx), len(suNames), rc.GetCount(ctx)),
 				Val:  "(empty)\n_ _\n",
 			})
 		}
 
 		if len(ofNames) > 0 {
 			overflowFields = append(overflowFields, cmdhandler.EmbedField{
-				Name: fmt.Sprintf("*Overflow %s* (%d)", rc.GetRole(), len(ofNames)),
-				Val:  rc.GetEmoji() + strings.Join(ofNames, fmt.Sprintf("\n%s", rc.GetEmoji())) + "\n_ _\n",
+				Name: fmt.Sprintf("*Overflow %s* (%d)", rc.GetRole(ctx), len(ofNames)),
+				Val:  rc.GetEmoji(ctx) + strings.Join(ofNames, fmt.Sprintf("\n%s", rc.GetEmoji(ctx))) + "\n_ _\n",
 			})
 		}
 	}
@@ -186,19 +187,19 @@ func formatTrialDisplay(trial storage.Trial, withState bool) *cmdhandler.EmbedRe
 	return r
 }
 
-func signupUser(trial storage.Trial, userMentionStr, role string) (bool, error) {
-	roleCounts := trial.GetRoleCounts() // already sorted by name
-	rc, known := roleCountByName(role, roleCounts)
+func signupUser(ctx context.Context, trial storage.Trial, userMentionStr, role string) (bool, error) {
+	roleCounts := trial.GetRoleCounts(ctx) // already sorted by name
+	rc, known := roleCountByName(ctx, role, roleCounts)
 	if !known {
 		return false, ErrUnknownRole
 	}
 
-	trial.AddSignup(userMentionStr, role)
+	trial.AddSignup(ctx, userMentionStr, role)
 
-	signups := trial.GetSignups()
-	roleSignups := signupsForRole(role, signups, false)
+	signups := trial.GetSignups(ctx)
+	roleSignups := signupsForRole(ctx, role, signups, false)
 
-	overflow := uint64(len(roleSignups)) > rc.GetCount()
+	overflow := uint64(len(roleSignups)) > rc.GetCount(ctx)
 
 	return overflow, nil
 }

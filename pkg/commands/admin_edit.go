@@ -3,18 +3,22 @@ package commands
 import (
 	"fmt"
 
-	"github.com/gsmcwhirter/go-util/v3/deferutil"
-	"github.com/gsmcwhirter/go-util/v3/errors"
-	"github.com/gsmcwhirter/go-util/v3/logging/level"
+	"github.com/gsmcwhirter/go-util/v4/deferutil"
+	"github.com/gsmcwhirter/go-util/v4/errors"
+	"github.com/gsmcwhirter/go-util/v4/logging/level"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v8/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v8/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/logging"
 )
 
 func (c *adminCommands) edit(msg cmdhandler.Message) (cmdhandler.Response, error) {
+	ctx, span := c.deps.Census().StartSpan(msg.Context(), "adminCommands.edit")
+	defer span.End()
+	msg = cmdhandler.NewWithContext(ctx, msg)
+
 	r := &cmdhandler.SimpleEmbedResponse{
 		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
@@ -22,7 +26,7 @@ func (c *adminCommands) edit(msg cmdhandler.Message) (cmdhandler.Response, error
 	logger := logging.WithMessage(msg, c.deps.Logger())
 	level.Info(logger).Message("handling adminCommand", "command", "edit", "args", msg.Contents())
 
-	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID())
+	gsettings, err := storage.GetSettings(msg.Context(), c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
 		return r, err
 	}
@@ -43,13 +47,13 @@ func (c *adminCommands) edit(msg cmdhandler.Message) (cmdhandler.Response, error
 	trialName := msg.Contents()[0]
 	settings := msg.Contents()[1:]
 
-	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), true)
+	t, err := c.deps.TrialAPI().NewTransaction(msg.Context(), msg.GuildID().ToString(), true)
 	if err != nil {
 		return r, err
 	}
-	defer deferutil.CheckDefer(t.Rollback)
+	defer deferutil.CheckDefer(func() error { return t.Rollback(msg.Context()) })
 
-	trial, err := t.GetTrial(trialName)
+	trial, err := t.GetTrial(msg.Context(), trialName)
 	if err != nil {
 		return r, err
 	}
@@ -60,19 +64,19 @@ func (c *adminCommands) edit(msg cmdhandler.Message) (cmdhandler.Response, error
 	}
 
 	if v, ok := settingMap["description"]; ok {
-		trial.SetDescription(v)
+		trial.SetDescription(msg.Context(), v)
 	}
 
 	if v, ok := settingMap["announcechannel"]; ok {
-		trial.SetAnnounceChannel(v)
+		trial.SetAnnounceChannel(msg.Context(), v)
 	}
 
 	if v, ok := settingMap["announceto"]; ok {
-		trial.SetAnnounceTo(v)
+		trial.SetAnnounceTo(msg.Context(), v)
 	}
 
 	if v, ok := settingMap["signupchannel"]; ok {
-		trial.SetSignupChannel(v)
+		trial.SetSignupChannel(msg.Context(), v)
 	}
 
 	roleCtEmoList, err := parseRolesString(settingMap["roles"])
@@ -81,17 +85,17 @@ func (c *adminCommands) edit(msg cmdhandler.Message) (cmdhandler.Response, error
 	}
 	for _, rce := range roleCtEmoList {
 		if rce.ct == 0 {
-			trial.RemoveRole(rce.role)
+			trial.RemoveRole(msg.Context(), rce.role)
 		} else {
-			trial.SetRoleCount(rce.role, rce.emo, rce.ct)
+			trial.SetRoleCount(msg.Context(), rce.role, rce.emo, rce.ct)
 		}
 	}
 
-	if err = t.SaveTrial(trial); err != nil {
+	if err = t.SaveTrial(msg.Context(), trial); err != nil {
 		return r, errors.Wrap(err, "could not save event")
 	}
 
-	if err = t.Commit(); err != nil {
+	if err = t.Commit(msg.Context()); err != nil {
 		return r, errors.Wrap(err, "could not save event")
 	}
 

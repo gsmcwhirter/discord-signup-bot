@@ -1,12 +1,13 @@
 package main
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/gsmcwhirter/go-util/v3/deferutil"
-	"github.com/gsmcwhirter/go-util/v3/errors"
+	"github.com/gsmcwhirter/go-util/v4/deferutil"
+	"github.com/gsmcwhirter/go-util/v4/errors"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v8/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/snowflake"
 )
 
 type config struct {
@@ -61,45 +62,48 @@ func dumpAllGuilds(deps *dependencies) error {
 }
 
 func dumpGuildSettings(deps *dependencies, gid snowflake.Snowflake) error {
-	t, err := deps.GuildAPI().NewTransaction(false)
+	ctx := context.Background()
+
+	t, err := deps.GuildAPI().NewTransaction(ctx, false)
 	if err != nil {
 		return errors.Wrap(err, "could not get settings transaction")
 	}
-	defer deferutil.CheckDefer(t.Rollback)
+	defer deferutil.CheckDefer(func() error { return t.Rollback(ctx) })
 
-	g, err := t.GetGuild(gid.ToString())
+	g, err := t.GetGuild(ctx, gid.ToString())
 	if err != nil {
 		return errors.Wrap(err, "could not get guild for settings")
 	}
 
-	gsettings := g.GetSettings()
+	gsettings := g.GetSettings(ctx)
 	fmt.Printf("%+v\n\n", gsettings)
 	return nil
 }
 
 func dumpGuildTrials(deps *dependencies, gid snowflake.Snowflake) error {
-	t, err := deps.TrialAPI().NewTransaction(gid.ToString(), false)
+	ctx := context.Background()
+	t, err := deps.TrialAPI().NewTransaction(ctx, gid.ToString(), false)
 	if err != nil {
 		return errors.Wrap(err, "could not get trials transaction")
 	}
-	defer deferutil.CheckDefer(t.Rollback)
+	defer deferutil.CheckDefer(func() error { return t.Rollback(ctx) })
 
-	for _, t := range t.GetTrials() {
+	for _, t := range t.GetTrials(ctx) {
 		fmt.Printf(`Name: %s
 	State: %s
 	SignupChannel: %s
 	AnnounceChannel: %s
 	Description: %s
-	Role Counts:`, t.GetName(), t.GetState(), t.GetSignupChannel(), t.GetAnnounceChannel(), t.GetDescription())
-		for _, rc := range t.GetRoleCounts() {
+	Role Counts:`, t.GetName(ctx), t.GetState(ctx), t.GetSignupChannel(ctx), t.GetAnnounceChannel(ctx), t.GetDescription(ctx))
+		for _, rc := range t.GetRoleCounts(ctx) {
 			fmt.Printf(`
-		%s: %d`, rc.GetRole(), rc.GetCount())
+		%s: %d`, rc.GetRole(ctx), rc.GetCount(ctx))
 		}
 		fmt.Printf(`
 	Signups:`)
-		for _, su := range t.GetSignups() {
+		for _, su := range t.GetSignups(ctx) {
 			fmt.Printf(`
-		%s: %s`, su.GetName(), su.GetRole())
+		%s: %s`, su.GetName(ctx), su.GetRole(ctx))
 		}
 		fmt.Println()
 		fmt.Println()

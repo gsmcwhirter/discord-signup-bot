@@ -1,31 +1,32 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/gsmcwhirter/go-util/v3/deferutil"
-	"github.com/gsmcwhirter/go-util/v3/logging/level"
+	"github.com/gsmcwhirter/go-util/v4/deferutil"
+	"github.com/gsmcwhirter/go-util/v4/logging/level"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v8/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v8/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/logging"
 )
 
-func (c *configCommands) collectStats(gid string) (stat, error) {
+func (c *configCommands) collectStats(ctx context.Context, gid string) (stat, error) {
 	s := stat{}
 
-	t, err := c.deps.TrialAPI().NewTransaction(gid, false)
+	t, err := c.deps.TrialAPI().NewTransaction(ctx, gid, false)
 	if err != nil {
 		return s, err
 	}
-	defer deferutil.CheckDefer(t.Rollback)
+	defer deferutil.CheckDefer(func() error { return t.Rollback(ctx) })
 
-	trials := t.GetTrials()
+	trials := t.GetTrials(ctx)
 
 	for _, trial := range trials {
 		s.trials++
-		if trial.GetState() == storage.TrialStateClosed {
+		if trial.GetState(ctx) == storage.TrialStateClosed {
 			s.closed++
 		} else {
 			s.open++
@@ -36,6 +37,10 @@ func (c *configCommands) collectStats(gid string) (stat, error) {
 }
 
 func (c *configCommands) stats(msg cmdhandler.Message) (cmdhandler.Response, error) {
+	ctx, span := c.deps.Census().StartSpan(msg.Context(), "configCommands.stats")
+	defer span.End()
+	msg = cmdhandler.NewWithContext(ctx, msg)
+
 	r := &cmdhandler.SimpleEmbedResponse{
 		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
@@ -47,7 +52,7 @@ func (c *configCommands) stats(msg cmdhandler.Message) (cmdhandler.Response, err
 		return r, msg.ContentErr()
 	}
 
-	allGuilds, err := c.deps.GuildAPI().AllGuilds()
+	allGuilds, err := c.deps.GuildAPI().AllGuilds(msg.Context())
 	if err != nil {
 		return r, err
 	}
@@ -55,7 +60,7 @@ func (c *configCommands) stats(msg cmdhandler.Message) (cmdhandler.Response, err
 	s := stat{}
 
 	for _, guild := range allGuilds {
-		stat, err := c.collectStats(guild)
+		stat, err := c.collectStats(msg.Context(), guild)
 		if err != nil {
 			return r, err
 		}

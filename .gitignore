@@ -15,6 +15,7 @@
 *.pb.go
 *_easyjson.go
 *.db
+honeytail.conf
 
 *config.toml
 bin/

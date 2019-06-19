@@ -3,8 +3,8 @@ package main
 import (
 	"github.com/spf13/viper"
 
-	"github.com/gsmcwhirter/go-util/v3/cli"
-	"github.com/gsmcwhirter/go-util/v3/errors"
+	"github.com/gsmcwhirter/go-util/v4/cli"
+	"github.com/gsmcwhirter/go-util/v4/errors"
 )
 
 func setup(start func(config) error) *cli.Command {

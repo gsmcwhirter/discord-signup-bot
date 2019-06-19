@@ -5,17 +5,21 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/gsmcwhirter/go-util/v3/deferutil"
-	"github.com/gsmcwhirter/go-util/v3/logging/level"
+	"github.com/gsmcwhirter/go-util/v4/deferutil"
+	"github.com/gsmcwhirter/go-util/v4/logging/level"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v8/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v8/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/logging"
 )
 
 func (c *adminCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error) {
+	ctx, span := c.deps.Census().StartSpan(msg.Context(), "adminCommands.list")
+	defer span.End()
+	msg = cmdhandler.NewWithContext(ctx, msg)
+
 	r := &cmdhandler.EmbedResponse{
 		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
@@ -23,7 +27,7 @@ func (c *adminCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error
 	logger := logging.WithMessage(msg, c.deps.Logger())
 	level.Info(logger).Message("handling adminCommand", "command", "list")
 
-	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID())
+	gsettings, err := storage.GetSettings(msg.Context(), c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
 		return r, err
 	}
@@ -37,20 +41,20 @@ func (c *adminCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error
 		return r, msg.ContentErr()
 	}
 
-	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), false)
+	t, err := c.deps.TrialAPI().NewTransaction(msg.Context(), msg.GuildID().ToString(), false)
 	if err != nil {
 		return r, err
 	}
-	defer deferutil.CheckDefer(t.Rollback)
+	defer deferutil.CheckDefer(func() error { return t.Rollback(msg.Context()) })
 
-	trials := t.GetTrials()
+	trials := t.GetTrials(msg.Context())
 	tNamesOpen := make([]string, 0, len(trials))
 	tNamesClosed := make([]string, 0, len(trials))
 	for _, trial := range trials {
-		if trial.GetState() == storage.TrialStateClosed {
-			tNamesClosed = append(tNamesClosed, fmt.Sprintf("%s (#%s)", trial.GetName(), trial.GetSignupChannel()))
+		if trial.GetState(msg.Context()) == storage.TrialStateClosed {
+			tNamesClosed = append(tNamesClosed, fmt.Sprintf("%s (#%s)", trial.GetName(msg.Context()), trial.GetSignupChannel(msg.Context())))
 		} else {
-			tNamesOpen = append(tNamesOpen, fmt.Sprintf("%s (#%s)", trial.GetName(), trial.GetSignupChannel()))
+			tNamesOpen = append(tNamesOpen, fmt.Sprintf("%s (#%s)", trial.GetName(msg.Context()), trial.GetSignupChannel(msg.Context())))
 		}
 	}
 	sort.Strings(tNamesOpen)

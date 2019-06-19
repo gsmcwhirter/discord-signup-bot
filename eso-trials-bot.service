@@ -10,10 +10,7 @@ Group=discordbot
 LimitNOFILE=999996
 # LimitNProc=...
 
-ExecStart=/home/discordbot/eso-discord/trials-bot \
-            --config /home/discordbot/eso-discord/trials-bot-config.toml \
-            --database /home/discordbot/eso-discord/trialsbot.db \
-            --num_workers 20
+ExecStart=/home/discordbot/eso-discord/start-bot.sh
 
 KillMode=mixed
 KillSignal=SIGTERM

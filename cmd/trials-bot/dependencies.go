@@ -1,26 +1,28 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"time"
 
 	bolt "github.com/coreos/bbolt"
 	"github.com/gorilla/websocket"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/errreport"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/httpclient"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/messagehandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/wsclient"
+	"github.com/gsmcwhirter/go-util/v4/census"
+	log "github.com/gsmcwhirter/go-util/v4/logging"
 	"golang.org/x/time/rate"
-
-	"github.com/gsmcwhirter/discord-bot-lib/v8/bot"
-	"github.com/gsmcwhirter/discord-bot-lib/v8/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v8/errreport"
-	"github.com/gsmcwhirter/discord-bot-lib/v8/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/v8/httpclient"
-	"github.com/gsmcwhirter/discord-bot-lib/v8/messagehandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v8/wsclient"
-	log "github.com/gsmcwhirter/go-util/v3/logging"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/bugsnag"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/commands"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
+	"github.com/gsmcwhirter/discord-signup-bot/pkg/stats"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
 
@@ -46,7 +48,9 @@ type dependencies struct {
 	discordMsgHandler bot.DiscordMessageHandler
 	msgHandlers       msghandler.Handlers
 
-	rep bugsnag.Reporter
+	rep         bugsnag.Reporter
+	census      *census.OpenCensus
+	promHandler http.Handler
 }
 
 func createDependencies(conf config) (*dependencies, error) {
@@ -71,6 +75,27 @@ func createDependencies(conf config) (*dependencies, error) {
 	logger = log.With(logger, "timestamp", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
 	d.logger = logger
 
+	promExp, err := stats.NewPrometheusExporter(stats.PrometheusConfig{
+		Namespace: conf.PrometheusNamespace,
+	})
+	if err != nil {
+		return d, err
+	}
+
+	d.promHandler = promExp
+
+	cOpts := census.Options{
+		StatsExporter: promExp,
+		TraceExporter: stats.NewHoneycombExporter(stats.HoneycombConfig{
+			APIKey:           conf.HoneycombAPIKey,
+			Dataset:          conf.HoneycombDataset,
+			TraceProbability: conf.TraceProbability,
+		}),
+		TraceProbability: conf.TraceProbability,
+	}
+
+	d.census = census.NewCensus(d, cOpts)
+
 	d.rep = bugsnag.NewReporter(logger, conf.BugsnagAPIKey, BuildVersion, conf.BugsnagReleaseStage)
 
 	d.db, err = bolt.Open(conf.Database, 0660, &bolt.Options{Timeout: 1 * time.Second})
@@ -78,12 +103,12 @@ func createDependencies(conf config) (*dependencies, error) {
 		return d, err
 	}
 
-	d.trialAPI, err = storage.NewBoltTrialAPI(d.db)
+	d.trialAPI, err = storage.NewBoltTrialAPI(d.db, d.census)
 	if err != nil {
 		return d, err
 	}
 
-	d.guildAPI, err = storage.NewBoltGuildAPI(d.db)
+	d.guildAPI, err = storage.NewBoltGuildAPI(context.Background(), d.db, d.census)
 	if err != nil {
 		return d, err
 	}
@@ -144,7 +169,8 @@ func (d *dependencies) CommandHandler() *cmdhandler.CommandHandler { return d.cm
 func (d *dependencies) ConfigHandler() *cmdhandler.CommandHandler  { return d.configHandler }
 func (d *dependencies) AdminHandler() *cmdhandler.CommandHandler   { return d.adminHandler }
 func (d *dependencies) MessageHandler() msghandler.Handlers        { return d.msgHandlers }
+func (d *dependencies) ErrReporter() errreport.Reporter            { return d.rep }
+func (d *dependencies) Census() *census.OpenCensus                 { return d.census }
 func (d *dependencies) DiscordMessageHandler() bot.DiscordMessageHandler {
 	return d.discordMsgHandler
 }
-func (d *dependencies) ErrReporter() errreport.Reporter { return d.rep }

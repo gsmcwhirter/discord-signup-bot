@@ -3,10 +3,12 @@ package storage
 //go:generate protoc --go_out=. --proto_path=. ./guildapi.proto
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
-	"github.com/gsmcwhirter/go-util/v3/errors"
+	"github.com/gsmcwhirter/go-util/v4/census"
+	"github.com/gsmcwhirter/go-util/v4/errors"
 )
 
 // ErrBadSetting is the error returned if an unknown setting is accessed
@@ -14,6 +16,7 @@ var ErrBadSetting = errors.New("bad setting")
 
 // GuildSettings is the set of configuration settings for a guild
 type GuildSettings struct {
+	census            *census.OpenCensus
 	ControlSequence   string
 	AnnounceChannel   string
 	SignupChannel     string
@@ -25,7 +28,10 @@ type GuildSettings struct {
 }
 
 // PrettyString returns a multi-line string describing the settings
-func (s *GuildSettings) PrettyString() string {
+func (s *GuildSettings) PrettyString(ctx context.Context) string {
+	_, span := s.census.StartSpan(ctx, "GuildSettings.PrettyString")
+	defer span.End()
+
 	return fmt.Sprintf(`
 GuildSettings:
 
@@ -42,7 +48,10 @@ GuildSettings:
 }
 
 // GetSettingString gets the value of a setting
-func (s *GuildSettings) GetSettingString(name string) (string, error) {
+func (s *GuildSettings) GetSettingString(ctx context.Context, name string) (string, error) {
+	_, span := s.census.StartSpan(ctx, "GuildSettings.GetSettingString")
+	defer span.End()
+
 	switch strings.ToLower(name) {
 	case "controlsequence":
 		return s.ControlSequence, nil
@@ -77,7 +86,10 @@ func normalizeTrueFalseString(val string) (string, error) {
 }
 
 // SetSettingString sets the value of a setting
-func (s *GuildSettings) SetSettingString(name, val string) error {
+func (s *GuildSettings) SetSettingString(ctx context.Context, name, val string) error {
+	_, span := s.census.StartSpan(ctx, "GuildSettings.SetSettingString")
+	defer span.End()
+
 	switch strings.ToLower(name) {
 	case "controlsequence":
 		s.ControlSequence = val
@@ -118,27 +130,27 @@ func (s *GuildSettings) SetSettingString(name, val string) error {
 
 // GuildAPI is the api for managing guild settings transactions
 type GuildAPI interface {
-	NewTransaction(writable bool) (GuildAPITx, error)
-	AllGuilds() ([]string, error)
+	NewTransaction(ctx context.Context, writable bool) (GuildAPITx, error)
+	AllGuilds(ctx context.Context) ([]string, error)
 }
 
 // GuildAPITx is the api for managing guild settings within a transaction
 type GuildAPITx interface {
-	Commit() error
-	Rollback() error
+	Commit(ctx context.Context) error
+	Rollback(ctx context.Context) error
 
-	GetGuild(name string) (Guild, error)
-	AddGuild(name string) (Guild, error)
-	SaveGuild(guild Guild) error
+	GetGuild(ctx context.Context, name string) (Guild, error)
+	AddGuild(ctx context.Context, name string) (Guild, error)
+	SaveGuild(ctx context.Context, guild Guild) error
 }
 
 // Guild is the api for managing guild settings for a particular guild
 type Guild interface {
-	GetName() string
-	GetSettings() GuildSettings
+	GetName(ctx context.Context) string
+	GetSettings(ctx context.Context) GuildSettings
 
-	SetName(name string)
-	SetSettings(s GuildSettings)
+	SetName(ctx context.Context, name string)
+	SetSettings(ctx context.Context, s GuildSettings)
 
-	Serialize() ([]byte, error)
+	Serialize(ctx context.Context) ([]byte, error)
 }

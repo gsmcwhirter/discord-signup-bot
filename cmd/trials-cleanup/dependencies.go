@@ -1,11 +1,13 @@
 package main
 
 import (
+	"context"
 	"time"
 
 	bolt "github.com/coreos/bbolt"
 
-	log "github.com/gsmcwhirter/go-util/v3/logging"
+	"github.com/gsmcwhirter/go-util/v4/census"
+	log "github.com/gsmcwhirter/go-util/v4/logging"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
@@ -16,6 +18,7 @@ type dependencies struct {
 	trialAPI storage.TrialAPI
 	guildAPI storage.GuildAPI
 	// botSession *etfapi.Session
+	census *census.OpenCensus
 }
 
 func createDependencies(conf config) (*dependencies, error) {
@@ -31,12 +34,12 @@ func createDependencies(conf config) (*dependencies, error) {
 		return d, err
 	}
 
-	d.trialAPI, err = storage.NewBoltTrialAPI(d.db)
+	d.trialAPI, err = storage.NewBoltTrialAPI(d.db, d.census)
 	if err != nil {
 		return d, err
 	}
 
-	d.guildAPI, err = storage.NewBoltGuildAPI(d.db)
+	d.guildAPI, err = storage.NewBoltGuildAPI(context.Background(), d.db, d.census)
 	if err != nil {
 		return d, err
 	}

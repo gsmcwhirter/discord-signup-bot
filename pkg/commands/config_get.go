@@ -4,15 +4,19 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gsmcwhirter/go-util/v3/deferutil"
-	"github.com/gsmcwhirter/go-util/v3/errors"
-	"github.com/gsmcwhirter/go-util/v3/logging/level"
+	"github.com/gsmcwhirter/go-util/v4/deferutil"
+	"github.com/gsmcwhirter/go-util/v4/errors"
+	"github.com/gsmcwhirter/go-util/v4/logging/level"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v8/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v8/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/logging"
 )
 
 func (c *configCommands) get(msg cmdhandler.Message) (cmdhandler.Response, error) {
+	ctx, span := c.deps.Census().StartSpan(msg.Context(), "configCommands.get")
+	defer span.End()
+	msg = cmdhandler.NewWithContext(ctx, msg)
+
 	r := &cmdhandler.SimpleEmbedResponse{
 		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
@@ -34,19 +38,19 @@ func (c *configCommands) get(msg cmdhandler.Message) (cmdhandler.Response, error
 
 	settingName := strings.TrimSpace(msg.Contents()[0])
 
-	t, err := c.deps.GuildAPI().NewTransaction(false)
+	t, err := c.deps.GuildAPI().NewTransaction(msg.Context(), false)
 	if err != nil {
 		return r, err
 	}
-	defer deferutil.CheckDefer(t.Rollback)
+	defer deferutil.CheckDefer(func() error { return t.Rollback(msg.Context()) })
 
-	bGuild, err := t.AddGuild(msg.GuildID().ToString())
+	bGuild, err := t.AddGuild(msg.Context(), msg.GuildID().ToString())
 	if err != nil {
 		return r, errors.Wrap(err, "unable to find guild")
 	}
 
-	s := bGuild.GetSettings()
-	sVal, err := s.GetSettingString(settingName)
+	s := bGuild.GetSettings(msg.Context())
+	sVal, err := s.GetSettingString(msg.Context(), settingName)
 	if err != nil {
 		return r, fmt.Errorf("'%s' is not the name of a setting", settingName)
 	}

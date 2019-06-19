@@ -1,5 +1,9 @@
 package storage
 
+import (
+	"context"
+)
+
 //go:generate protoc --go_out=. --proto_path=. ./trialapi.proto
 
 // TrialState represents the state of a trial
@@ -13,59 +17,59 @@ const (
 
 // TrialAPI is the API for managing trials transactions
 type TrialAPI interface {
-	NewTransaction(guild string, writable bool) (TrialAPITx, error)
+	NewTransaction(ctx context.Context, guild string, writable bool) (TrialAPITx, error)
 }
 
 // TrialAPITx is the api for managing trials within a transaction
 type TrialAPITx interface {
-	Commit() error
-	Rollback() error
+	Commit(ctx context.Context) error
+	Rollback(ctx context.Context) error
 
-	GetTrial(name string) (Trial, error)
-	AddTrial(name string) (Trial, error)
-	SaveTrial(trial Trial) error
-	DeleteTrial(name string) error
+	GetTrial(ctx context.Context, name string) (Trial, error)
+	AddTrial(ctx context.Context, name string) (Trial, error)
+	SaveTrial(ctx context.Context, trial Trial) error
+	DeleteTrial(ctx context.Context, name string) error
 
-	GetTrials() []Trial
+	GetTrials(ctx context.Context) []Trial
 }
 
 // Trial is the api for managing a particular trial
 type Trial interface {
-	GetName() string
-	GetDescription() string
-	GetAnnounceTo() string
-	GetAnnounceChannel() string
-	GetSignupChannel() string
-	GetState() TrialState
-	GetSignups() []TrialSignup
-	GetRoleCounts() []RoleCount
-	PrettySettings() string
+	GetName(ctx context.Context) string
+	GetDescription(ctx context.Context) string
+	GetAnnounceTo(ctx context.Context) string
+	GetAnnounceChannel(ctx context.Context) string
+	GetSignupChannel(ctx context.Context) string
+	GetState(ctx context.Context) TrialState
+	GetSignups(ctx context.Context) []TrialSignup
+	GetRoleCounts(ctx context.Context) []RoleCount
+	PrettySettings(ctx context.Context) string
 
-	SetName(name string)
-	SetDescription(d string)
-	SetAnnounceTo(val string)
-	SetAnnounceChannel(val string)
-	SetSignupChannel(val string)
-	SetState(state TrialState)
-	AddSignup(name, role string)
-	RemoveSignup(name string)
-	SetRoleCount(name, emoji string, ct uint64)
-	RemoveRole(name string)
+	SetName(ctx context.Context, name string)
+	SetDescription(ctx context.Context, d string)
+	SetAnnounceTo(ctx context.Context, val string)
+	SetAnnounceChannel(ctx context.Context, val string)
+	SetSignupChannel(ctx context.Context, val string)
+	SetState(ctx context.Context, state TrialState)
+	AddSignup(ctx context.Context, name, role string)
+	RemoveSignup(ctx context.Context, name string)
+	SetRoleCount(ctx context.Context, name, emoji string, ct uint64)
+	RemoveRole(ctx context.Context, name string)
 
-	ClearSignups()
+	ClearSignups(ctx context.Context)
 
-	Serialize() ([]byte, error)
+	Serialize(ctx context.Context) ([]byte, error)
 }
 
 // TrialSignup is the api for managing a signup for a trial
 type TrialSignup interface {
-	GetName() string
-	GetRole() string
+	GetName(ctx context.Context) string
+	GetRole(ctx context.Context) string
 }
 
 // RoleCount is the api for managing a role in a trial
 type RoleCount interface {
-	GetRole() string
-	GetCount() uint64
-	GetEmoji() string
+	GetRole(ctx context.Context) string
+	GetCount(ctx context.Context) uint64
+	GetEmoji(ctx context.Context) string
 }

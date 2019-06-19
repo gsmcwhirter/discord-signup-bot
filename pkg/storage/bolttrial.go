@@ -1,11 +1,13 @@
 package storage
 
 import (
-	fmt "fmt"
+	"context"
+	"fmt"
 	"sort"
 	"strings"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/gsmcwhirter/go-util/v4/census"
 )
 
 const (
@@ -15,33 +17,37 @@ const (
 
 type boltTrial struct {
 	protoTrial *ProtoTrial
+	census     *census.OpenCensus
 }
 
-func (b *boltTrial) GetName() string {
+func (b *boltTrial) GetName(ctx context.Context) string {
 	return b.protoTrial.Name
 }
 
-func (b *boltTrial) GetDescription() string {
+func (b *boltTrial) GetDescription(ctx context.Context) string {
 	return b.protoTrial.Description
 }
 
-func (b *boltTrial) GetAnnounceTo() string {
+func (b *boltTrial) GetAnnounceTo(ctx context.Context) string {
 	return b.protoTrial.AnnounceTo
 }
 
-func (b *boltTrial) GetAnnounceChannel() string {
+func (b *boltTrial) GetAnnounceChannel(ctx context.Context) string {
 	return b.protoTrial.AnnounceChannel
 }
 
-func (b *boltTrial) GetSignupChannel() string {
+func (b *boltTrial) GetSignupChannel(ctx context.Context) string {
 	return b.protoTrial.SignupChannel
 }
 
-func (b *boltTrial) GetState() TrialState {
+func (b *boltTrial) GetState(ctx context.Context) TrialState {
 	return TrialState(b.protoTrial.State)
 }
 
-func (b *boltTrial) getSignups(raw bool) []TrialSignup {
+func (b *boltTrial) getSignups(ctx context.Context, raw bool) []TrialSignup {
+	_, span := b.census.StartSpan(ctx, "boltTrial.getSignups")
+	defer span.End()
+
 	s := make([]TrialSignup, 0, len(b.protoTrial.Signups))
 	for _, ps := range b.protoTrial.Signups {
 		if ps.State == signupCanceled {
@@ -54,20 +60,27 @@ func (b *boltTrial) getSignups(raw bool) []TrialSignup {
 		}
 
 		s = append(s, &boltTrialSignup{
-			name: name,
-			role: ps.Role,
+			name:   name,
+			role:   ps.Role,
+			census: b.census,
 		})
 	}
 
 	return s
 }
 
-func (b *boltTrial) GetSignups() []TrialSignup {
-	return b.getSignups(false)
+func (b *boltTrial) GetSignups(ctx context.Context) []TrialSignup {
+	ctx, span := b.census.StartSpan(ctx, "boltTrial.GetSignups")
+	defer span.End()
+
+	return b.getSignups(ctx, false)
 }
 
-func (b *boltTrial) GetRoleCounts() []RoleCount {
-	b.migrateRoleCounts()
+func (b *boltTrial) GetRoleCounts(ctx context.Context) []RoleCount {
+	ctx, span := b.census.StartSpan(ctx, "boltTrial.GetRoleCounts")
+	defer span.End()
+
+	b.migrateRoleCounts(ctx)
 
 	s := make([]RoleCount, 0, len(b.protoTrial.RoleCountMap))
 	rcNames := make([]string, 0, len(b.protoTrial.RoleCountMap))
@@ -80,27 +93,34 @@ func (b *boltTrial) GetRoleCounts() []RoleCount {
 	for _, rName := range rcNames {
 		r := b.protoTrial.RoleCountMap[rName]
 		s = append(s, &boltRoleCount{
-			role:  r.Name,
-			count: r.Count,
-			emoji: r.Emoji,
+			role:   r.Name,
+			count:  r.Count,
+			emoji:  r.Emoji,
+			census: b.census,
 		})
 	}
 
 	return s
 }
 
-func (b *boltTrial) PrettyRoles(indent string) string {
-	rcs := b.GetRoleCounts()
+func (b *boltTrial) PrettyRoles(ctx context.Context, indent string) string {
+	ctx, span := b.census.StartSpan(ctx, "boltTrial.PrettyRoles")
+	defer span.End()
+
+	rcs := b.GetRoleCounts(ctx)
 	lines := make([]string, 0, len(rcs))
 
 	for _, rc := range rcs {
-		lines = append(lines, fmt.Sprintf("%s%s: %d", rc.GetEmoji(), rc.GetRole(), rc.GetCount()))
+		lines = append(lines, fmt.Sprintf("%s%s: %d", rc.GetEmoji(ctx), rc.GetRole(ctx), rc.GetCount(ctx)))
 	}
 
 	return strings.Join(lines, "\n"+indent)
 }
 
-func (b *boltTrial) PrettySettings() string {
+func (b *boltTrial) PrettySettings(ctx context.Context) string {
+	ctx, span := b.census.StartSpan(ctx, "boltTrial.PrettySettings")
+	defer span.End()
+
 	return fmt.Sprintf(`
 Event settings:
 
@@ -114,30 +134,30 @@ Event settings:
 Description:
 %s
 
-	`, b.GetAnnounceChannel(), b.GetSignupChannel(), b.GetAnnounceTo(), b.GetState(), b.PrettyRoles("    "), b.GetDescription())
+	`, b.GetAnnounceChannel(ctx), b.GetSignupChannel(ctx), b.GetAnnounceTo(ctx), b.GetState(ctx), b.PrettyRoles(ctx, "    "), b.GetDescription(ctx))
 }
 
-func (b *boltTrial) SetName(name string) {
+func (b *boltTrial) SetName(ctx context.Context, name string) {
 	b.protoTrial.Name = name
 }
 
-func (b *boltTrial) SetDescription(d string) {
+func (b *boltTrial) SetDescription(ctx context.Context, d string) {
 	b.protoTrial.Description = d
 }
 
-func (b *boltTrial) SetAnnounceChannel(val string) {
+func (b *boltTrial) SetAnnounceChannel(ctx context.Context, val string) {
 	b.protoTrial.AnnounceChannel = val
 }
 
-func (b *boltTrial) SetAnnounceTo(val string) {
+func (b *boltTrial) SetAnnounceTo(ctx context.Context, val string) {
 	b.protoTrial.AnnounceTo = val
 }
 
-func (b *boltTrial) SetSignupChannel(val string) {
+func (b *boltTrial) SetSignupChannel(ctx context.Context, val string) {
 	b.protoTrial.SignupChannel = val
 }
 
-func (b *boltTrial) SetState(state TrialState) {
+func (b *boltTrial) SetState(ctx context.Context, state TrialState) {
 	b.protoTrial.State = string(state)
 }
 
@@ -145,16 +165,21 @@ func isSameUser(dbName, argName string) bool {
 	return dbName == argName || userMentionOverflowFix(dbName) == argName
 }
 
-func (b *boltTrial) AddSignup(name, role string) {
+func (b *boltTrial) AddSignup(ctx context.Context, name, role string) {
+	ctx, span := b.census.StartSpan(ctx, "boltTrial.AddSignup")
+	defer span.End()
+
 	lowerRole := strings.ToLower(role)
-	s := b.getSignups(true)
+	s := b.getSignups(ctx, true)
 	for _, su := range s {
-		if isSameUser(su.GetName(), name) && strings.ToLower(su.GetRole()) != lowerRole {
-			b.RemoveSignup(su.GetName())
+		suName := su.GetName(ctx)
+		suRole := su.GetRole(ctx)
+		if isSameUser(suName, name) && strings.ToLower(suRole) != lowerRole {
+			b.RemoveSignup(ctx, suName)
 			break
 		}
 
-		if isSameUser(su.GetName(), name) && strings.ToLower(su.GetRole()) == lowerRole {
+		if isSameUser(suName, name) && strings.ToLower(suRole) == lowerRole {
 			return
 		}
 	}
@@ -166,7 +191,10 @@ func (b *boltTrial) AddSignup(name, role string) {
 	})
 }
 
-func (b *boltTrial) RemoveSignup(name string) {
+func (b *boltTrial) RemoveSignup(ctx context.Context, name string) {
+	_, span := b.census.StartSpan(ctx, "boltTrial.RemoveSignup")
+	defer span.End()
+
 	for i := 0; i < len(b.protoTrial.Signups); i++ {
 		if isSameUser(b.protoTrial.Signups[i].Name, name) {
 			b.protoTrial.Signups[i].State = signupCanceled
@@ -174,12 +202,18 @@ func (b *boltTrial) RemoveSignup(name string) {
 	}
 }
 
-func (b *boltTrial) ClearSignups() {
+func (b *boltTrial) ClearSignups(ctx context.Context) {
+	_, span := b.census.StartSpan(ctx, "boltTrial.ClearSignups")
+	defer span.End()
+
 	b.protoTrial.Signups = nil
 }
 
-func (b *boltTrial) SetRoleCount(name, emoji string, ct uint64) {
-	b.migrateRoleCounts()
+func (b *boltTrial) SetRoleCount(ctx context.Context, name, emoji string, ct uint64) {
+	ctx, span := b.census.StartSpan(ctx, "boltTrial.SetRoleCount")
+	defer span.End()
+
+	b.migrateRoleCounts(ctx)
 
 	if b.protoTrial.RoleCountMap == nil {
 		b.protoTrial.RoleCountMap = map[string]*ProtoRoleCount{}
@@ -198,13 +232,16 @@ func (b *boltTrial) SetRoleCount(name, emoji string, ct uint64) {
 	b.protoTrial.RoleCountMap[lowerName] = prc
 }
 
-func (b *boltTrial) RemoveRole(name string) {
+func (b *boltTrial) RemoveRole(ctx context.Context, name string) {
+	ctx, span := b.census.StartSpan(ctx, "boltTrial.RemoveRole")
+	defer span.End()
+
 	lowerName := strings.ToLower(name)
 	if b.protoTrial.RoleCounts == nil && b.protoTrial.RoleCountMap == nil {
 		return
 	}
 
-	b.migrateRoleCounts()
+	b.migrateRoleCounts(ctx)
 
 	if _, ok := b.protoTrial.RoleCountMap[lowerName]; !ok {
 		return
@@ -213,12 +250,18 @@ func (b *boltTrial) RemoveRole(name string) {
 	delete(b.protoTrial.RoleCountMap, lowerName)
 }
 
-func (b *boltTrial) Serialize() (out []byte, err error) {
+func (b *boltTrial) Serialize(ctx context.Context) (out []byte, err error) {
+	_, span := b.census.StartSpan(ctx, "boltTrial.Serialize")
+	defer span.End()
+
 	out, err = proto.Marshal(b.protoTrial)
 	return
 }
 
-func (b *boltTrial) migrateRoleCounts() {
+func (b *boltTrial) migrateRoleCounts(ctx context.Context) {
+	_, span := b.census.StartSpan(ctx, "boltTrial.migrateRoleCounts")
+	defer span.End()
+
 	if b.protoTrial.RoleCountMap != nil {
 		return
 	}
@@ -234,32 +277,34 @@ func (b *boltTrial) migrateRoleCounts() {
 }
 
 type boltTrialSignup struct {
-	name string
-	role string
+	name   string
+	role   string
+	census *census.OpenCensus
 }
 
-func (b *boltTrialSignup) GetName() string {
+func (b *boltTrialSignup) GetName(ctx context.Context) string {
 	return b.name
 }
 
-func (b *boltTrialSignup) GetRole() string {
+func (b *boltTrialSignup) GetRole(ctx context.Context) string {
 	return b.role
 }
 
 type boltRoleCount struct {
-	role  string
-	count uint64
-	emoji string
+	role   string
+	count  uint64
+	emoji  string
+	census *census.OpenCensus
 }
 
-func (b *boltRoleCount) GetRole() string {
+func (b *boltRoleCount) GetRole(ctx context.Context) string {
 	return b.role
 }
 
-func (b *boltRoleCount) GetCount() uint64 {
+func (b *boltRoleCount) GetCount(ctx context.Context) uint64 {
 	return b.count
 }
 
-func (b *boltRoleCount) GetEmoji() string {
+func (b *boltRoleCount) GetEmoji(ctx context.Context) string {
 	return b.emoji
 }

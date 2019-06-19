@@ -4,19 +4,23 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gsmcwhirter/go-util/v3/deferutil"
-	"github.com/gsmcwhirter/go-util/v3/errors"
-	"github.com/gsmcwhirter/go-util/v3/logging/level"
+	"github.com/gsmcwhirter/go-util/v4/deferutil"
+	"github.com/gsmcwhirter/go-util/v4/errors"
+	"github.com/gsmcwhirter/go-util/v4/logging/level"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v8/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v8/logging"
-	"github.com/gsmcwhirter/discord-bot-lib/v8/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/snowflake"
 )
 
 func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, error) {
+	ctx, span := c.deps.Census().StartSpan(msg.Context(), "adminCommands.announce")
+	defer span.End()
+	msg = cmdhandler.NewWithContext(ctx, msg)
+
 	r := &cmdhandler.SimpleEmbedResponse{
 		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
@@ -24,7 +28,7 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 	logger := logging.WithMessage(msg, c.deps.Logger())
 	level.Info(logger).Message("handling adminCommand", "command", "announce", "args", msg.Contents())
 
-	gsettings, err := storage.GetSettings(c.deps.GuildAPI(), msg.GuildID())
+	gsettings, err := storage.GetSettings(msg.Context(), c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
 		return r, err
 	}
@@ -45,13 +49,13 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 	trialName := msg.Contents()[0]
 	phrase := strings.Join(msg.Contents()[1:], " ")
 
-	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), false)
+	t, err := c.deps.TrialAPI().NewTransaction(msg.Context(), msg.GuildID().ToString(), false)
 	if err != nil {
 		return r, err
 	}
-	defer deferutil.CheckDefer(t.Rollback)
+	defer deferutil.CheckDefer(func() error { return t.Rollback(msg.Context()) })
 
-	trial, err := t.GetTrial(trialName)
+	trial, err := t.GetTrial(msg.Context(), trialName)
 	if err != nil {
 		return r, err
 	}
@@ -64,24 +68,25 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 	var signupCid snowflake.Snowflake
 	var announceCid snowflake.Snowflake
 
-	if scID, ok := sessionGuild.ChannelWithName(trial.GetSignupChannel()); ok {
+	if scID, ok := sessionGuild.ChannelWithName(trial.GetSignupChannel(msg.Context())); ok {
 		signupCid = scID
 	}
 
-	if acID, ok := sessionGuild.ChannelWithName(trial.GetAnnounceChannel()); ok {
+	if acID, ok := sessionGuild.ChannelWithName(trial.GetAnnounceChannel(msg.Context())); ok {
 		announceCid = acID
 	}
 
-	roles := trial.GetRoleCounts()
+	roles := trial.GetRoleCounts(msg.Context())
 	roleStrs := make([]string, 0, len(roles))
 	for _, rc := range roles {
-		roleStrs = append(roleStrs, fmt.Sprintf("%s: %d", rc.GetRole(), rc.GetCount()))
+		roleStrs = append(roleStrs, fmt.Sprintf("%s: %d", rc.GetRole(msg.Context()), rc.GetCount(msg.Context())))
 	}
 
 	var toStr string
+	tAnnTo := trial.GetAnnounceTo(msg.Context())
 	switch {
-	case trial.GetAnnounceTo() != "":
-		toStr = trial.GetAnnounceTo()
+	case tAnnTo != "":
+		toStr = tAnnTo
 	case gsettings.AnnounceTo != "":
 		toStr = gsettings.AnnounceTo
 	default:
@@ -91,8 +96,8 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 	r2 := &cmdhandler.EmbedResponse{
 		To:          fmt.Sprintf("%s %s", toStr, phrase),
 		ToChannel:   announceCid,
-		Title:       fmt.Sprintf("Signups are open for %s", trial.GetName()),
-		Description: trial.GetDescription(),
+		Title:       fmt.Sprintf("Signups are open for %s", trial.GetName(msg.Context())),
+		Description: trial.GetDescription(msg.Context()),
 		Fields: []cmdhandler.EmbedField{
 			{
 				Name: "Roles Requested",

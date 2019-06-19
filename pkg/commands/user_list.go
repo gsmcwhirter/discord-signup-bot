@@ -5,16 +5,20 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/gsmcwhirter/go-util/v3/deferutil"
-	"github.com/gsmcwhirter/go-util/v3/logging/level"
+	"github.com/gsmcwhirter/go-util/v4/deferutil"
+	"github.com/gsmcwhirter/go-util/v4/logging/level"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v8/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v8/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/logging"
 )
 
 func (c *userCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error) {
+	ctx, span := c.deps.Census().StartSpan(msg.Context(), "userCommands.list")
+	defer span.End()
+	msg = cmdhandler.NewWithContext(ctx, msg)
+
 	r := &cmdhandler.EmbedResponse{
 		To: cmdhandler.UserMentionString(msg.UserID()),
 	}
@@ -26,25 +30,25 @@ func (c *userCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error)
 		return r, msg.ContentErr()
 	}
 
-	t, err := c.deps.TrialAPI().NewTransaction(msg.GuildID().ToString(), false)
+	t, err := c.deps.TrialAPI().NewTransaction(msg.Context(), msg.GuildID().ToString(), false)
 	if err != nil {
 		return r, err
 	}
-	defer deferutil.CheckDefer(t.Rollback)
+	defer deferutil.CheckDefer(func() error { return t.Rollback(msg.Context()) })
 
 	g, ok := c.deps.BotSession().Guild(msg.GuildID())
 	if !ok {
 		return r, ErrGuildNotFound
 	}
 
-	trials := t.GetTrials()
+	trials := t.GetTrials(msg.Context())
 	tNames := make([]string, 0, len(trials))
 	for _, trial := range trials {
-		if trial.GetState() != storage.TrialStateClosed {
-			if tscID, ok := g.ChannelWithName(trial.GetSignupChannel()); ok {
-				tNames = append(tNames, fmt.Sprintf("%s (%s)", trial.GetName(), cmdhandler.ChannelMentionString(tscID)))
+		if trial.GetState(msg.Context()) != storage.TrialStateClosed {
+			if tscID, ok := g.ChannelWithName(trial.GetSignupChannel(msg.Context())); ok {
+				tNames = append(tNames, fmt.Sprintf("%s (%s)", trial.GetName(msg.Context()), cmdhandler.ChannelMentionString(tscID)))
 			} else {
-				tNames = append(tNames, trial.GetName())
+				tNames = append(tNames, trial.GetName(msg.Context()))
 			}
 		}
 	}

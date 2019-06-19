@@ -1,21 +1,23 @@
 package msghandler
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
-	"github.com/gsmcwhirter/go-util/v3/errors"
-	log "github.com/gsmcwhirter/go-util/v3/logging"
-	"github.com/gsmcwhirter/go-util/v3/logging/level"
-	"github.com/gsmcwhirter/go-util/v3/parser"
+	"github.com/gsmcwhirter/go-util/v4/census"
+	"github.com/gsmcwhirter/go-util/v4/errors"
+	log "github.com/gsmcwhirter/go-util/v4/logging"
+	"github.com/gsmcwhirter/go-util/v4/logging/level"
+	"github.com/gsmcwhirter/go-util/v4/parser"
 	"golang.org/x/time/rate"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v8/bot"
-	"github.com/gsmcwhirter/discord-bot-lib/v8/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v8/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/v8/logging"
-	"github.com/gsmcwhirter/discord-bot-lib/v8/snowflake"
-	"github.com/gsmcwhirter/discord-bot-lib/v8/wsclient"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v9/wsclient"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
@@ -36,6 +38,7 @@ type dependencies interface {
 	AdminHandler() *cmdhandler.CommandHandler
 	MessageRateLimiter() *rate.Limiter
 	BotSession() *etfapi.Session
+	Census() *census.OpenCensus
 }
 
 // Handlers is the interface for a Handlers dependency that registers itself with a discrord bot
@@ -81,12 +84,15 @@ func (h *handlers) channelGuild(cid snowflake.Snowflake) (gid snowflake.Snowflak
 	return
 }
 
-func (h *handlers) guildCommandIndicator(gid snowflake.Snowflake) string {
+func (h *handlers) guildCommandIndicator(ctx context.Context, gid snowflake.Snowflake) string {
+	ctx, span := h.deps.Census().StartSpan(ctx, "handlers.guildCommandIndicator")
+	defer span.End()
+
 	if gid == 0 {
 		return h.defaultCommandIndicator
 	}
 
-	s, err := storage.GetSettings(h.deps.GuildAPI(), gid)
+	s, err := storage.GetSettings(ctx, h.deps.GuildAPI(), gid)
 	if err != nil {
 		return h.defaultCommandIndicator
 	}
@@ -98,10 +104,14 @@ func (h *handlers) guildCommandIndicator(gid snowflake.Snowflake) string {
 	return s.ControlSequence
 }
 
-func (h *handlers) attemptConfigAndAdminHandlers(msg cmdhandler.Message, req wsclient.WSMessage, cmdIndicator, content string) (cmdhandler.Response, error) {
+func (h *handlers) attemptConfigAndAdminHandlers(msg cmdhandler.Message, cmdIndicator, content string) (cmdhandler.Response, error) {
+	ctx, span := h.deps.Census().StartSpan(msg.Context(), "handlers.attemptConfigAndAdminHandlers")
+	defer span.End()
+	msg = cmdhandler.NewWithContext(ctx, msg)
+
 	logger := logging.WithMessage(msg, h.deps.Logger())
 
-	s, err := storage.GetSettings(h.deps.GuildAPI(), msg.GuildID())
+	s, err := storage.GetSettings(msg.Context(), h.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
 		level.Error(logger).Err("could not retrieve guild settings", err)
 	}
@@ -130,6 +140,10 @@ func (h *handlers) attemptConfigAndAdminHandlers(msg cmdhandler.Message, req wsc
 }
 
 func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, respChan chan<- wsclient.WSMessage) {
+	ctx, span := h.deps.Census().StartSpan(req.Ctx, "handlers.handleMessage")
+	defer span.End()
+	req.Ctx = ctx
+
 	if h.bot == nil {
 		return
 	}
@@ -160,7 +174,7 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 	}
 
 	gid := h.channelGuild(m.ChannelID())
-	cmdIndicator := h.guildCommandIndicator(gid)
+	cmdIndicator := h.guildCommandIndicator(req.Ctx, gid)
 
 	if !strings.HasPrefix(content, cmdIndicator) {
 		level.Info(logger).Message("not a command")
@@ -171,7 +185,7 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 
 	msg := cmdhandler.NewSimpleMessage(req.Ctx, m.AuthorID(), gid, m.ChannelID(), m.ID(), "")
 	logger = logging.WithMessage(msg, h.deps.Logger())
-	resp, err := h.attemptConfigAndAdminHandlers(msg, req, cmdIndicator, content)
+	resp, err := h.attemptConfigAndAdminHandlers(msg, cmdIndicator, content)
 
 	if err != nil && (err == ErrUnauthorized || err == parser.ErrUnknownCommand) {
 		level.Debug(logger).Message("admin not successful; processing as real message")
