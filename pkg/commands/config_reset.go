@@ -12,7 +12,7 @@ import (
 )
 
 func (c *configCommands) reset(msg cmdhandler.Message) (cmdhandler.Response, error) {
-	ctx, span := c.deps.Census().StartSpan(msg.Context(), "configCommands.reset")
+	ctx, span := c.deps.Census().StartSpan(msg.Context(), "configCommands.reset", "guild_id", msg.GuildID().ToString())
 	defer span.End()
 	msg = cmdhandler.NewWithContext(ctx, msg)
 

@@ -37,7 +37,7 @@ func (c *configCommands) collectStats(ctx context.Context, gid string) (stat, er
 }
 
 func (c *configCommands) stats(msg cmdhandler.Message) (cmdhandler.Response, error) {
-	ctx, span := c.deps.Census().StartSpan(msg.Context(), "configCommands.stats")
+	ctx, span := c.deps.Census().StartSpan(msg.Context(), "configCommands.stats", "guild_id", msg.GuildID().ToString())
 	defer span.End()
 	msg = cmdhandler.NewWithContext(ctx, msg)
 
@@ -60,14 +60,14 @@ func (c *configCommands) stats(msg cmdhandler.Message) (cmdhandler.Response, err
 	s := stat{}
 
 	for _, guild := range allGuilds {
-		stat, err := c.collectStats(msg.Context(), guild)
+		st, err := c.collectStats(msg.Context(), guild)
 		if err != nil {
 			return r, err
 		}
 
-		s.trials += stat.trials
-		s.open += stat.open
-		s.closed += stat.closed
+		s.trials += st.trials
+		s.open += st.open
+		s.closed += st.closed
 	}
 
 	r.Description = fmt.Sprintf("Total guilds: %d\nTotal events: %d\nCurrently open: %d\nCurrently closed: %d\n", len(allGuilds), s.trials, s.open, s.closed)

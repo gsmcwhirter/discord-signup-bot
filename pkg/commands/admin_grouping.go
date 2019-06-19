@@ -17,7 +17,7 @@ import (
 )
 
 func (c *adminCommands) grouping(msg cmdhandler.Message) (cmdhandler.Response, error) {
-	ctx, span := c.deps.Census().StartSpan(msg.Context(), "adminCommands.grouping")
+	ctx, span := c.deps.Census().StartSpan(msg.Context(), "adminCommands.grouping", "guild_id", msg.GuildID().ToString())
 	defer span.End()
 	msg = cmdhandler.NewWithContext(ctx, msg)
 

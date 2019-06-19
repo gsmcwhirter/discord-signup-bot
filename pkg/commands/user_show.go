@@ -15,7 +15,7 @@ import (
 )
 
 func (c *userCommands) show(msg cmdhandler.Message) (cmdhandler.Response, error) {
-	ctx, span := c.deps.Census().StartSpan(msg.Context(), "userCommands.show")
+	ctx, span := c.deps.Census().StartSpan(msg.Context(), "userCommands.show", "guild_id", msg.GuildID().ToString())
 	defer span.End()
 	msg = cmdhandler.NewWithContext(ctx, msg)
 

@@ -15,7 +15,5 @@ systemctl daemon-reload
 rm ${HERE}/trials-bot
 gunzip ${HERE}/trials-bot.gz
 systemctl start eso-trials-bot
-rm ${HERE}/trials-repl
-gunzip ${HERE}/trials-repl.gz
 rm ${HERE}/trials-dump
 gunzip ${HERE}/trials-dump

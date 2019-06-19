@@ -150,10 +150,10 @@ github.com/gostaticanalysis/analysisutil v0.0.0-20190318220348-4088753ea4d3/go.m
 github.com/grpc-ecosystem/go-grpc-middleware v1.0.0/go.mod h1:FiyG127CGDf3tlThmgyCl78X/SZQqEOJBCDaAfeWzPs=
 github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0/go.mod h1:8NvIoxWQoOIhqOTXgfV/d3M/q6VIi02HzZEHgUlZvzk=
 github.com/grpc-ecosystem/grpc-gateway v1.9.0/go.mod h1:vNeuVxBJEsws4ogUvrchl83t/GYV9WGTSLVdBhOQFDY=
-github.com/gsmcwhirter/discord-bot-lib/v9 v9.2.0 h1:JL1fhoPy81FqAg//gGn4i8erqciqw61DjVVUPFDIdJ8=
-github.com/gsmcwhirter/discord-bot-lib/v9 v9.2.0/go.mod h1:z3dqGZmRYo6Wd4wZ+0Owm7od81j6Kd+Nb1TH98IFydQ=
-github.com/gsmcwhirter/go-util/v4 v4.2.0 h1:/lHSmGouVPI6FZW1FMMMEJSc3IM5zQO4iPmkPbpQo64=
-github.com/gsmcwhirter/go-util/v4 v4.2.0/go.mod h1:XIdkOvJmeH1ffpZvhBNWDCQ5kVkgSC/V2JbGU3y7EbQ=
+github.com/gsmcwhirter/discord-bot-lib/v9 v9.5.0 h1:+CuZaiDJPvRxlhM1SsS4xhyvgKGZEBXaxb1JnRbm0DI=
+github.com/gsmcwhirter/discord-bot-lib/v9 v9.5.0/go.mod h1:7o6/0Wvqp1rFkEBMos03jKDaSzQUWWjKoKGKdeRJwLQ=
+github.com/gsmcwhirter/go-util/v4 v4.5.0 h1:uy+G8+J1u/nrSgySQDRtp/TwqlNhefqABsCBAOfB9FI=
+github.com/gsmcwhirter/go-util/v4 v4.5.0/go.mod h1:XIdkOvJmeH1ffpZvhBNWDCQ5kVkgSC/V2JbGU3y7EbQ=
 github.com/hashicorp/errwrap v1.0.0 h1:hLrqtEDnRye3+sgx6z4qVLNuviH3MR5aQ0ykNJa/UYA=
 github.com/hashicorp/errwrap v1.0.0/go.mod h1:YH+1FKiLXxHSkmPseP+kNlulaMuP3n2brvKWEqk/Jc4=
 github.com/hashicorp/go-multierror v1.0.0 h1:iVjPR7a6H0tWELX5NxNe7bYopibicUzc7uPribsnS6o=

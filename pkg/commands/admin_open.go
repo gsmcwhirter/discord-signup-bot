@@ -15,7 +15,7 @@ import (
 )
 
 func (c *adminCommands) open(msg cmdhandler.Message) (cmdhandler.Response, error) {
-	ctx, span := c.deps.Census().StartSpan(msg.Context(), "adminCommands.open")
+	ctx, span := c.deps.Census().StartSpan(msg.Context(), "adminCommands.open", "guild_id", msg.GuildID().ToString())
 	defer span.End()
 	msg = cmdhandler.NewWithContext(ctx, msg)
 
