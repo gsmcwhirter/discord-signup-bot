@@ -5,19 +5,19 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gsmcwhirter/go-util/v4/census"
-	"github.com/gsmcwhirter/go-util/v4/errors"
-	log "github.com/gsmcwhirter/go-util/v4/logging"
-	"github.com/gsmcwhirter/go-util/v4/logging/level"
-	"github.com/gsmcwhirter/go-util/v4/parser"
+	"github.com/gsmcwhirter/go-util/v5/errors"
+	log "github.com/gsmcwhirter/go-util/v5/logging"
+	"github.com/gsmcwhirter/go-util/v5/logging/level"
+	"github.com/gsmcwhirter/go-util/v5/parser"
+	census "github.com/gsmcwhirter/go-util/v5/stats"
 	"golang.org/x/time/rate"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v9/bot"
-	"github.com/gsmcwhirter/discord-bot-lib/v9/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v9/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/v9/logging"
-	"github.com/gsmcwhirter/discord-bot-lib/v9/snowflake"
-	"github.com/gsmcwhirter/discord-bot-lib/v9/wsclient"
+	"github.com/gsmcwhirter/discord-bot-lib/v10/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v10/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v10/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v10/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v10/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v10/wsclient"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
@@ -38,7 +38,7 @@ type dependencies interface {
 	AdminHandler() *cmdhandler.CommandHandler
 	MessageRateLimiter() *rate.Limiter
 	BotSession() *etfapi.Session
-	Census() *census.OpenCensus
+	Census() *census.Census
 }
 
 // Handlers is the interface for a Handlers dependency that registers itself with a discrord bot

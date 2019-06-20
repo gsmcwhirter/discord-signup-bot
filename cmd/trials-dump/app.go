@@ -4,10 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/gsmcwhirter/go-util/v4/deferutil"
-	"github.com/gsmcwhirter/go-util/v4/errors"
+	"github.com/gsmcwhirter/go-util/v5/deferutil"
+	"github.com/gsmcwhirter/go-util/v5/errors"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v9/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v10/snowflake"
 )
 
 type config struct {

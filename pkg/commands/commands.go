@@ -3,12 +3,12 @@ package commands
 import (
 	"fmt"
 
-	"github.com/gsmcwhirter/go-util/v4/census"
-	log "github.com/gsmcwhirter/go-util/v4/logging"
-	"github.com/gsmcwhirter/go-util/v4/parser"
+	log "github.com/gsmcwhirter/go-util/v5/logging"
+	"github.com/gsmcwhirter/go-util/v5/parser"
+	census "github.com/gsmcwhirter/go-util/v5/stats"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v9/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v9/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v10/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v10/etfapi"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
@@ -18,7 +18,7 @@ type dependencies interface {
 	TrialAPI() storage.TrialAPI
 	GuildAPI() storage.GuildAPI
 	BotSession() *etfapi.Session
-	Census() *census.OpenCensus
+	Census() *census.Census
 }
 
 // Options is the way to specify the command indicator string
@@ -62,7 +62,7 @@ type configDependencies interface {
 	GuildAPI() storage.GuildAPI
 	TrialAPI() storage.TrialAPI
 	BotSession() *etfapi.Session
-	Census() *census.OpenCensus
+	Census() *census.Census
 }
 
 // ConfigHandler creates a new command handler for !config-su
@@ -98,7 +98,7 @@ type adminDependencies interface {
 	GuildAPI() storage.GuildAPI
 	TrialAPI() storage.TrialAPI
 	BotSession() *etfapi.Session
-	Census() *census.OpenCensus
+	Census() *census.Census
 }
 
 // AdminHandler creates a new command handler for !admin

@@ -2,7 +2,7 @@ package stats
 
 import (
 	"contrib.go.opencensus.io/exporter/prometheus"
-	"github.com/gsmcwhirter/go-util/v4/errors"
+	"github.com/gsmcwhirter/go-util/v5/errors"
 )
 
 type PrometheusConfig struct {

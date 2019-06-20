@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v9/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v9/etfapi"
-	"github.com/gsmcwhirter/go-util/v4/errors"
-	log "github.com/gsmcwhirter/go-util/v4/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v10/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v10/etfapi"
+	"github.com/gsmcwhirter/go-util/v5/errors"
+	log "github.com/gsmcwhirter/go-util/v5/logging"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"

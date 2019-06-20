@@ -6,8 +6,8 @@ import (
 
 	bolt "github.com/coreos/bbolt"
 
-	"github.com/gsmcwhirter/go-util/v4/census"
-	log "github.com/gsmcwhirter/go-util/v4/logging"
+	log "github.com/gsmcwhirter/go-util/v5/logging"
+	census "github.com/gsmcwhirter/go-util/v5/stats"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
@@ -18,7 +18,7 @@ type dependencies struct {
 	trialAPI storage.TrialAPI
 	guildAPI storage.GuildAPI
 	// botSession *etfapi.Session
-	census *census.OpenCensus
+	census *census.Census
 }
 
 func createDependencies(conf config) (*dependencies, error) {

@@ -7,7 +7,7 @@ import (
 	"strings"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/gsmcwhirter/go-util/v4/census"
+	census "github.com/gsmcwhirter/go-util/v5/stats"
 )
 
 const (
@@ -17,7 +17,7 @@ const (
 
 type boltTrial struct {
 	protoTrial *ProtoTrial
-	census     *census.OpenCensus
+	census     *census.Census
 }
 
 func (b *boltTrial) GetName(ctx context.Context) string {
@@ -279,7 +279,7 @@ func (b *boltTrial) migrateRoleCounts(ctx context.Context) {
 type boltTrialSignup struct {
 	name   string
 	role   string
-	census *census.OpenCensus
+	census *census.Census
 }
 
 func (b *boltTrialSignup) GetName(ctx context.Context) string {
@@ -294,7 +294,7 @@ type boltRoleCount struct {
 	role   string
 	count  uint64
 	emoji  string
-	census *census.OpenCensus
+	census *census.Census
 }
 
 func (b *boltRoleCount) GetRole(ctx context.Context) string {

@@ -8,15 +8,15 @@ import (
 
 	bolt "github.com/coreos/bbolt"
 	"github.com/gorilla/websocket"
-	"github.com/gsmcwhirter/discord-bot-lib/v9/bot"
-	"github.com/gsmcwhirter/discord-bot-lib/v9/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v9/errreport"
-	"github.com/gsmcwhirter/discord-bot-lib/v9/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/v9/httpclient"
-	"github.com/gsmcwhirter/discord-bot-lib/v9/messagehandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v9/wsclient"
-	"github.com/gsmcwhirter/go-util/v4/census"
-	log "github.com/gsmcwhirter/go-util/v4/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v10/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v10/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v10/errreport"
+	"github.com/gsmcwhirter/discord-bot-lib/v10/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v10/httpclient"
+	"github.com/gsmcwhirter/discord-bot-lib/v10/messagehandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v10/wsclient"
+	log "github.com/gsmcwhirter/go-util/v5/logging"
+	census "github.com/gsmcwhirter/go-util/v5/stats"
 	"golang.org/x/time/rate"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/bugsnag"
@@ -49,7 +49,7 @@ type dependencies struct {
 	msgHandlers       msghandler.Handlers
 
 	rep         bugsnag.Reporter
-	census      *census.OpenCensus
+	census      *census.Census
 	promHandler http.Handler
 }
 
@@ -94,7 +94,7 @@ func createDependencies(conf config) (*dependencies, error) {
 		TraceProbability: conf.TraceProbability,
 	}
 
-	d.census = census.NewCensus(d, cOpts)
+	d.census = census.NewCensus(cOpts)
 
 	d.rep = bugsnag.NewReporter(logger, conf.BugsnagAPIKey, BuildVersion, conf.BugsnagReleaseStage)
 
@@ -170,7 +170,7 @@ func (d *dependencies) ConfigHandler() *cmdhandler.CommandHandler  { return d.co
 func (d *dependencies) AdminHandler() *cmdhandler.CommandHandler   { return d.adminHandler }
 func (d *dependencies) MessageHandler() msghandler.Handlers        { return d.msgHandlers }
 func (d *dependencies) ErrReporter() errreport.Reporter            { return d.rep }
-func (d *dependencies) Census() *census.OpenCensus                 { return d.census }
+func (d *dependencies) Census() *census.Census                     { return d.census }
 func (d *dependencies) DiscordMessageHandler() bot.DiscordMessageHandler {
 	return d.discordMsgHandler
 }

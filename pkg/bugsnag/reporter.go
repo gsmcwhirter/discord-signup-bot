@@ -5,8 +5,8 @@ import (
 
 	bugsnag "github.com/bugsnag/bugsnag-go"
 	bserr "github.com/bugsnag/bugsnag-go/errors"
-	log "github.com/gsmcwhirter/go-util/v4/logging"
-	"github.com/gsmcwhirter/go-util/v4/logging/level"
+	log "github.com/gsmcwhirter/go-util/v5/logging"
+	"github.com/gsmcwhirter/go-util/v5/logging/level"
 )
 
 type Reporter struct {

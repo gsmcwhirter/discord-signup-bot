@@ -6,8 +6,8 @@ import (
 
 	bolt "github.com/coreos/bbolt"
 	"github.com/golang/protobuf/proto"
-	"github.com/gsmcwhirter/go-util/v4/census"
-	"github.com/gsmcwhirter/go-util/v4/errors"
+	"github.com/gsmcwhirter/go-util/v5/errors"
+	census "github.com/gsmcwhirter/go-util/v5/stats"
 )
 
 // ErrGuildNotExist is the error returned if a guild does not exist
@@ -17,12 +17,12 @@ var settingsBucket = []byte("GuildRecords")
 
 type boltGuildAPI struct {
 	db         *bolt.DB
-	census     *census.OpenCensus
+	census     *census.Census
 	bucketName []byte
 }
 
 // NewBoltGuildAPI constructs a boltDB-backed GuildAPI
-func NewBoltGuildAPI(ctx context.Context, db *bolt.DB, c *census.OpenCensus) (GuildAPI, error) {
+func NewBoltGuildAPI(ctx context.Context, db *bolt.DB, c *census.Census) (GuildAPI, error) {
 	_, span := c.StartSpan(ctx, "boltGuildAPI.NewBoltGuildAPI")
 	defer span.End()
 
@@ -88,7 +88,7 @@ func (b *boltGuildAPI) NewTransaction(ctx context.Context, writable bool) (Guild
 type boltGuildAPITx struct {
 	bucketName []byte
 	tx         *bolt.Tx
-	census     *census.OpenCensus
+	census     *census.Census
 }
 
 func (b *boltGuildAPITx) Commit(ctx context.Context) error {

@@ -4,12 +4,12 @@ import (
 	"context"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/gsmcwhirter/go-util/v4/census"
+	census "github.com/gsmcwhirter/go-util/v5/stats"
 )
 
 type boltGuild struct {
 	protoGuild *ProtoGuild
-	census     *census.OpenCensus
+	census     *census.Census
 }
 
 func (g *boltGuild) GetName(ctx context.Context) string {

@@ -1,15 +1,15 @@
 package commands
 
 import (
-	"github.com/gsmcwhirter/go-util/v4/deferutil"
-	"github.com/gsmcwhirter/go-util/v4/errors"
-	"github.com/gsmcwhirter/go-util/v4/logging/level"
+	"github.com/gsmcwhirter/go-util/v5/deferutil"
+	"github.com/gsmcwhirter/go-util/v5/errors"
+	"github.com/gsmcwhirter/go-util/v5/logging/level"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v9/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v9/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v10/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v10/logging"
 )
 
 func (c *adminCommands) show(msg cmdhandler.Message) (cmdhandler.Response, error) {

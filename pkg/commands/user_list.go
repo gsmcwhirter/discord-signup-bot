@@ -5,13 +5,13 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/gsmcwhirter/go-util/v4/deferutil"
-	"github.com/gsmcwhirter/go-util/v4/logging/level"
+	"github.com/gsmcwhirter/go-util/v5/deferutil"
+	"github.com/gsmcwhirter/go-util/v5/logging/level"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v9/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v9/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v10/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v10/logging"
 )
 
 func (c *userCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error) {
