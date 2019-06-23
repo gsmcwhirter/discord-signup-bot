@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v10/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v10/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v11/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v11/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v11/logging"
 	"github.com/gsmcwhirter/go-util/v5/errors"
-	log "github.com/gsmcwhirter/go-util/v5/logging"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
@@ -21,7 +21,7 @@ var ErrUnknownRole = errors.New("unknown role")
 var isAdminAuthorized = msghandler.IsAdminAuthorized
 var isAdminChannel = msghandler.IsAdminChannel
 
-func isSignupChannel(logger log.Logger, msg cmdhandler.Message, signupChannel, adminChannel, adminRole string, session *etfapi.Session) bool {
+func isSignupChannel(logger logging.Logger, msg cmdhandler.Message, signupChannel, adminChannel, adminRole string, session *etfapi.Session) bool {
 	if msghandler.IsSignupChannel(msg, signupChannel, session) {
 		return true
 	}

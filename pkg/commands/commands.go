@@ -3,18 +3,17 @@ package commands
 import (
 	"fmt"
 
-	log "github.com/gsmcwhirter/go-util/v5/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v11/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v11/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v11/logging"
 	"github.com/gsmcwhirter/go-util/v5/parser"
 	census "github.com/gsmcwhirter/go-util/v5/stats"
-
-	"github.com/gsmcwhirter/discord-bot-lib/v10/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v10/etfapi"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
 
 type dependencies interface {
-	Logger() log.Logger
+	Logger() logging.Logger
 	TrialAPI() storage.TrialAPI
 	GuildAPI() storage.GuildAPI
 	BotSession() *etfapi.Session
@@ -58,7 +57,7 @@ func CommandHandler(deps dependencies, versionStr string, opts Options) (*cmdhan
 }
 
 type configDependencies interface {
-	Logger() log.Logger
+	Logger() logging.Logger
 	GuildAPI() storage.GuildAPI
 	TrialAPI() storage.TrialAPI
 	BotSession() *etfapi.Session
@@ -94,7 +93,7 @@ func ConfigHandler(deps configDependencies, versionStr string, opts Options) (*c
 }
 
 type adminDependencies interface {
-	Logger() log.Logger
+	Logger() logging.Logger
 	GuildAPI() storage.GuildAPI
 	TrialAPI() storage.TrialAPI
 	BotSession() *etfapi.Session

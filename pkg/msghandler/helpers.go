@@ -1,15 +1,15 @@
 package msghandler
 
 import (
-	"github.com/gsmcwhirter/discord-bot-lib/v10/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v10/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/v10/snowflake"
-	log "github.com/gsmcwhirter/go-util/v5/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v11/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v11/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v11/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v11/snowflake"
 	"github.com/gsmcwhirter/go-util/v5/logging/level"
 )
 
 // IsAdminAuthorized determines if a user can take admin actions with the bot (ignoring channel)
-func IsAdminAuthorized(logger log.Logger, msg cmdhandler.Message, adminRole string, session *etfapi.Session) bool {
+func IsAdminAuthorized(logger logging.Logger, msg cmdhandler.Message, adminRole string, session *etfapi.Session) bool {
 	authorized := false
 	authorized = authorized || session.IsGuildAdmin(msg.GuildID(), msg.UserID())
 	authorized = authorized || HasAdminRole(logger, msg, adminRole, session)
@@ -18,7 +18,7 @@ func IsAdminAuthorized(logger log.Logger, msg cmdhandler.Message, adminRole stri
 }
 
 // IsAdminChannel determines if a message is occurring in the admin channel for a guild
-func IsAdminChannel(logger log.Logger, msg cmdhandler.Message, adminChannel string, session *etfapi.Session) bool {
+func IsAdminChannel(logger logging.Logger, msg cmdhandler.Message, adminChannel string, session *etfapi.Session) bool {
 
 	g, ok := session.Guild(msg.GuildID())
 	if !ok {
@@ -54,7 +54,7 @@ func IsSignupChannel(msg cmdhandler.Message, signupChannel string, session *etfa
 }
 
 // HasAdminRole determines if the message author is an authorized bot admin (not super-admin)
-func HasAdminRole(logger log.Logger, msg cmdhandler.Message, adminRole string, session *etfapi.Session) bool {
+func HasAdminRole(logger logging.Logger, msg cmdhandler.Message, adminRole string, session *etfapi.Session) bool {
 	if adminRole == "" {
 		return false
 	}

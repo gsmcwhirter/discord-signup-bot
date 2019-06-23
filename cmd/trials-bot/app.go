@@ -12,7 +12,7 @@ import (
 	"github.com/gsmcwhirter/go-util/v5/pprofsidecar"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v10/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v11/bot"
 )
 
 type config struct {

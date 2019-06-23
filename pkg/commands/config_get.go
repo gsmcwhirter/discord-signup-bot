@@ -8,8 +8,8 @@ import (
 	"github.com/gsmcwhirter/go-util/v5/errors"
 	"github.com/gsmcwhirter/go-util/v5/logging/level"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v10/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v10/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v11/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v11/logging"
 )
 
 func (c *configCommands) get(msg cmdhandler.Message) (cmdhandler.Response, error) {

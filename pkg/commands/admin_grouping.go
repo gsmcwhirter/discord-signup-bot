@@ -11,9 +11,9 @@ import (
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v10/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v10/logging"
-	"github.com/gsmcwhirter/discord-bot-lib/v10/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v11/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v11/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v11/snowflake"
 )
 
 func (c *adminCommands) grouping(msg cmdhandler.Message) (cmdhandler.Response, error) {

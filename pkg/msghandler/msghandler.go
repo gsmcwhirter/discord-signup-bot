@@ -6,18 +6,18 @@ import (
 	"strings"
 
 	"github.com/gsmcwhirter/go-util/v5/errors"
-	log "github.com/gsmcwhirter/go-util/v5/logging"
 	"github.com/gsmcwhirter/go-util/v5/logging/level"
 	"github.com/gsmcwhirter/go-util/v5/parser"
 	census "github.com/gsmcwhirter/go-util/v5/stats"
 	"golang.org/x/time/rate"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v10/bot"
-	"github.com/gsmcwhirter/discord-bot-lib/v10/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v10/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/v10/logging"
-	"github.com/gsmcwhirter/discord-bot-lib/v10/snowflake"
-	"github.com/gsmcwhirter/discord-bot-lib/v10/wsclient"
+	"github.com/gsmcwhirter/discord-bot-lib/v11/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v11/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v11/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v11/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v11/request"
+	"github.com/gsmcwhirter/discord-bot-lib/v11/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v11/wsclient"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
@@ -31,7 +31,7 @@ var ErrUnauthorized = errors.New("unauthorized")
 var ErrNoResponse = errors.New("no response")
 
 type dependencies interface {
-	Logger() log.Logger
+	Logger() logging.Logger
 	GuildAPI() storage.GuildAPI
 	CommandHandler() *cmdhandler.CommandHandler
 	ConfigHandler() *cmdhandler.CommandHandler
@@ -139,18 +139,18 @@ func (h *handlers) attemptConfigAndAdminHandlers(msg cmdhandler.Message, cmdIndi
 	return h.deps.AdminHandler().HandleMessage(cmdhandler.NewWithContents(msg, cmdContent))
 }
 
-func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, respChan chan<- wsclient.WSMessage) {
+func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, respChan chan<- wsclient.WSMessage) snowflake.Snowflake {
 	ctx, span := h.deps.Census().StartSpan(req.Ctx, "handlers.handleMessage")
 	defer span.End()
 	req.Ctx = ctx
 
 	if h.bot == nil {
-		return
+		return 0
 	}
 
 	select {
 	case <-req.Ctx.Done():
-		return
+		return 0
 	default:
 	}
 
@@ -159,26 +159,29 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 	m, err := etfapi.MessageFromElementMap(p.Data)
 	if err != nil {
 		level.Error(logger).Err("error inflating message", err)
-		return
+		return 0
 	}
 
 	if m.MessageType() != etfapi.DefaultMessage {
 		level.Info(logger).Message("message was not a default type")
-		return
+		return 0
 	}
+
+	gid := h.channelGuild(m.ChannelID())
+	req.Ctx = request.WithGuildID(req.Ctx, gid)
+	logger = logging.WithContext(req.Ctx, h.deps.Logger())
 
 	content := m.ContentString()
 	if content == "" {
 		level.Info(logger).Message("message contents empty")
-		return
+		return gid
 	}
 
-	gid := h.channelGuild(m.ChannelID())
 	cmdIndicator := h.guildCommandIndicator(req.Ctx, gid)
 
 	if !strings.HasPrefix(content, cmdIndicator) {
 		level.Info(logger).Message("not a command")
-		return
+		return gid
 	}
 
 	content = strings.TrimSpace(content)
@@ -194,7 +197,7 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 	}
 
 	if err == ErrNoResponse || err == parser.ErrUnknownCommand {
-		return
+		return gid
 	}
 
 	if err != nil {
@@ -223,7 +226,7 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 		err = h.deps.MessageRateLimiter().Wait(req.Ctx)
 		if err != nil {
 			level.Error(logger).Err("error waiting for ratelimiting", err)
-			return
+			return gid
 		}
 
 		sendResp, body, err := h.bot.SendMessage(req.Ctx, sendTo, res.ToMessage())
@@ -239,9 +242,11 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 			}
 
 			level.Error(logger).Err("could not send message", err, "resp_body", bodyStr, "status_code", status)
-			return
+			return gid
 		}
 	}
 
 	level.Info(logger).Message("successfully sent message(s) to channel", "channel_id", sendTo.ToString(), "message_ct", len(splitResp))
+
+	return gid
 }
