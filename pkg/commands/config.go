@@ -49,3 +49,28 @@ func ConfigCommandHandler(deps configDependencies, versionStr, preCommand string
 
 	return ch, err
 }
+
+// ConfigDebugHandler creates a new command handler for !config-su-debug commands
+func ConfigDebugCommandHandler(deps configDependencies, preCommand string) (*cmdhandler.CommandHandler, error) {
+	p := parser.NewParser(parser.Options{
+		CmdIndicator: "",
+	})
+	cc := configCommands{
+		preCommand: preCommand,
+		deps:       deps,
+	}
+
+	ch, err := cmdhandler.NewCommandHandler(p, cmdhandler.Options{
+		PreCommand:          preCommand,
+		Placeholder:         "action",
+		HelpOnEmptyCommands: true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	ch.SetHandler("factory-reset", cmdhandler.NewMessageHandler(cc.reset))
+	ch.SetHandler("info", cmdhandler.NewMessageHandler(cc.debug))
+
+	return ch, err
+}

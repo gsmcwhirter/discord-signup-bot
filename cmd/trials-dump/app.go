@@ -76,7 +76,7 @@ func dumpGuildSettings(deps *dependencies, gid snowflake.Snowflake) error {
 	}
 
 	gsettings := g.GetSettings(ctx)
-	fmt.Printf("%+v\n\n", gsettings)
+	fmt.Printf("SETTINGS: %+v\n\n", gsettings)
 	return nil
 }
 

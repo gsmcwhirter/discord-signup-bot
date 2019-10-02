@@ -35,6 +35,7 @@ type dependencies interface {
 	GuildAPI() storage.GuildAPI
 	CommandHandler() *cmdhandler.CommandHandler
 	ConfigHandler() *cmdhandler.CommandHandler
+	DebugHandler() *cmdhandler.CommandHandler
 	AdminHandler() *cmdhandler.CommandHandler
 	MessageRateLimiter() *rate.Limiter
 	BotSession() *etfapi.Session
@@ -122,9 +123,20 @@ func (h *handlers) attemptConfigAndAdminHandlers(msg cmdhandler.Message, cmdIndi
 	}
 
 	level.Debug(logger).Message("admin trying to config")
+
+	level.Info(logger).Message("processing debug command", "cmdContent", fmt.Sprintf("%q", content))
+	resp, err := h.deps.DebugHandler().HandleMessage(cmdhandler.NewWithContents(msg, content))
+	if err == nil {
+		return resp, nil
+	}
+
+	if err != ErrUnauthorized && err != parser.ErrUnknownCommand {
+		return resp, err
+	}
+
 	cmdContent := h.deps.ConfigHandler().CommandIndicator() + strings.TrimPrefix(content, cmdIndicator)
 	level.Info(logger).Message("processing command", "cmdContent", fmt.Sprintf("%q", cmdContent), "rawCmd", fmt.Sprintf("%q", content))
-	resp, err := h.deps.ConfigHandler().HandleMessage(cmdhandler.NewWithContents(msg, cmdContent))
+	resp, err = h.deps.ConfigHandler().HandleMessage(cmdhandler.NewWithContents(msg, cmdContent))
 
 	if err == nil {
 		return resp, nil

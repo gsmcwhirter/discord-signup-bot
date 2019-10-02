@@ -45,6 +45,7 @@ type dependencies struct {
 	cmdHandler        *cmdhandler.CommandHandler
 	configHandler     *cmdhandler.CommandHandler
 	adminHandler      *cmdhandler.CommandHandler
+	debugHandler      *cmdhandler.CommandHandler
 	discordMsgHandler bot.DiscordMessageHandler
 	msgHandlers       msghandler.Handlers
 
@@ -133,6 +134,10 @@ func createDependencies(conf config) (*dependencies, error) {
 	if err != nil {
 		return d, err
 	}
+	d.debugHandler, err = commands.ConfigDebugHandler(d)
+	if err != nil {
+		return d, err
+	}
 
 	d.discordMsgHandler = messagehandler.NewDiscordMessageHandler(d)
 
@@ -168,6 +173,7 @@ func (d *dependencies) BotSession() *etfapi.Session                { return d.bo
 func (d *dependencies) CommandHandler() *cmdhandler.CommandHandler { return d.cmdHandler }
 func (d *dependencies) ConfigHandler() *cmdhandler.CommandHandler  { return d.configHandler }
 func (d *dependencies) AdminHandler() *cmdhandler.CommandHandler   { return d.adminHandler }
+func (d *dependencies) DebugHandler() *cmdhandler.CommandHandler   { return d.debugHandler }
 func (d *dependencies) MessageHandler() msghandler.Handlers        { return d.msgHandlers }
 func (d *dependencies) ErrReporter() errreport.Reporter            { return d.rep }
 func (d *dependencies) Census() *census.Census                     { return d.census }

@@ -83,11 +83,40 @@ func ConfigHandler(deps configDependencies, versionStr string, opts Options) (*c
 	}
 
 	ch.SetHandler("config-su", cch)
+
 	// disable help for config
 	ch.SetHandler("help", cmdhandler.NewMessageHandler(func(msg cmdhandler.Message) (cmdhandler.Response, error) {
 		r := &cmdhandler.SimpleEmbedResponse{}
 		return r, parser.ErrUnknownCommand
 	}))
+
+	return ch, nil
+}
+
+func ConfigDebugHandler(deps configDependencies) (*cmdhandler.CommandHandler, error) {
+	p := parser.NewParser(parser.Options{
+		CmdIndicator: "!", // yes, hard-code this here
+	})
+
+	ch, err := cmdhandler.NewCommandHandler(p, cmdhandler.Options{
+		NoHelpOnUnknownCommands: false,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	cch, err := ConfigDebugCommandHandler(deps, "!config-su-debug")
+	if err != nil {
+		return nil, err
+	}
+
+	ch.SetHandler("config-su-debug", cch)
+
+	// // disable help for config
+	// ch.SetHandler("help", cmdhandler.NewMessageHandler(func(msg cmdhandler.Message) (cmdhandler.Response, error) {
+	// 	r := &cmdhandler.SimpleEmbedResponse{}
+	// 	return r, parser.ErrUnknownCommand
+	// }))
 
 	return ch, nil
 }
