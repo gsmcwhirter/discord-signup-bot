@@ -130,7 +130,11 @@ func (h *handlers) attemptConfigAndAdminHandlers(msg cmdhandler.Message, cmdIndi
 		return resp, nil
 	}
 
-	if err != ErrUnauthorized && err != parser.ErrUnknownCommand {
+	if e2, ok := err.(errors.Error); ok && e2.Cause() != nil {
+		err = e2.Cause()
+	}
+
+	if err != ErrUnauthorized && err != parser.ErrUnknownCommand && err != parser.ErrNotACommand {
 		return resp, err
 	}
 
