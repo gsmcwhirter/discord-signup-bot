@@ -112,11 +112,11 @@ func ConfigDebugHandler(deps configDependencies) (*cmdhandler.CommandHandler, er
 
 	ch.SetHandler("config-su-debug", cch)
 
-	// // disable help for config
-	// ch.SetHandler("help", cmdhandler.NewMessageHandler(func(msg cmdhandler.Message) (cmdhandler.Response, error) {
-	// 	r := &cmdhandler.SimpleEmbedResponse{}
-	// 	return r, parser.ErrUnknownCommand
-	// }))
+	// disable help for config
+	ch.SetHandler("help", cmdhandler.NewMessageHandler(func(msg cmdhandler.Message) (cmdhandler.Response, error) {
+		r := &cmdhandler.SimpleEmbedResponse{}
+		return r, parser.ErrUnknownCommand
+	}))
 
 	return ch, nil
 }

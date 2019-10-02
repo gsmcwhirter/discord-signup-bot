@@ -50,7 +50,7 @@ func ConfigCommandHandler(deps configDependencies, versionStr, preCommand string
 	return ch, err
 }
 
-// ConfigDebugHandler creates a new command handler for !config-su-debug commands
+// ConfigDebugCommandHandler creates a new command handler for !config-su-debug commands
 func ConfigDebugCommandHandler(deps configDependencies, preCommand string) (*cmdhandler.CommandHandler, error) {
 	p := parser.NewParser(parser.Options{
 		CmdIndicator: "",
