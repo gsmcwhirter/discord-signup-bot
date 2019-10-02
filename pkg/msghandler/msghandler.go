@@ -195,7 +195,7 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 
 	cmdIndicator := h.guildCommandIndicator(req.Ctx, gid)
 
-	if !strings.HasPrefix(content, cmdIndicator) && !strings.HasPrefix("!config-su-debug") {
+	if !strings.HasPrefix(content, cmdIndicator) && !strings.HasPrefix(content, "!config-su-debug") {
 		level.Info(logger).Message("not a command")
 		return gid
 	}
