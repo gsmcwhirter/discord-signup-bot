@@ -1,5 +1,63 @@
 # Changelog
 
+## v0.19.0
+
+- Adjust bot permissions (with new lib version) to ensure ability to embed/attach
+
+## v0.18.1 -- v0.18.4
+
+- Get debug handlers actually working
+
+## v0.18.0
+
+- Add debug handlers to help figure out issues
+
+## v0.17.1
+
+- Upgrade libraries to get some moderately better logging (hopefully)
+
+## v0.17.0
+
+- Upgrade to bot-lib v10 and go-util v5
+
+## v0.16.1
+
+- Add guild_id to traces
+
+## v0.16.0
+
+- Add tracing and rework the service to ship logs off box
+
+## v0.15.1
+
+- Fix nil pointer dereference panic
+- Use the bugfix version of the bot library
+- Attempt to fix integer overflow issues that might already exist in the database
+
+## v0.15.0
+
+- Add bugsnag panic reporting
+
+## v0.14.0
+
+- Upgrade to the v7 bot library and v3 go-util
+
+## v0.13.3
+
+- Convert to go modules, new linters, and fix linting issues
+
+## v0.13.2
+
+- Fix a help placeholder for config-su
+
+## v0.13.1
+
+- Some refactoring to make the !admin signup and !admin withdraw actually work in the signup channel
+
+## v0.13.0
+
+- Allow !admin signup and !admin withdraw in signup channels as well as admin channels
+
 ## v0.12.1
 
 - Fix `!admin edit` creating new events unintentionally
