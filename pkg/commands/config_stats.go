@@ -9,8 +9,8 @@ import (
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v11/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v11/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v12/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v12/logging"
 )
 
 func (c *configCommands) collectStats(ctx context.Context, gid string) (stat, error) {

@@ -3,9 +3,9 @@ package commands
 import (
 	"fmt"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v11/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v11/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/v11/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v12/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v12/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v12/logging"
 	"github.com/gsmcwhirter/go-util/v5/parser"
 	census "github.com/gsmcwhirter/go-util/v5/stats"
 

@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v11/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v11/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/v11/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v12/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v12/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v12/logging"
 	"github.com/gsmcwhirter/go-util/v5/errors"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"

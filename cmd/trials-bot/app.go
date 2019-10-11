@@ -12,7 +12,7 @@ import (
 	"github.com/gsmcwhirter/go-util/v5/pprofsidecar"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v11/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v12/bot"
 )
 
 type config struct {
@@ -57,7 +57,18 @@ func start(c config) error {
 		BotPresence: c.BotPresence,
 	}
 
-	b := bot.NewDiscordBot(deps, botConfig)
+	// See https://discordapp.com/developers/docs/topics/permissions#permissions-bitwise-permission-flags
+	botPermissions := 0x00000040 // add reactions
+	botPermissions |= 0x00000400 // view channel (including read messages)
+	botPermissions |= 0x00000800 // send messages
+	botPermissions |= 0x00002000 // manage messages
+	botPermissions |= 0x00004000 // embed links
+	botPermissions |= 0x00008000 // attach files
+	botPermissions |= 0x00010000 // read message history
+	botPermissions |= 0x00020000 // mention everyone
+	botPermissions |= 0x04000000 // change own nickname
+
+	b := bot.NewDiscordBot(deps, botConfig, botPermissions)
 	err = b.AuthenticateAndConnect()
 	if err != nil {
 		return err

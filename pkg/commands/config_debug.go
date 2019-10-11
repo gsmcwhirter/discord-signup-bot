@@ -7,9 +7,9 @@ import (
 	"github.com/gsmcwhirter/go-util/v5/errors"
 	"github.com/gsmcwhirter/go-util/v5/logging/level"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v11/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v11/logging"
-	"github.com/gsmcwhirter/discord-bot-lib/v11/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v12/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v12/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v12/snowflake"
 )
 
 func (c *configCommands) debug(msg cmdhandler.Message) (cmdhandler.Response, error) {

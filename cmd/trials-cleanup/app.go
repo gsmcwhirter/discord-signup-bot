@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v11/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v12/snowflake"
 	"github.com/gsmcwhirter/go-util/v5/deferutil"
 	"github.com/gsmcwhirter/go-util/v5/errors"
 )

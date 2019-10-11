@@ -13,14 +13,13 @@ require (
 	github.com/golang/protobuf v1.3.1
 	github.com/golangci/golangci-lint v1.17.1
 	github.com/gorilla/websocket v1.4.0
-	github.com/gsmcwhirter/discord-bot-lib/v11 v11.0.1
+	github.com/gsmcwhirter/discord-bot-lib/v12 v12.0.1
 	github.com/gsmcwhirter/go-util/v5 v5.1.2
 	github.com/hashicorp/go-multierror v1.0.0
 	github.com/honeycombio/opencensus-exporter v1.0.1
 	github.com/kardianos/osext v0.0.0-20190222173326-2bc1f35cddc0 // indirect
-	github.com/mailru/easyjson v0.7.0 // indirect
 	github.com/spf13/viper v1.4.0
 	golang.org/x/sync v0.0.0-20190423024810-112230192c58
 	golang.org/x/time v0.0.0-20190308202827-9d24e82272b4
-	golang.org/x/tools v0.0.0-20191002212750-6fe9ea94a73d
+	golang.org/x/tools v0.0.0-20191010201905-e5ffc44a6fee
 )
