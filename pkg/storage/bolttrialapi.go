@@ -4,10 +4,10 @@ import (
 	"context"
 	"strings"
 
-	bolt "github.com/coreos/bbolt"
-	"github.com/golang/protobuf/proto"
-	"github.com/gsmcwhirter/go-util/v5/errors"
-	census "github.com/gsmcwhirter/go-util/v5/stats"
+	"github.com/gsmcwhirter/go-util/v7/errors"
+	"github.com/gsmcwhirter/go-util/v7/telemetry"
+	bolt "go.etcd.io/bbolt"
+	"google.golang.org/protobuf/proto"
 )
 
 // ErrTrialNotExist is the error returned if a trial does not exist
@@ -15,11 +15,11 @@ var ErrTrialNotExist = errors.New("trial does not exist")
 
 type boltTrialAPI struct {
 	db     *bolt.DB
-	census *census.Census
+	census *telemetry.Census
 }
 
 // NewBoltTrialAPI constructs a boltDB-backed TrialAPI
-func NewBoltTrialAPI(db *bolt.DB, c *census.Census) (TrialAPI, error) {
+func NewBoltTrialAPI(db *bolt.DB, c *telemetry.Census) (TrialAPI, error) {
 	b := boltTrialAPI{
 		db:     db,
 		census: c,
@@ -60,7 +60,7 @@ func (b *boltTrialAPI) NewTransaction(ctx context.Context, guild string, writabl
 type boltTrialAPITx struct {
 	bucketName []byte
 	tx         *bolt.Tx
-	census     *census.Census
+	census     *telemetry.Census
 }
 
 func (b *boltTrialAPITx) Commit(ctx context.Context) error {

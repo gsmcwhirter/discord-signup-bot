@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gsmcwhirter/go-util/v5/deferutil"
-	"github.com/gsmcwhirter/go-util/v5/errors"
-	"github.com/gsmcwhirter/go-util/v5/logging/level"
+	"github.com/gsmcwhirter/go-util/v7/deferutil"
+	"github.com/gsmcwhirter/go-util/v7/errors"
+	"github.com/gsmcwhirter/go-util/v7/logging/level"
 	multierror "github.com/hashicorp/go-multierror"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v12/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v12/logging"
-	"github.com/gsmcwhirter/discord-bot-lib/v12/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v13/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v13/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v13/snowflake"
 )
 
 func (c *adminCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, error) {

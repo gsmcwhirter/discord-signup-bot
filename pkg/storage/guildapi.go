@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gsmcwhirter/go-util/v5/errors"
-	census "github.com/gsmcwhirter/go-util/v5/stats"
+	"github.com/gsmcwhirter/go-util/v7/errors"
+	"github.com/gsmcwhirter/go-util/v7/telemetry"
 )
 
 // ErrBadSetting is the error returned if an unknown setting is accessed
@@ -16,7 +16,7 @@ var ErrBadSetting = errors.New("bad setting")
 
 // GuildSettings is the set of configuration settings for a guild
 type GuildSettings struct {
-	census            *census.Census
+	census            *telemetry.Census
 	ControlSequence   string
 	AnnounceChannel   string
 	SignupChannel     string

@@ -1,11 +1,11 @@
 package msghandler
 
 import (
-	"github.com/gsmcwhirter/discord-bot-lib/v12/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v12/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/v12/logging"
-	"github.com/gsmcwhirter/discord-bot-lib/v12/snowflake"
-	"github.com/gsmcwhirter/go-util/v5/logging/level"
+	"github.com/gsmcwhirter/discord-bot-lib/v13/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v13/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v13/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v13/snowflake"
+	"github.com/gsmcwhirter/go-util/v7/logging/level"
 )
 
 // IsAdminAuthorized determines if a user can take admin actions with the bot (ignoring channel)

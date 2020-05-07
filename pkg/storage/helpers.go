@@ -5,11 +5,11 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gsmcwhirter/go-util/v5/deferutil"
-	"github.com/gsmcwhirter/go-util/v5/errors"
+	"github.com/gsmcwhirter/go-util/v7/deferutil"
+	"github.com/gsmcwhirter/go-util/v7/errors"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v12/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v12/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v13/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v13/snowflake"
 )
 
 // GetSettings is a wrapper to get the configuration settings for a guild

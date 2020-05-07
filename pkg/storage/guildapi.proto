@@ -1,6 +1,8 @@
 syntax = "proto3";
 package storage;
 
+option go_package = ".;storage";
+
 message ProtoGuild {
     string name = 1;
     string command_indicator = 2;

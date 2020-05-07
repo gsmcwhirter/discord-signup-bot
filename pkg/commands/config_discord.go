@@ -1,9 +1,9 @@
 package commands
 
 import (
-	"github.com/gsmcwhirter/discord-bot-lib/v12/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v12/logging"
-	"github.com/gsmcwhirter/go-util/v5/logging/level"
+	"github.com/gsmcwhirter/discord-bot-lib/v13/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v13/logging"
+	"github.com/gsmcwhirter/go-util/v7/logging/level"
 )
 
 func (c *configCommands) discord(msg cmdhandler.Message) (cmdhandler.Response, error) {

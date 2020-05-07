@@ -6,17 +6,17 @@ import (
 	"net/http"
 	"time"
 
-	bolt "github.com/coreos/bbolt"
 	"github.com/gorilla/websocket"
-	"github.com/gsmcwhirter/discord-bot-lib/v12/bot"
-	"github.com/gsmcwhirter/discord-bot-lib/v12/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v12/errreport"
-	"github.com/gsmcwhirter/discord-bot-lib/v12/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/v12/httpclient"
-	"github.com/gsmcwhirter/discord-bot-lib/v12/messagehandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v12/wsclient"
-	log "github.com/gsmcwhirter/go-util/v5/logging"
-	census "github.com/gsmcwhirter/go-util/v5/stats"
+	"github.com/gsmcwhirter/discord-bot-lib/v13/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v13/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v13/errreport"
+	"github.com/gsmcwhirter/discord-bot-lib/v13/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v13/httpclient"
+	"github.com/gsmcwhirter/discord-bot-lib/v13/messagehandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v13/wsclient"
+	log "github.com/gsmcwhirter/go-util/v7/logging"
+	"github.com/gsmcwhirter/go-util/v7/telemetry"
+	bolt "go.etcd.io/bbolt"
 	"golang.org/x/time/rate"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/bugsnag"
@@ -50,7 +50,7 @@ type dependencies struct {
 	msgHandlers       msghandler.Handlers
 
 	rep         bugsnag.Reporter
-	census      *census.Census
+	census      *telemetry.Census
 	promHandler http.Handler
 }
 
@@ -85,7 +85,7 @@ func createDependencies(conf config) (*dependencies, error) {
 
 	d.promHandler = promExp
 
-	cOpts := census.Options{
+	cOpts := telemetry.Options{
 		StatsExporter: promExp,
 		TraceExporter: stats.NewHoneycombExporter(stats.HoneycombConfig{
 			APIKey:           conf.HoneycombAPIKey,
@@ -95,7 +95,7 @@ func createDependencies(conf config) (*dependencies, error) {
 		TraceProbability: conf.TraceProbability,
 	}
 
-	d.census = census.NewCensus(cOpts)
+	d.census = telemetry.NewCensus(cOpts)
 
 	d.rep = bugsnag.NewReporter(logger, conf.BugsnagAPIKey, BuildVersion, conf.BugsnagReleaseStage)
 
@@ -176,7 +176,7 @@ func (d *dependencies) AdminHandler() *cmdhandler.CommandHandler   { return d.ad
 func (d *dependencies) DebugHandler() *cmdhandler.CommandHandler   { return d.debugHandler }
 func (d *dependencies) MessageHandler() msghandler.Handlers        { return d.msgHandlers }
 func (d *dependencies) ErrReporter() errreport.Reporter            { return d.rep }
-func (d *dependencies) Census() *census.Census                     { return d.census }
+func (d *dependencies) Census() *telemetry.Census                  { return d.census }
 func (d *dependencies) DiscordMessageHandler() bot.DiscordMessageHandler {
 	return d.discordMsgHandler
 }

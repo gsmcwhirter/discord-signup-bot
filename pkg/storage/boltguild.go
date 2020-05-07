@@ -3,13 +3,13 @@ package storage
 import (
 	"context"
 
-	"github.com/golang/protobuf/proto"
-	census "github.com/gsmcwhirter/go-util/v5/stats"
+	"github.com/gsmcwhirter/go-util/v7/telemetry"
+	"google.golang.org/protobuf/proto"
 )
 
 type boltGuild struct {
 	protoGuild *ProtoGuild
-	census     *census.Census
+	census     *telemetry.Census
 }
 
 func (g *boltGuild) GetName(ctx context.Context) string {

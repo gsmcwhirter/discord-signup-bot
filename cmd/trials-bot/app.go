@@ -7,12 +7,12 @@ import (
 
 	_ "net/http/pprof"
 
-	"github.com/gsmcwhirter/go-util/v5/deferutil"
-	"github.com/gsmcwhirter/go-util/v5/logging/level"
-	"github.com/gsmcwhirter/go-util/v5/pprofsidecar"
+	"github.com/gsmcwhirter/go-util/v7/deferutil"
+	"github.com/gsmcwhirter/go-util/v7/logging/level"
+	"github.com/gsmcwhirter/go-util/v7/pprofsidecar"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v12/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v13/bot"
 )
 
 type config struct {

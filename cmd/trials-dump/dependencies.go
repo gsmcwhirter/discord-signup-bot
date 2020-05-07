@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
-	bolt "github.com/coreos/bbolt"
+	bolt "go.etcd.io/bbolt"
 
-	log "github.com/gsmcwhirter/go-util/v5/logging"
-	census "github.com/gsmcwhirter/go-util/v5/stats"
+	log "github.com/gsmcwhirter/go-util/v7/logging"
+	"github.com/gsmcwhirter/go-util/v7/telemetry"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
@@ -17,8 +17,8 @@ type dependencies struct {
 	db       *bolt.DB
 	trialAPI storage.TrialAPI
 	guildAPI storage.GuildAPI
+	census   *telemetry.Census
 	// botSession *etfapi.Session
-	census *census.Census
 }
 
 func createDependencies(conf config) (*dependencies, error) {

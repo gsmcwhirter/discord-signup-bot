@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/gsmcwhirter/go-util/v5/deferutil"
-	"github.com/gsmcwhirter/go-util/v5/logging/level"
+	"github.com/gsmcwhirter/go-util/v7/deferutil"
+	"github.com/gsmcwhirter/go-util/v7/logging/level"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v12/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v12/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v13/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v13/logging"
 )
 
 func (c *configCommands) collectStats(ctx context.Context, gid string) (stat, error) {

@@ -5,19 +5,19 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gsmcwhirter/go-util/v5/errors"
-	"github.com/gsmcwhirter/go-util/v5/logging/level"
-	"github.com/gsmcwhirter/go-util/v5/parser"
-	census "github.com/gsmcwhirter/go-util/v5/stats"
+	"github.com/gsmcwhirter/go-util/v7/errors"
+	"github.com/gsmcwhirter/go-util/v7/logging/level"
+	"github.com/gsmcwhirter/go-util/v7/parser"
+	"github.com/gsmcwhirter/go-util/v7/telemetry"
 	"golang.org/x/time/rate"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v12/bot"
-	"github.com/gsmcwhirter/discord-bot-lib/v12/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v12/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/v12/logging"
-	"github.com/gsmcwhirter/discord-bot-lib/v12/request"
-	"github.com/gsmcwhirter/discord-bot-lib/v12/snowflake"
-	"github.com/gsmcwhirter/discord-bot-lib/v12/wsclient"
+	"github.com/gsmcwhirter/discord-bot-lib/v13/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v13/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v13/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v13/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v13/request"
+	"github.com/gsmcwhirter/discord-bot-lib/v13/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v13/wsclient"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
@@ -39,7 +39,7 @@ type dependencies interface {
 	AdminHandler() *cmdhandler.CommandHandler
 	MessageRateLimiter() *rate.Limiter
 	BotSession() *etfapi.Session
-	Census() *census.Census
+	Census() *telemetry.Census
 }
 
 // Handlers is the interface for a Handlers dependency that registers itself with a discrord bot
@@ -130,8 +130,8 @@ func (h *handlers) attemptConfigAndAdminHandlers(msg cmdhandler.Message, cmdIndi
 		return resp, nil
 	}
 
-	if e2, ok := err.(errors.Error); ok && e2.Cause() != nil {
-		err = e2.Cause()
+	if e2, ok := err.(errors.Error); ok && e2.Unwrap() != nil {
+		err = e2.Unwrap()
 	}
 
 	if err != ErrUnauthorized && err != parser.ErrUnknownCommand && err != parser.ErrNotACommand {

@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/golang/protobuf/proto"
-	census "github.com/gsmcwhirter/go-util/v5/stats"
+	"github.com/gsmcwhirter/go-util/v7/telemetry"
+	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -17,7 +17,7 @@ const (
 
 type boltTrial struct {
 	protoTrial *ProtoTrial
-	census     *census.Census
+	census     *telemetry.Census
 }
 
 func (b *boltTrial) GetName(ctx context.Context) string {
@@ -279,7 +279,7 @@ func (b *boltTrial) migrateRoleCounts(ctx context.Context) {
 type boltTrialSignup struct {
 	name   string
 	role   string
-	census *census.Census
+	census *telemetry.Census
 }
 
 func (b *boltTrialSignup) GetName(ctx context.Context) string {
@@ -294,7 +294,7 @@ type boltRoleCount struct {
 	role   string
 	count  uint64
 	emoji  string
-	census *census.Census
+	census *telemetry.Census
 }
 
 func (b *boltRoleCount) GetRole(ctx context.Context) string {
