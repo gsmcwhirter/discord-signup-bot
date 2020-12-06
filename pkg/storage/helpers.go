@@ -8,8 +8,8 @@ import (
 	"github.com/gsmcwhirter/go-util/v7/deferutil"
 	"github.com/gsmcwhirter/go-util/v7/errors"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v15/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v15/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v16/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v16/snowflake"
 )
 
 // GetSettings is a wrapper to get the configuration settings for a guild

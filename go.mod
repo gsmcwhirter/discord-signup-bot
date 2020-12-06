@@ -12,7 +12,7 @@ require (
 	github.com/golang/protobuf v1.4.2
 	github.com/golangci/golangci-lint v1.31.0
 	github.com/gorilla/websocket v1.4.2
-	github.com/gsmcwhirter/discord-bot-lib/v15 v15.1.0
+	github.com/gsmcwhirter/discord-bot-lib/v16 v16.0.0
 	github.com/gsmcwhirter/go-util/v7 v7.0.0
 	github.com/hashicorp/go-multierror v1.1.0
 	github.com/honeycombio/opencensus-exporter v1.0.1

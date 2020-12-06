@@ -3,11 +3,11 @@ package msghandler
 import (
 	"context"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v15/bot"
-	"github.com/gsmcwhirter/discord-bot-lib/v15/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v15/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/v15/logging"
-	"github.com/gsmcwhirter/discord-bot-lib/v15/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v16/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v16/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v16/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v16/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v16/snowflake"
 	"github.com/gsmcwhirter/go-util/v7/logging/level"
 )
 
