@@ -1,18 +1,21 @@
 package msghandler
 
 import (
-	"github.com/gsmcwhirter/discord-bot-lib/v13/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v13/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/v13/logging"
-	"github.com/gsmcwhirter/discord-bot-lib/v13/snowflake"
+	"context"
+
+	"github.com/gsmcwhirter/discord-bot-lib/v15/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v15/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v15/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v15/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v15/snowflake"
 	"github.com/gsmcwhirter/go-util/v7/logging/level"
 )
 
 // IsAdminAuthorized determines if a user can take admin actions with the bot (ignoring channel)
-func IsAdminAuthorized(logger logging.Logger, msg cmdhandler.Message, adminRole string, session *etfapi.Session) bool {
+func IsAdminAuthorized(ctx context.Context, logger logging.Logger, msg cmdhandler.Message, adminRole string, session *etfapi.Session, b bot.DiscordBot) bool {
 	authorized := false
 	authorized = authorized || session.IsGuildAdmin(msg.GuildID(), msg.UserID())
-	authorized = authorized || HasAdminRole(logger, msg, adminRole, session)
+	authorized = authorized || HasAdminRole(ctx, logger, msg, adminRole, b)
 
 	return authorized
 }
@@ -54,7 +57,7 @@ func IsSignupChannel(msg cmdhandler.Message, signupChannel string, session *etfa
 }
 
 // HasAdminRole determines if the message author is an authorized bot admin (not super-admin)
-func HasAdminRole(logger logging.Logger, msg cmdhandler.Message, adminRole string, session *etfapi.Session) bool {
+func HasAdminRole(ctx context.Context, logger logging.Logger, msg cmdhandler.Message, adminRole string, b bot.DiscordBot) bool {
 	if adminRole == "" {
 		return false
 	}
@@ -65,11 +68,18 @@ func HasAdminRole(logger logging.Logger, msg cmdhandler.Message, adminRole strin
 		return false
 	}
 
-	g, ok := session.Guild(msg.GuildID())
-	if !ok {
-		level.Error(logger).Message("could not find guild in session")
+	// g, ok := session.Guild(msg.GuildID())
+	// if !ok {
+	// 	level.Error(logger).Message("could not find guild in session")
+	// 	return false
+	// }
+
+	// return g.HasRole(msg.UserID(), rid)
+
+	gm, err := b.GetGuildMember(ctx, msg.GuildID(), msg.UserID())
+	if err != nil {
+		level.Error(logger).Err("could not get guild member", err, "guild_id", msg.GuildID(), "member_id", msg.UserID())
 		return false
 	}
-
-	return g.HasRole(msg.UserID(), rid)
+	return gm.HasRole(rid)
 }

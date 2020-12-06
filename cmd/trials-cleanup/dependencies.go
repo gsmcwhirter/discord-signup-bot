@@ -51,7 +51,7 @@ func createDependencies(conf config) (*dependencies, error) {
 
 func (d *dependencies) Close() {
 	if d.db != nil {
-		d.db.Close() // nolint: errcheck
+		d.db.Close() //nolint:errcheck // not needed
 	}
 }
 

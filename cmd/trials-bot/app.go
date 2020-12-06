@@ -5,14 +5,14 @@ import (
 	"net/http"
 	"time"
 
-	_ "net/http/pprof"
+	// _ "net/http/pprof"
 
 	"github.com/gsmcwhirter/go-util/v7/deferutil"
 	"github.com/gsmcwhirter/go-util/v7/logging/level"
 	"github.com/gsmcwhirter/go-util/v7/pprofsidecar"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v13/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v15/bot"
 )
 
 type config struct {
@@ -39,24 +39,6 @@ type config struct {
 }
 
 func start(c config) error {
-	deps, err := createDependencies(c)
-	if err != nil {
-		return err
-	}
-	defer deps.Close()
-
-	botConfig := bot.Config{
-		ClientID:     c.ClientID,
-		ClientSecret: c.ClientSecret,
-		BotToken:     c.ClientToken,
-		APIURL:       c.DiscordAPI,
-		NumWorkers:   c.NumWorkers,
-
-		OS:          "linux",
-		BotName:     c.BotName,
-		BotPresence: c.BotPresence,
-	}
-
 	// See https://discordapp.com/developers/docs/topics/permissions#permissions-bitwise-permission-flags
 	botPermissions := 0x00000040 // add reactions
 	botPermissions |= 0x00000400 // view channel (including read messages)
@@ -68,14 +50,26 @@ func start(c config) error {
 	botPermissions |= 0x00020000 // mention everyone
 	botPermissions |= 0x04000000 // change own nickname
 
-	b := bot.NewDiscordBot(deps, botConfig, botPermissions)
-	err = b.AuthenticateAndConnect()
+	botIntents := 1 << 0  // guilds
+	botIntents |= 1 << 1  // guild members
+	botIntents |= 1 << 9  // guild messages
+	botIntents |= 1 << 10 // guild message reactions
+	botIntents |= 1 << 12 // direct messages
+	botIntents |= 1 << 13 // direct message reactions
+
+	deps, err := createDependencies(c, botPermissions, botIntents)
 	if err != nil {
 		return err
 	}
-	defer deferutil.CheckDefer(b.Disconnect)
+	defer deps.Close()
 
-	deps.MessageHandler().ConnectToBot(b)
+	err = deps.Bot().AuthenticateAndConnect()
+	if err != nil {
+		return err
+	}
+	defer deferutil.CheckDefer(deps.Bot().Disconnect)
+
+	deps.MessageHandler().ConnectToBot(deps.Bot())
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -92,7 +86,7 @@ func start(c config) error {
 		Handler:      mux,
 	}
 
-	err = pprofsidecar.Run(ctx, c.PProfHostPort, nil, runAll(deps, b, prom))
+	err = pprofsidecar.Run(ctx, c.PProfHostPort, nil, runAll(deps, deps.Bot(), prom))
 
 	level.Error(deps.Logger()).Err("error in start; quitting", err)
 	return err

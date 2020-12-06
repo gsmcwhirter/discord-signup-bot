@@ -3,9 +3,10 @@ package commands
 import (
 	"fmt"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v13/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v13/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/v13/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v15/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v15/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v15/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v15/logging"
 	"github.com/gsmcwhirter/go-util/v7/parser"
 	"github.com/gsmcwhirter/go-util/v7/telemetry"
 
@@ -17,6 +18,7 @@ type dependencies interface {
 	TrialAPI() storage.TrialAPI
 	GuildAPI() storage.GuildAPI
 	BotSession() *etfapi.Session
+	Bot() bot.DiscordBot
 	Census() *telemetry.Census
 }
 
@@ -61,6 +63,7 @@ type configDependencies interface {
 	GuildAPI() storage.GuildAPI
 	TrialAPI() storage.TrialAPI
 	BotSession() *etfapi.Session
+	Bot() bot.DiscordBot
 	Census() *telemetry.Census
 }
 
@@ -126,6 +129,7 @@ type adminDependencies interface {
 	GuildAPI() storage.GuildAPI
 	TrialAPI() storage.TrialAPI
 	BotSession() *etfapi.Session
+	Bot() bot.DiscordBot
 	Census() *telemetry.Census
 }
 

@@ -11,13 +11,13 @@ import (
 	"github.com/gsmcwhirter/go-util/v7/telemetry"
 	"golang.org/x/time/rate"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v13/bot"
-	"github.com/gsmcwhirter/discord-bot-lib/v13/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v13/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/v13/logging"
-	"github.com/gsmcwhirter/discord-bot-lib/v13/request"
-	"github.com/gsmcwhirter/discord-bot-lib/v13/snowflake"
-	"github.com/gsmcwhirter/discord-bot-lib/v13/wsclient"
+	"github.com/gsmcwhirter/discord-bot-lib/v15/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v15/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v15/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v15/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v15/request"
+	"github.com/gsmcwhirter/discord-bot-lib/v15/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v15/wsclient"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
@@ -117,7 +117,7 @@ func (h *handlers) attemptConfigAndAdminHandlers(msg cmdhandler.Message, cmdIndi
 		level.Error(logger).Err("could not retrieve guild settings", err)
 	}
 
-	if !IsAdminAuthorized(logger, msg, s.AdminRole, h.deps.BotSession()) {
+	if !IsAdminAuthorized(ctx, logger, msg, s.AdminRole, h.deps.BotSession(), h.bot) {
 		level.Info(logger).Message("non-admin trying to config")
 		return nil, ErrUnauthorized
 	}

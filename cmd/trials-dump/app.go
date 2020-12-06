@@ -7,7 +7,7 @@ import (
 	"github.com/gsmcwhirter/go-util/v7/deferutil"
 	"github.com/gsmcwhirter/go-util/v7/errors"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v13/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v15/snowflake"
 )
 
 type config struct {

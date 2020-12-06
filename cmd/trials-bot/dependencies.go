@@ -7,13 +7,13 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/gsmcwhirter/discord-bot-lib/v13/bot"
-	"github.com/gsmcwhirter/discord-bot-lib/v13/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v13/errreport"
-	"github.com/gsmcwhirter/discord-bot-lib/v13/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/v13/httpclient"
-	"github.com/gsmcwhirter/discord-bot-lib/v13/messagehandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v13/wsclient"
+	"github.com/gsmcwhirter/discord-bot-lib/v15/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v15/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v15/errreport"
+	"github.com/gsmcwhirter/discord-bot-lib/v15/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v15/httpclient"
+	"github.com/gsmcwhirter/discord-bot-lib/v15/messagehandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v15/wsclient"
 	log "github.com/gsmcwhirter/go-util/v7/logging"
 	"github.com/gsmcwhirter/go-util/v7/telemetry"
 	bolt "go.etcd.io/bbolt"
@@ -52,9 +52,11 @@ type dependencies struct {
 	rep         bugsnag.Reporter
 	census      *telemetry.Census
 	promHandler http.Handler
+
+	bot bot.DiscordBot
 }
 
-func createDependencies(conf config) (*dependencies, error) {
+func createDependencies(conf config, botPermissions, botIntents int) (*dependencies, error) {
 	var err error
 
 	d := &dependencies{
@@ -147,12 +149,26 @@ func createDependencies(conf config) (*dependencies, error) {
 		SuccessColor:            0xaa63ff,
 	})
 
+	botConfig := bot.Config{
+		ClientID:     conf.ClientID,
+		ClientSecret: conf.ClientSecret,
+		BotToken:     conf.ClientToken,
+		APIURL:       conf.DiscordAPI,
+		NumWorkers:   conf.NumWorkers,
+
+		OS:          "linux",
+		BotName:     conf.BotName,
+		BotPresence: conf.BotPresence,
+	}
+
+	d.bot = bot.NewDiscordBot(d, botConfig, botPermissions, botIntents)
+
 	return d, nil
 }
 
 func (d *dependencies) Close() {
 	if d.db != nil {
-		d.db.Close() // nolint: errcheck
+		d.db.Close() //nolint:errcheck // not needed
 	}
 
 	if d.wsClient != nil {
@@ -177,6 +193,7 @@ func (d *dependencies) DebugHandler() *cmdhandler.CommandHandler   { return d.de
 func (d *dependencies) MessageHandler() msghandler.Handlers        { return d.msgHandlers }
 func (d *dependencies) ErrReporter() errreport.Reporter            { return d.rep }
 func (d *dependencies) Census() *telemetry.Census                  { return d.census }
+func (d *dependencies) Bot() bot.DiscordBot                        { return d.bot }
 func (d *dependencies) DiscordMessageHandler() bot.DiscordMessageHandler {
 	return d.discordMsgHandler
 }

@@ -3,7 +3,7 @@ package commands
 import (
 	"github.com/gsmcwhirter/go-util/v7/parser"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v13/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v15/cmdhandler"
 )
 
 type configCommands struct {
