@@ -11,13 +11,13 @@ import (
 	"github.com/gsmcwhirter/go-util/v7/telemetry"
 	"golang.org/x/time/rate"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v16/bot"
-	"github.com/gsmcwhirter/discord-bot-lib/v16/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v16/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/v16/logging"
-	"github.com/gsmcwhirter/discord-bot-lib/v16/request"
-	"github.com/gsmcwhirter/discord-bot-lib/v16/snowflake"
-	"github.com/gsmcwhirter/discord-bot-lib/v16/wsclient"
+	"github.com/gsmcwhirter/discord-bot-lib/v17/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v17/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v17/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v17/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v17/request"
+	"github.com/gsmcwhirter/discord-bot-lib/v17/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v17/wsclient"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
@@ -38,6 +38,7 @@ type dependencies interface {
 	DebugHandler() *cmdhandler.CommandHandler
 	AdminHandler() *cmdhandler.CommandHandler
 	MessageRateLimiter() *rate.Limiter
+	ReactionsRateLimiter() *rate.Limiter
 	BotSession() *etfapi.Session
 	Census() *telemetry.Census
 }
@@ -245,37 +246,30 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 			return gid
 		}
 
-		sendResp, body, err := h.bot.SendMessage(req.Ctx, sendTo, res.ToMessage())
-		var bodyStr string
-		if body != nil {
-			bodyStr = string(body)
-		}
-
+		sentMsg, err := h.bot.SendMessage(req.Ctx, sendTo, res.ToMessage())
 		if err != nil {
-			status := 0
-			if sendResp != nil {
-				status = sendResp.StatusCode
-			}
-
-			level.Error(logger).Err("could not send message", err, "resp_body", bodyStr, "status_code", status)
+			level.Error(logger).Err("could not send message", err)
 			return gid
 		}
 
-		level.Error(logger).Log("response body", "resp_body", bodyStr)
+		reactions := res.MessageReactions()
+		for _, reaction := range reactions {
+			err = h.deps.ReactionsRateLimiter().Wait(req.Ctx)
+			if err != nil {
+				level.Error(logger).Err("error waiting for ratelimiting for reaction", err)
+				return gid
+			}
 
-		// reactions := res.MessageReactions()
-		// for _, reaction := range reactions {
-		// 	resp, err := h.bot.CreateReaction(ctx, sendTo, 0, reaction) // TODO message ID
+			resp, err := h.bot.CreateReaction(ctx, sendTo, sentMsg.IDSnowflake, reaction)
+			if err != nil {
+				status := 0
+				if resp != nil {
+					status = resp.StatusCode
+				}
 
-		// 	status := 0
-		// 	if resp != nil {
-		// 		status = resp.StatusCode
-		// 	}
-
-		// 	if err != nil {
-		// 		level.Error(logger).Err("could not add reaction", err, "status_code", status)
-		// 	}
-		// }
+				level.Error(logger).Err("could not add reaction", err, "status_code", status)
+			}
+		}
 	}
 
 	level.Info(logger).Message("successfully sent message(s) to channel", "channel_id", sendTo.ToString(), "message_ct", len(splitResp))

@@ -11,8 +11,8 @@ import (
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v16/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v16/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v17/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v17/logging"
 )
 
 func (c *userCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, error) {
@@ -81,8 +81,9 @@ func (c *userCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, er
 		level.Debug(logger).Message("auto-show after withdraw", "trial_name", trialName)
 
 		r2 := formatTrialDisplay(msg.Context(), trial, true)
-		r2.To = cmdhandler.UserMentionString(msg.UserID())
+		// r2.To = cmdhandler.UserMentionString(msg.UserID())
 		r2.Description = fmt.Sprintf("%s\n\n%s", descStr, r2.Description)
+		r2.SetReplyTo(msg)
 		return r2, nil
 	}
 

@@ -7,13 +7,13 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/gsmcwhirter/discord-bot-lib/v16/bot"
-	"github.com/gsmcwhirter/discord-bot-lib/v16/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v16/errreport"
-	"github.com/gsmcwhirter/discord-bot-lib/v16/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/v16/httpclient"
-	"github.com/gsmcwhirter/discord-bot-lib/v16/messagehandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v16/wsclient"
+	"github.com/gsmcwhirter/discord-bot-lib/v17/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v17/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v17/errreport"
+	"github.com/gsmcwhirter/discord-bot-lib/v17/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v17/httpclient"
+	"github.com/gsmcwhirter/discord-bot-lib/v17/messagehandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v17/wsclient"
 	log "github.com/gsmcwhirter/go-util/v7/logging"
 	"github.com/gsmcwhirter/go-util/v7/telemetry"
 	bolt "go.etcd.io/bbolt"
@@ -38,9 +38,10 @@ type dependencies struct {
 	wsDialer   wsclient.Dialer
 	wsClient   wsclient.WSClient
 
-	messageRateLimiter *rate.Limiter
-	connectRateLimiter *rate.Limiter
-	botSession         *etfapi.Session
+	messageRateLimiter   *rate.Limiter
+	connectRateLimiter   *rate.Limiter
+	reactionsRateLimiter *rate.Limiter
+	botSession           *etfapi.Session
 
 	cmdHandler        *cmdhandler.CommandHandler
 	configHandler     *cmdhandler.CommandHandler
@@ -60,11 +61,12 @@ func createDependencies(conf config, botPermissions, botIntents int) (*dependenc
 	var err error
 
 	d := &dependencies{
-		httpDoer:           &http.Client{},
-		wsDialer:           wsclient.WrapDialer(websocket.DefaultDialer),
-		connectRateLimiter: rate.NewLimiter(rate.Every(5*time.Second), 1),
-		messageRateLimiter: rate.NewLimiter(rate.Every(60*time.Second), 120),
-		botSession:         etfapi.NewSession(),
+		httpDoer:             &http.Client{},
+		wsDialer:             wsclient.WrapDialer(websocket.DefaultDialer),
+		connectRateLimiter:   rate.NewLimiter(rate.Every(5*time.Second), 1),
+		messageRateLimiter:   rate.NewLimiter(rate.Every(60*time.Second), 120),
+		reactionsRateLimiter: rate.NewLimiter(rate.Every(500*time.Millisecond), 1),
+		botSession:           etfapi.NewSession(),
 	}
 
 	var logger log.Logger
@@ -185,6 +187,7 @@ func (d *dependencies) WSDialer() wsclient.Dialer                  { return d.ws
 func (d *dependencies) WSClient() wsclient.WSClient                { return d.wsClient }
 func (d *dependencies) MessageRateLimiter() *rate.Limiter          { return d.messageRateLimiter }
 func (d *dependencies) ConnectRateLimiter() *rate.Limiter          { return d.connectRateLimiter }
+func (d *dependencies) ReactionsRateLimiter() *rate.Limiter        { return d.reactionsRateLimiter }
 func (d *dependencies) BotSession() *etfapi.Session                { return d.botSession }
 func (d *dependencies) CommandHandler() *cmdhandler.CommandHandler { return d.cmdHandler }
 func (d *dependencies) ConfigHandler() *cmdhandler.CommandHandler  { return d.configHandler }
