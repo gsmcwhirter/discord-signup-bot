@@ -22,8 +22,10 @@ func (c *configCommands) set(msg cmdhandler.Message) (cmdhandler.Response, error
 	msg = cmdhandler.NewWithContext(ctx, msg)
 
 	r := &cmdhandler.SimpleEmbedResponse{
-		To: cmdhandler.UserMentionString(msg.UserID()),
+		// To: cmdhandler.UserMentionString(msg.UserID()),
 	}
+
+	r.SetReplyTo(msg)
 
 	logger := logging.WithMessage(msg, c.deps.Logger())
 	level.Info(logger).Message("handling configCommand", "command", "set", "set_args", msg.Contents())

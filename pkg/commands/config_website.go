@@ -12,9 +12,11 @@ func (c *configCommands) website(msg cmdhandler.Message) (cmdhandler.Response, e
 	msg = cmdhandler.NewWithContext(ctx, msg)
 
 	r := &cmdhandler.SimpleEmbedResponse{
-		To:          cmdhandler.UserMentionString(msg.UserID()),
+		// To:          cmdhandler.UserMentionString(msg.UserID()),
 		Description: "https://www.evogames.org/bots/eso-signup-bot/",
 	}
+
+	r.SetReplyTo(msg)
 
 	logger := logging.WithMessage(msg, c.deps.Logger())
 	level.Info(logger).Message("handling configCommand", "command", "website")

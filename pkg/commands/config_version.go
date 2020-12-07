@@ -12,9 +12,11 @@ func (c *configCommands) version(msg cmdhandler.Message) (cmdhandler.Response, e
 	msg = cmdhandler.NewWithContext(ctx, msg)
 
 	r := &cmdhandler.SimpleEmbedResponse{
-		To:          cmdhandler.UserMentionString(msg.UserID()),
+		// To:          cmdhandler.UserMentionString(msg.UserID()),
 		Description: c.versionStr,
 	}
+
+	r.SetReplyTo(msg)
 
 	logger := logging.WithMessage(msg, c.deps.Logger())
 	level.Info(logger).Message("handling configCommand", "command", "version")

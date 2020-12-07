@@ -21,8 +21,10 @@ func (c *userCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, er
 	msg = cmdhandler.NewWithContext(ctx, msg)
 
 	r := &cmdhandler.SimpleEmbedResponse{
-		To: cmdhandler.UserMentionString(msg.UserID()),
+		// To: cmdhandler.UserMentionString(msg.UserID()),
 	}
+
+	r.SetReplyTo(msg)
 
 	logger := logging.WithMessage(msg, c.deps.Logger())
 	level.Info(logger).Message("handling rootCommand", "command", "withdraw", "trial_name", msg.Contents())

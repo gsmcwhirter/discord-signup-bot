@@ -22,8 +22,10 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 	msg = cmdhandler.NewWithContext(ctx, msg)
 
 	r := &cmdhandler.SimpleEmbedResponse{
-		To: cmdhandler.UserMentionString(msg.UserID()),
+		// To: cmdhandler.UserMentionString(msg.UserID()),
 	}
+
+	r.SetReplyTo(msg)
 
 	logger := logging.WithMessage(msg, c.deps.Logger())
 	level.Info(logger).Message("handling adminCommand", "command", "announce", "args", msg.Contents())
@@ -78,8 +80,14 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 
 	roles := trial.GetRoleCounts(msg.Context())
 	roleStrs := make([]string, 0, len(roles))
+	emojis := make([]string, 0, len(roles))
 	for _, rc := range roles {
-		roleStrs = append(roleStrs, fmt.Sprintf("%s: %d", rc.GetRole(msg.Context()), rc.GetCount(msg.Context())))
+		emoji := rc.GetEmoji(msg.Context())
+		roleStrs = append(roleStrs, fmt.Sprintf("%s %s: %d", emoji, rc.GetRole(msg.Context()), rc.GetCount(msg.Context())))
+
+		if emoji != "" {
+			emojis = append(emojis, emoji)
+		}
 	}
 
 	var toStr string
@@ -104,6 +112,7 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 				Val:  fmt.Sprintf("```\n%s\n```\n", strings.Join(roleStrs, "\n")),
 			},
 		},
+		Reactions: emojis,
 	}
 
 	if signupCid != 0 {

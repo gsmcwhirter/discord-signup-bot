@@ -246,12 +246,12 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 		}
 
 		sendResp, body, err := h.bot.SendMessage(req.Ctx, sendTo, res.ToMessage())
-		if err != nil {
-			var bodyStr string
-			if body != nil {
-				bodyStr = string(body)
-			}
+		var bodyStr string
+		if body != nil {
+			bodyStr = string(body)
+		}
 
+		if err != nil {
 			status := 0
 			if sendResp != nil {
 				status = sendResp.StatusCode
@@ -260,6 +260,22 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 			level.Error(logger).Err("could not send message", err, "resp_body", bodyStr, "status_code", status)
 			return gid
 		}
+
+		level.Error(logger).Log("response body", "resp_body", bodyStr)
+
+		// reactions := res.MessageReactions()
+		// for _, reaction := range reactions {
+		// 	resp, err := h.bot.CreateReaction(ctx, sendTo, 0, reaction) // TODO message ID
+
+		// 	status := 0
+		// 	if resp != nil {
+		// 		status = resp.StatusCode
+		// 	}
+
+		// 	if err != nil {
+		// 		level.Error(logger).Err("could not add reaction", err, "status_code", status)
+		// 	}
+		// }
 	}
 
 	level.Info(logger).Message("successfully sent message(s) to channel", "channel_id", sendTo.ToString(), "message_ct", len(splitResp))

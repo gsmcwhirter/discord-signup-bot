@@ -20,8 +20,10 @@ func (c *userCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, erro
 	msg = cmdhandler.NewWithContext(ctx, msg)
 
 	r := &cmdhandler.SimpleEmbedResponse{
-		To: cmdhandler.UserMentionString(msg.UserID()),
+		// To: cmdhandler.UserMentionString(msg.UserID()),
 	}
+
+	r.SetReplyTo(msg)
 
 	logger := logging.WithMessage(msg, c.deps.Logger())
 	level.Info(logger).Message("handling rootCommand", "command", "signup", "trial_and_role", msg.Contents())

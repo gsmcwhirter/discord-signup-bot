@@ -160,13 +160,17 @@ func formatTrialDisplay(ctx context.Context, trial storage.Trial, withState bool
 	roleCounts := trial.GetRoleCounts(ctx) // already sorted by name
 	signups := trial.GetSignups(ctx)
 
+	emojis := make([]string, 0, len(roleCounts))
+
 	for _, rc := range roleCounts {
 		suNames, ofNames := getTrialRoleSignups(ctx, signups, rc)
+
+		emoji := rc.GetEmoji(ctx)
 
 		if len(suNames) > 0 {
 			r.Fields = append(r.Fields, cmdhandler.EmbedField{
 				Name: fmt.Sprintf("*%s* (%d/%d)", rc.GetRole(ctx), len(suNames), rc.GetCount(ctx)),
-				Val:  rc.GetEmoji(ctx) + strings.Join(suNames, fmt.Sprintf("\n%s", rc.GetEmoji(ctx))) + "\n_ _\n",
+				Val:  emoji + strings.Join(suNames, fmt.Sprintf("\n%s", emoji)) + "\n_ _\n",
 			})
 		} else {
 			r.Fields = append(r.Fields, cmdhandler.EmbedField{
@@ -178,12 +182,17 @@ func formatTrialDisplay(ctx context.Context, trial storage.Trial, withState bool
 		if len(ofNames) > 0 {
 			overflowFields = append(overflowFields, cmdhandler.EmbedField{
 				Name: fmt.Sprintf("*Overflow %s* (%d)", rc.GetRole(ctx), len(ofNames)),
-				Val:  rc.GetEmoji(ctx) + strings.Join(ofNames, fmt.Sprintf("\n%s", rc.GetEmoji(ctx))) + "\n_ _\n",
+				Val:  emoji + strings.Join(ofNames, fmt.Sprintf("\n%s", emoji)) + "\n_ _\n",
 			})
+		}
+
+		if emoji != "" {
+			emojis = append(emojis, emoji)
 		}
 	}
 
 	r.Fields = append(r.Fields, overflowFields...)
+	r.Reactions = emojis
 
 	return r
 }

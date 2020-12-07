@@ -12,7 +12,7 @@ require (
 	github.com/golang/protobuf v1.4.2
 	github.com/golangci/golangci-lint v1.31.0
 	github.com/gorilla/websocket v1.4.2
-	github.com/gsmcwhirter/discord-bot-lib/v16 v16.0.0
+	github.com/gsmcwhirter/discord-bot-lib/v16 v16.1.0
 	github.com/gsmcwhirter/go-util/v7 v7.0.0
 	github.com/hashicorp/go-multierror v1.1.0
 	github.com/honeycombio/opencensus-exporter v1.0.1
@@ -21,6 +21,6 @@ require (
 	go.etcd.io/bbolt v1.3.5
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
-	golang.org/x/tools v0.0.0-20201204222352-654352759326
+	golang.org/x/tools v0.0.0-20201206230334-368bee879bfd
 	google.golang.org/protobuf v1.25.0
 )
