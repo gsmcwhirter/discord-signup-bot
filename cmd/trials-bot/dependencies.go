@@ -144,6 +144,7 @@ func createDependencies(conf config, botPermissions, botIntents int) (*dependenc
 	if err != nil {
 		return d, err
 	}
+	d.reactionHandler = commands.NewReactionHandler(d)
 
 	d.discordMsgHandler = messagehandler.NewDiscordMessageHandler(d)
 

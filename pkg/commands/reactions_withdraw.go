@@ -14,8 +14,8 @@ import (
 	"github.com/gsmcwhirter/discord-bot-lib/v18/cmdhandler"
 )
 
-func (c *reactionHandler) signup(msg reactions.Reaction) (cmdhandler.Response, error) {
-	ctx, span := c.deps.Census().StartSpan(msg.Context(), "reactionHandler.signup", "guild_id", msg.GuildID().ToString())
+func (c *reactionHandler) withdraw(msg reactions.Reaction) (cmdhandler.Response, error) {
+	ctx, span := c.deps.Census().StartSpan(msg.Context(), "userCommands.withdraw", "guild_id", msg.GuildID().ToString())
 	defer span.End()
 
 	r := &cmdhandler.SimpleEmbedResponse{
@@ -23,7 +23,7 @@ func (c *reactionHandler) signup(msg reactions.Reaction) (cmdhandler.Response, e
 	}
 
 	logger := reactions.LoggerWithReaction(msg, c.deps.Logger())
-	level.Info(logger).Message("handling reaction", "command", "signup")
+	level.Info(logger).Message("handling reaction", "command", "withdraw")
 
 	trialName, err := c.getTrialNameForReaction(ctx, logger, msg)
 	if err != nil {
@@ -31,7 +31,7 @@ func (c *reactionHandler) signup(msg reactions.Reaction) (cmdhandler.Response, e
 	}
 	level.Info(logger).Message("reaction event identified", "trial_name", trialName)
 
-	// proceed with the signup
+	// proceed with the withdraw
 	gsettings, err := storage.GetSettings(ctx, c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
 		return r, err
@@ -43,8 +43,6 @@ func (c *reactionHandler) signup(msg reactions.Reaction) (cmdhandler.Response, e
 	}
 	defer deferutil.CheckDefer(func() error { return t.Rollback(ctx) })
 
-	var descStr string
-
 	trial, err := t.GetTrial(ctx, trialName)
 	if err != nil {
 		return r, err
@@ -55,49 +53,29 @@ func (c *reactionHandler) signup(msg reactions.Reaction) (cmdhandler.Response, e
 		return r, msghandler.ErrNoResponse
 	}
 
-	// find the role based on the emoji
-	role := ""
-	roleCounts := trial.GetRoleCounts(ctx)
-	for _, rc := range roleCounts {
-		if rc.GetEmoji(ctx) == msg.Emoji() {
-			role = rc.GetRole(ctx)
-		}
-	}
-	if role == "" {
-		return r, msghandler.ErrNoResponse
-	}
-
 	if trial.GetState(ctx) != storage.TrialStateOpen {
-		return r, errors.New("cannot sign up for a closed trial")
+		return r, errors.New("cannot withdraw from a closed trial")
 	}
 
-	overflow, err := signupUser(ctx, trial, cmdhandler.UserMentionString(msg.UserID()), role)
-	if err != nil {
-		return r, err
-	}
+	trial.RemoveSignup(ctx, cmdhandler.UserMentionString(msg.UserID()))
 
 	if err = t.SaveTrial(ctx, trial); err != nil {
-		return r, errors.Wrap(err, "could not save trial signup")
-	}
-
-	if overflow {
-		level.Info(logger).Message("signed up", "overflow", true, "role", role, "trial_name", trialName)
-		descStr += fmt.Sprintf("Signed up as OVERFLOW for %s in %s\n", role, trialName)
-	} else {
-		level.Info(logger).Message("signed up", "overflow", false, "role", role, "trial_name", trialName)
-		descStr += fmt.Sprintf("Signed up for %s in %s\n", role, trialName)
+		return r, errors.Wrap(err, "could not save trial withdraw")
 	}
 
 	if err = t.Commit(ctx); err != nil {
-		return r, errors.Wrap(err, "could not save trial signup")
+		return r, errors.Wrap(err, "could not save trial withdraw")
 	}
 
-	if gsettings.ShowAfterSignup == "true" {
+	level.Info(logger).Message("withdrew", "trial_name", trialName)
+	descStr := fmt.Sprintf("Withdrew from %s", trialName)
+
+	if gsettings.ShowAfterWithdraw == "true" {
+		level.Debug(logger).Message("auto-show after withdraw", "trial_name", trialName)
+
 		r2 := formatTrialDisplay(ctx, trial, true)
-
-		r2.Description = fmt.Sprintf("%s\n\n%s", descStr, r2.Description)
 		r2.To = cmdhandler.UserMentionString(msg.UserID())
-
+		r2.Description = fmt.Sprintf("%s\n\n%s", descStr, r2.Description)
 		return r2, nil
 	}
 
