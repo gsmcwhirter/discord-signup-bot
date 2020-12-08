@@ -8,8 +8,8 @@ import (
 	"github.com/gsmcwhirter/go-util/v7/errors"
 	"github.com/gsmcwhirter/go-util/v7/logging/level"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v17/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v17/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/logging"
 )
 
 type argPair struct {

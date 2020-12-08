@@ -3,10 +3,10 @@ package commands
 import (
 	"fmt"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v17/bot"
-	"github.com/gsmcwhirter/discord-bot-lib/v17/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v17/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/v17/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/logging"
 	"github.com/gsmcwhirter/go-util/v7/parser"
 	"github.com/gsmcwhirter/go-util/v7/telemetry"
 

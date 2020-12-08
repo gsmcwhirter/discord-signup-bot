@@ -11,14 +11,15 @@ import (
 	"github.com/gsmcwhirter/go-util/v7/telemetry"
 	"golang.org/x/time/rate"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v17/bot"
-	"github.com/gsmcwhirter/discord-bot-lib/v17/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v17/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/v17/logging"
-	"github.com/gsmcwhirter/discord-bot-lib/v17/request"
-	"github.com/gsmcwhirter/discord-bot-lib/v17/snowflake"
-	"github.com/gsmcwhirter/discord-bot-lib/v17/wsclient"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/request"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/wsclient"
 
+	"github.com/gsmcwhirter/discord-signup-bot/pkg/reactions"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
 
@@ -37,6 +38,7 @@ type dependencies interface {
 	ConfigHandler() *cmdhandler.CommandHandler
 	DebugHandler() *cmdhandler.CommandHandler
 	AdminHandler() *cmdhandler.CommandHandler
+	ReactionHandler() reactions.Handler
 	MessageRateLimiter() *rate.Limiter
 	ReactionsRateLimiter() *rate.Limiter
 	BotSession() *etfapi.Session
@@ -79,6 +81,8 @@ func (h *handlers) ConnectToBot(b bot.DiscordBot) {
 	h.bot = b
 
 	b.AddMessageHandler("MESSAGE_CREATE", h.handleMessage)
+	b.AddMessageHandler("MESSAGE_REACTION_ADD", h.handleReactionAdd)
+	b.AddMessageHandler("MESSAGE_REACTION_REMOVE", h.handleReactionRemove)
 }
 
 func (h *handlers) channelGuild(cid snowflake.Snowflake) (gid snowflake.Snowflake) {
@@ -156,6 +160,69 @@ func (h *handlers) attemptConfigAndAdminHandlers(msg cmdhandler.Message, cmdIndi
 	return h.deps.AdminHandler().HandleMessage(cmdhandler.NewWithContents(msg, cmdContent))
 }
 
+func (h *handlers) handleResponse(ctx context.Context, logger logging.Logger, resp cmdhandler.Response, cid, gid snowflake.Snowflake, content string, err error) {
+	if err == ErrNoResponse || err == parser.ErrUnknownCommand {
+		return
+	}
+
+	if err != nil {
+		level.Error(logger).Err("error handling command", err, "contents", content)
+		resp.IncludeError(err)
+	}
+
+	if resp.HasErrors() {
+		resp.SetColor(h.errorColor)
+	} else {
+		resp.SetColor(h.successColor)
+	}
+
+	level.Info(logger).Message("sending message", "resp", fmt.Sprintf("%+v", resp))
+
+	sendTo := resp.Channel()
+	if sendTo == 0 {
+		sendTo = cid
+	}
+
+	splitResp := resp.Split()
+
+	level.Info(logger).Message("sending message split", "split_count", len(splitResp))
+
+	for _, res := range splitResp {
+		err = h.deps.MessageRateLimiter().Wait(ctx)
+		if err != nil {
+			level.Error(logger).Err("error waiting for ratelimiting", err)
+			return
+		}
+
+		sentMsg, err := h.bot.SendMessage(ctx, sendTo, res.ToMessage())
+		if err != nil {
+			level.Error(logger).Err("could not send message", err)
+			return
+		}
+
+		reacts := res.MessageReactions()
+		for _, reaction := range reacts {
+			err = h.deps.ReactionsRateLimiter().Wait(ctx)
+			if err != nil {
+				level.Error(logger).Err("error waiting for ratelimiting for reaction", err)
+				return
+			}
+
+			resp, err := h.bot.CreateReaction(ctx, sendTo, sentMsg.IDSnowflake, reaction)
+			if err != nil {
+				status := 0
+				if resp != nil {
+					status = resp.StatusCode
+				}
+
+				level.Error(logger).Err("could not add reaction", err, "status_code", status)
+			}
+		}
+	}
+
+	level.Info(logger).Message("successfully sent message(s) to channel", "channel_id", sendTo.ToString(), "message_ct", len(splitResp))
+}
+
 func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, respChan chan<- wsclient.WSMessage) snowflake.Snowflake {
 	ctx, span := h.deps.Census().StartSpan(req.Ctx, "handlers.handleMessage")
 	defer span.End()
@@ -213,66 +280,77 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 		resp, err = h.deps.CommandHandler().HandleMessage(cmdhandler.NewWithContents(msg, cmdContent))
 	}
 
-	if err == ErrNoResponse || err == parser.ErrUnknownCommand {
-		return gid
+	h.handleResponse(req.Ctx, logger, resp, m.ChannelID(), gid, content, err)
+
+	return gid
+}
+
+func (h *handlers) handleReactionAdd(p *etfapi.Payload, req wsclient.WSMessage, respChan chan<- wsclient.WSMessage) snowflake.Snowflake {
+	ctx, span := h.deps.Census().StartSpan(req.Ctx, "handlers.handleReactionAdd")
+	defer span.End()
+	req.Ctx = ctx
+
+	if h.bot == nil {
+		return 0
 	}
 
+	select {
+	case <-req.Ctx.Done():
+		return 0
+	default:
+	}
+
+	logger := logging.WithContext(req.Ctx, h.deps.Logger())
+
+	r, err := etfapi.ReactionFromElementMap(p.Data)
 	if err != nil {
-		level.Error(logger).Err("error handling command", err, "contents", content)
-		resp.IncludeError(err)
+		level.Error(logger).Err("error inflating reaction", err)
+		return 0
 	}
 
-	if resp.HasErrors() {
-		resp.SetColor(h.errorColor)
-	} else {
-		resp.SetColor(h.successColor)
+	gid := h.channelGuild(r.ChannelID())
+	req.Ctx = request.WithGuildID(req.Ctx, gid)
+	reaction := reactions.NewReaction(req.Ctx, r.UserID(), r.MessageID(), r.ChannelID(), r.GuildID(), r.Emoji())
+	logger = reactions.LoggerWithReaction(reaction, h.deps.Logger())
+
+	resp, err := h.deps.ReactionHandler().HandleReactionAdd(reaction)
+
+	h.handleResponse(req.Ctx, logger, resp, r.ChannelID(), gid, r.Emoji(), err)
+
+	return gid
+}
+
+func (h *handlers) handleReactionRemove(p *etfapi.Payload, req wsclient.WSMessage, respChan chan<- wsclient.WSMessage) snowflake.Snowflake {
+	ctx, span := h.deps.Census().StartSpan(req.Ctx, "handlers.handleReactionAdd")
+	defer span.End()
+	req.Ctx = ctx
+
+	if h.bot == nil {
+		return 0
 	}
 
-	level.Info(logger).Message("sending message", "resp", fmt.Sprintf("%+v", resp))
-
-	sendTo := resp.Channel()
-	if sendTo == 0 {
-		sendTo = m.ChannelID()
+	select {
+	case <-req.Ctx.Done():
+		return 0
+	default:
 	}
 
-	splitResp := resp.Split()
+	logger := logging.WithContext(req.Ctx, h.deps.Logger())
 
-	level.Info(logger).Message("sending message split", "split_count", len(splitResp))
-
-	for _, res := range splitResp {
-		err = h.deps.MessageRateLimiter().Wait(req.Ctx)
-		if err != nil {
-			level.Error(logger).Err("error waiting for ratelimiting", err)
-			return gid
-		}
-
-		sentMsg, err := h.bot.SendMessage(req.Ctx, sendTo, res.ToMessage())
-		if err != nil {
-			level.Error(logger).Err("could not send message", err)
-			return gid
-		}
-
-		reactions := res.MessageReactions()
-		for _, reaction := range reactions {
-			err = h.deps.ReactionsRateLimiter().Wait(req.Ctx)
-			if err != nil {
-				level.Error(logger).Err("error waiting for ratelimiting for reaction", err)
-				return gid
-			}
-
-			resp, err := h.bot.CreateReaction(ctx, sendTo, sentMsg.IDSnowflake, reaction)
-			if err != nil {
-				status := 0
-				if resp != nil {
-					status = resp.StatusCode
-				}
-
-				level.Error(logger).Err("could not add reaction", err, "status_code", status)
-			}
-		}
+	r, err := etfapi.ReactionFromElementMap(p.Data)
+	if err != nil {
+		level.Error(logger).Err("error inflating reaction", err)
+		return 0
 	}
 
-	level.Info(logger).Message("successfully sent message(s) to channel", "channel_id", sendTo.ToString(), "message_ct", len(splitResp))
+	gid := h.channelGuild(r.ChannelID())
+	req.Ctx = request.WithGuildID(req.Ctx, gid)
+	reaction := reactions.NewReaction(req.Ctx, r.UserID(), r.MessageID(), r.ChannelID(), r.GuildID(), r.Emoji())
+	logger = reactions.LoggerWithReaction(reaction, h.deps.Logger())
+
+	resp, err := h.deps.ReactionHandler().HandleReactionRemove(reaction)
+
+	h.handleResponse(req.Ctx, logger, resp, r.ChannelID(), gid, r.Emoji(), err)
 
 	return gid
 }

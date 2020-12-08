@@ -7,13 +7,13 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/gsmcwhirter/discord-bot-lib/v17/bot"
-	"github.com/gsmcwhirter/discord-bot-lib/v17/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v17/errreport"
-	"github.com/gsmcwhirter/discord-bot-lib/v17/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/v17/httpclient"
-	"github.com/gsmcwhirter/discord-bot-lib/v17/messagehandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v17/wsclient"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/errreport"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/httpclient"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/messagehandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/wsclient"
 	log "github.com/gsmcwhirter/go-util/v7/logging"
 	"github.com/gsmcwhirter/go-util/v7/telemetry"
 	bolt "go.etcd.io/bbolt"
@@ -22,6 +22,7 @@ import (
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/bugsnag"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/commands"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
+	"github.com/gsmcwhirter/discord-signup-bot/pkg/reactions"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/stats"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
@@ -47,6 +48,7 @@ type dependencies struct {
 	configHandler     *cmdhandler.CommandHandler
 	adminHandler      *cmdhandler.CommandHandler
 	debugHandler      *cmdhandler.CommandHandler
+	reactionHandler   reactions.Handler
 	discordMsgHandler bot.DiscordMessageHandler
 	msgHandlers       msghandler.Handlers
 
@@ -193,6 +195,7 @@ func (d *dependencies) CommandHandler() *cmdhandler.CommandHandler { return d.cm
 func (d *dependencies) ConfigHandler() *cmdhandler.CommandHandler  { return d.configHandler }
 func (d *dependencies) AdminHandler() *cmdhandler.CommandHandler   { return d.adminHandler }
 func (d *dependencies) DebugHandler() *cmdhandler.CommandHandler   { return d.debugHandler }
+func (d *dependencies) ReactionHandler() reactions.Handler         { return d.reactionHandler }
 func (d *dependencies) MessageHandler() msghandler.Handlers        { return d.msgHandlers }
 func (d *dependencies) ErrReporter() errreport.Reporter            { return d.rep }
 func (d *dependencies) Census() *telemetry.Census                  { return d.census }

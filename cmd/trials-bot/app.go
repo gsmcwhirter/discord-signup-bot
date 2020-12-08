@@ -12,10 +12,11 @@ import (
 	"github.com/gsmcwhirter/go-util/v7/pprofsidecar"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v17/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/bot"
 )
 
 type config struct {
+	BotID               string  `mapstructure:"bot_id"`
 	BotName             string  `mapstructure:"bot_name"`
 	BotPresence         string  `mapstructure:"bot_presence"`
 	DiscordAPI          string  `mapstructure:"discord_api"`

@@ -7,10 +7,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v17/bot"
-	"github.com/gsmcwhirter/discord-bot-lib/v17/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v17/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/v17/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/logging"
 	"github.com/gsmcwhirter/go-util/v7/errors"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
@@ -22,7 +22,7 @@ var ErrUnknownRole = errors.New("unknown role")
 var isAdminAuthorized = msghandler.IsAdminAuthorized
 var isAdminChannel = msghandler.IsAdminChannel
 
-func isSignupChannel(ctx context.Context, logger logging.Logger, msg cmdhandler.Message, signupChannel, adminChannel, adminRole string, session *etfapi.Session, b bot.DiscordBot) bool {
+func isSignupChannel(ctx context.Context, logger logging.Logger, msg msghandler.MessageLike, signupChannel, adminChannel, adminRole string, session *etfapi.Session, b bot.DiscordBot) bool {
 	if msghandler.IsSignupChannel(msg, signupChannel, session) {
 		return true
 	}
@@ -193,6 +193,7 @@ func formatTrialDisplay(ctx context.Context, trial storage.Trial, withState bool
 
 	r.Fields = append(r.Fields, overflowFields...)
 	r.Reactions = emojis
+	r.FooterText = fmt.Sprintf("event:%s", trial.GetName(ctx))
 
 	return r
 }

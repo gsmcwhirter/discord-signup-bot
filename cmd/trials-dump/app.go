@@ -7,7 +7,7 @@ import (
 	"github.com/gsmcwhirter/go-util/v7/deferutil"
 	"github.com/gsmcwhirter/go-util/v7/errors"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v17/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/snowflake"
 )
 
 type config struct {
@@ -50,6 +50,16 @@ func start(c config) error {
 		return err
 	}
 
+	if gid == snowflake.Snowflake(558789102510800917) {
+		if err := setGuildAdminRole(deps, gid, "584957583836839936"); err != nil {
+			return err
+		}
+	}
+
+	if err := dumpGuildSettings(deps, gid); err != nil {
+		return err
+	}
+
 	if err := dumpGuildTrials(deps, gid); err != nil {
 		return err
 	}
@@ -77,6 +87,35 @@ func dumpGuildSettings(deps *dependencies, gid snowflake.Snowflake) error {
 
 	gsettings := g.GetSettings(ctx)
 	fmt.Printf("SETTINGS: %+v\n\n", gsettings)
+	return nil
+}
+
+func setGuildAdminRole(deps *dependencies, gid snowflake.Snowflake, roleName string) error {
+	ctx := context.Background()
+
+	t, err := deps.GuildAPI().NewTransaction(ctx, true)
+	if err != nil {
+		return errors.Wrap(err, "could not get settings transaction")
+	}
+	defer deferutil.CheckDefer(func() error { return t.Rollback(ctx) })
+
+	g, err := t.GetGuild(ctx, gid.ToString())
+	if err != nil {
+		return errors.Wrap(err, "could not get guild for settings")
+	}
+
+	gsettings := g.GetSettings(ctx)
+	gsettings.AdminRole = roleName
+	g.SetSettings(ctx, gsettings)
+
+	if err := t.SaveGuild(ctx, g); err != nil {
+		return errors.Wrap(err, "could not save guild")
+	}
+
+	if err := t.Commit(ctx); err != nil {
+		return errors.Wrap(err, "could not commit")
+	}
+
 	return nil
 }
 

@@ -11,9 +11,9 @@ import (
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v17/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v17/logging"
-	"github.com/gsmcwhirter/discord-bot-lib/v17/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/snowflake"
 )
 
 func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, error) {
@@ -112,7 +112,8 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 				Val:  fmt.Sprintf("```\n%s\n```\n", strings.Join(roleStrs, "\n")),
 			},
 		},
-		Reactions: emojis,
+		Reactions:  emojis,
+		FooterText: fmt.Sprintf("event:%s", trial.GetName(msg.Context())),
 	}
 
 	if signupCid != 0 {

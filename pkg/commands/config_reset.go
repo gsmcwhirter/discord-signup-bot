@@ -7,8 +7,8 @@ import (
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v17/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v17/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/logging"
 )
 
 func (c *configCommands) reset(msg cmdhandler.Message) (cmdhandler.Response, error) {
