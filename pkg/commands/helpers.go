@@ -169,20 +169,20 @@ func formatTrialDisplay(ctx context.Context, trial storage.Trial, withState bool
 
 		if len(suNames) > 0 {
 			r.Fields = append(r.Fields, cmdhandler.EmbedField{
-				Name: fmt.Sprintf("*%s* (%d/%d)", rc.GetRole(ctx), len(suNames), rc.GetCount(ctx)),
-				Val:  emoji + strings.Join(suNames, fmt.Sprintf("\n%s", emoji)) + "\n_ _\n",
+				Name: fmt.Sprintf("*%s* %s (%d/%d)", rc.GetRole(ctx), emoji, len(suNames), rc.GetCount(ctx)),
+				Val:  strings.Join(suNames, "\n") + "\n_ _\n",
 			})
 		} else {
 			r.Fields = append(r.Fields, cmdhandler.EmbedField{
-				Name: fmt.Sprintf("*%s* (%d/%d)", rc.GetRole(ctx), len(suNames), rc.GetCount(ctx)),
+				Name: fmt.Sprintf("*%s* %s (%d/%d)", rc.GetRole(ctx), emoji, len(suNames), rc.GetCount(ctx)),
 				Val:  "(empty)\n_ _\n",
 			})
 		}
 
 		if len(ofNames) > 0 {
 			overflowFields = append(overflowFields, cmdhandler.EmbedField{
-				Name: fmt.Sprintf("*Overflow %s* (%d)", rc.GetRole(ctx), len(ofNames)),
-				Val:  emoji + strings.Join(ofNames, fmt.Sprintf("\n%s", emoji)) + "\n_ _\n",
+				Name: fmt.Sprintf("*Overflow %s* %s (%d)", rc.GetRole(ctx), emoji, len(ofNames)),
+				Val:  strings.Join(ofNames, "\n") + "\n_ _\n",
 			})
 		}
 
