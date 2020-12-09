@@ -21,26 +21,39 @@ type boltTrial struct {
 }
 
 func (b *boltTrial) GetName(ctx context.Context) string {
+	_, span := b.census.StartSpan(ctx, "boltTrial.GetName")
+	defer span.End()
 	return b.protoTrial.Name
 }
 
 func (b *boltTrial) GetDescription(ctx context.Context) string {
+	_, span := b.census.StartSpan(ctx, "boltTrial.GetDescription")
+	defer span.End()
 	return b.protoTrial.Description
 }
 
 func (b *boltTrial) GetAnnounceTo(ctx context.Context) string {
+	_, span := b.census.StartSpan(ctx, "boltTrial.GetAnnounceTo")
+	defer span.End()
 	return b.protoTrial.AnnounceTo
+
 }
 
 func (b *boltTrial) GetAnnounceChannel(ctx context.Context) string {
+	_, span := b.census.StartSpan(ctx, "boltTrial.GetAnnounceChannel")
+	defer span.End()
 	return b.protoTrial.AnnounceChannel
 }
 
 func (b *boltTrial) GetSignupChannel(ctx context.Context) string {
+	_, span := b.census.StartSpan(ctx, "boltTrial.GetSignupChannel")
+	defer span.End()
 	return b.protoTrial.SignupChannel
 }
 
 func (b *boltTrial) GetState(ctx context.Context) TrialState {
+	_, span := b.census.StartSpan(ctx, "boltTrial.GetState")
+	defer span.End()
 	return TrialState(b.protoTrial.State)
 }
 
@@ -82,7 +95,7 @@ func (b *boltTrial) GetRoleCounts(ctx context.Context) []RoleCount {
 
 	b.migrateRoleCounts(ctx)
 
-	s := make([]RoleCount, 0, len(b.protoTrial.RoleCountMap))
+	s := RoleCountSlice(make([]RoleCount, 0, len(b.protoTrial.RoleCountMap)))
 	rcNames := make([]string, 0, len(b.protoTrial.RoleCountMap))
 
 	for rName := range b.protoTrial.RoleCountMap {
@@ -90,17 +103,46 @@ func (b *boltTrial) GetRoleCounts(ctx context.Context) []RoleCount {
 	}
 	sort.Strings(rcNames)
 
-	for _, rName := range rcNames {
+	ord := b.GetRoleOrder(ctx)
+	ordMap := map[string]int{}
+	for i, r := range ord {
+		ordMap[r] = i
+	}
+
+	for i, rName := range rcNames {
+		idx, ok := ordMap[strings.ToLower(rName)]
+		if !ok {
+			idx = len(ord) + i
+		}
+
 		r := b.protoTrial.RoleCountMap[rName]
 		s = append(s, &boltRoleCount{
 			role:   r.Name,
 			count:  r.Count,
 			emoji:  r.Emoji,
 			census: b.census,
+			index:  idx,
 		})
 	}
 
-	return s
+	sort.Sort(s)
+
+	return []RoleCount(s)
+}
+
+func (b *boltTrial) GetRoleOrder(ctx context.Context) []string {
+	_, span := b.census.StartSpan(ctx, "boltTrial.GetRoleOrder")
+	defer span.End()
+
+	return b.protoTrial.RoleSortOrder
+}
+
+func (b *boltTrial) PrettyRoleOrder(ctx context.Context) string {
+	ctx, span := b.census.StartSpan(ctx, "boltTrial.PrettyRoleOrder")
+	defer span.End()
+
+	ord := b.GetRoleOrder(ctx)
+	return strings.Join(ord, ", ")
 }
 
 func (b *boltTrial) PrettyRoles(ctx context.Context, indent string) string {
@@ -128,36 +170,49 @@ Event settings:
 	- AnnounceChannel: '#%[1]s',
 	- SignupChannel: '#%[2]s',
 	- AnnounceTo: '%[3]s', 
+	- RoleOrder: '%[7]s',
 	- Roles:
 		%[5]s
 
 Description:
-%s
+%[6]s
 
-	`, b.GetAnnounceChannel(ctx), b.GetSignupChannel(ctx), b.GetAnnounceTo(ctx), b.GetState(ctx), b.PrettyRoles(ctx, "    "), b.GetDescription(ctx))
+	`, b.GetAnnounceChannel(ctx), b.GetSignupChannel(ctx), b.GetAnnounceTo(ctx), b.GetState(ctx), b.PrettyRoles(ctx, "    "), b.GetDescription(ctx), b.PrettyRoleOrder(ctx))
 }
 
 func (b *boltTrial) SetName(ctx context.Context, name string) {
+	_, span := b.census.StartSpan(ctx, "boltTrial.SetName")
+	defer span.End()
 	b.protoTrial.Name = name
 }
 
 func (b *boltTrial) SetDescription(ctx context.Context, d string) {
+	_, span := b.census.StartSpan(ctx, "boltTrial.SetDescription")
+	defer span.End()
 	b.protoTrial.Description = d
 }
 
 func (b *boltTrial) SetAnnounceChannel(ctx context.Context, val string) {
+	_, span := b.census.StartSpan(ctx, "boltTrial.SetAnnounceChannel")
+	defer span.End()
 	b.protoTrial.AnnounceChannel = val
 }
 
 func (b *boltTrial) SetAnnounceTo(ctx context.Context, val string) {
+	_, span := b.census.StartSpan(ctx, "boltTrial.SetAnnounceTo")
+	defer span.End()
 	b.protoTrial.AnnounceTo = val
 }
 
 func (b *boltTrial) SetSignupChannel(ctx context.Context, val string) {
+	_, span := b.census.StartSpan(ctx, "boltTrial.SetSignupChannel")
+	defer span.End()
 	b.protoTrial.SignupChannel = val
 }
 
 func (b *boltTrial) SetState(ctx context.Context, state TrialState) {
+	_, span := b.census.StartSpan(ctx, "boltTrial.SetState")
+	defer span.End()
 	b.protoTrial.State = string(state)
 }
 
@@ -250,6 +305,16 @@ func (b *boltTrial) RemoveRole(ctx context.Context, name string) {
 	delete(b.protoTrial.RoleCountMap, lowerName)
 }
 
+func (b *boltTrial) SetRoleOrder(ctx context.Context, ord []string) {
+	_, span := b.census.StartSpan(ctx, "boltTrial.SetRoleOrder")
+	defer span.End()
+
+	b.protoTrial.RoleSortOrder = nil
+	for _, role := range ord {
+		b.protoTrial.RoleSortOrder = append(b.protoTrial.RoleSortOrder, strings.ToLower(role))
+	}
+}
+
 func (b *boltTrial) Serialize(ctx context.Context) (out []byte, err error) {
 	_, span := b.census.StartSpan(ctx, "boltTrial.Serialize")
 	defer span.End()
@@ -283,11 +348,31 @@ type boltTrialSignup struct {
 }
 
 func (b *boltTrialSignup) GetName(ctx context.Context) string {
+	_, span := b.census.StartSpan(ctx, "boltTrialSignup.GetName")
+	defer span.End()
+
 	return b.name
 }
 
 func (b *boltTrialSignup) GetRole(ctx context.Context) string {
+	_, span := b.census.StartSpan(ctx, "boltTrialSignup.GetRole")
+	defer span.End()
+
 	return b.role
+}
+
+type RoleCountSlice []RoleCount
+
+func (s RoleCountSlice) Len() int {
+	return len(s)
+}
+
+func (s RoleCountSlice) Less(i, j int) bool {
+	return s[i].Index() < s[j].Index()
+}
+
+func (s RoleCountSlice) Swap(i, j int) {
+	s[i], s[j] = s[j], s[i]
 }
 
 type boltRoleCount struct {
@@ -295,16 +380,30 @@ type boltRoleCount struct {
 	count  uint64
 	emoji  string
 	census *telemetry.Census
+	index  int
 }
 
 func (b *boltRoleCount) GetRole(ctx context.Context) string {
+	_, span := b.census.StartSpan(ctx, "boltRoleCount.GetRole")
+	defer span.End()
+
 	return b.role
 }
 
 func (b *boltRoleCount) GetCount(ctx context.Context) uint64 {
+	_, span := b.census.StartSpan(ctx, "boltRoleCount.GetCount")
+	defer span.End()
+
 	return b.count
 }
 
 func (b *boltRoleCount) GetEmoji(ctx context.Context) string {
+	_, span := b.census.StartSpan(ctx, "boltRoleCount.GetEmoji")
+	defer span.End()
+
 	return b.emoji
+}
+
+func (b *boltRoleCount) Index() int {
+	return b.index
 }

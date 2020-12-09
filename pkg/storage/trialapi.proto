@@ -27,4 +27,6 @@ message ProtoTrial {
     repeated ProtoTrialSignup signups = 6;
 
     map<string, ProtoRoleCount> role_count_map = 8;
+
+    repeated string role_sort_order = 10;
 }

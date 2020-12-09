@@ -43,6 +43,7 @@ type Trial interface {
 	GetState(ctx context.Context) TrialState
 	GetSignups(ctx context.Context) []TrialSignup
 	GetRoleCounts(ctx context.Context) []RoleCount
+	GetRoleOrder(ctx context.Context) []string
 	PrettySettings(ctx context.Context) string
 
 	SetName(ctx context.Context, name string)
@@ -55,6 +56,7 @@ type Trial interface {
 	RemoveSignup(ctx context.Context, name string)
 	SetRoleCount(ctx context.Context, name, emoji string, ct uint64)
 	RemoveRole(ctx context.Context, name string)
+	SetRoleOrder(ctx context.Context, ord []string)
 
 	ClearSignups(ctx context.Context)
 
@@ -72,4 +74,5 @@ type RoleCount interface {
 	GetRole(ctx context.Context) string
 	GetCount(ctx context.Context) uint64
 	GetEmoji(ctx context.Context) string
+	Index() int
 }

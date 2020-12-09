@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/gsmcwhirter/go-util/v7/deferutil"
 	"github.com/gsmcwhirter/go-util/v7/errors"
@@ -79,6 +80,14 @@ func (c *adminCommands) edit(msg cmdhandler.Message) (cmdhandler.Response, error
 
 	if v, ok := settingMap["signupchannel"]; ok {
 		trial.SetSignupChannel(msg.Context(), v)
+	}
+
+	if v, ok := settingMap["roleorder"]; ok {
+		roleOrder := strings.Split(v, ",")
+		for i := range roleOrder {
+			roleOrder[i] = strings.TrimSpace(roleOrder[i])
+		}
+		trial.SetRoleOrder(msg.Context(), roleOrder)
 	}
 
 	roleCtEmoList, err := parseRolesString(settingMap["roles"])
