@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -euo pipefail
+
 SOURCE="${BASH_SOURCE[0]}"
 while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
   DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
@@ -10,10 +12,10 @@ HERE="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 echo ${HERE}
 
 systemctl stop eso-trials-bot
-cp ${HERE}/eso-trials-bot.service /etc/systemd/system/
+cp "${HERE}/eso-trials-bot.service" /etc/systemd/system/
 systemctl daemon-reload
-rm ${HERE}/trials-bot
+[ ! -f "${HERE}/trials-bot" ] || rm "${HERE}/trials-bot"
 gunzip ${HERE}/trials-bot.gz
 systemctl start eso-trials-bot
-rm ${HERE}/trials-dump
+[ ! -f "${HERE}/trials-dump" ] || rm "${HERE}/trials-dump"
 gunzip ${HERE}/trials-dump

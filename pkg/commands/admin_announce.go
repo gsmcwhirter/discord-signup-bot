@@ -79,11 +79,22 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 	}
 
 	roles := trial.GetRoleCounts(msg.Context())
+	signups := trial.GetSignups(msg.Context())
+
 	roleStrs := make([]string, 0, len(roles))
 	emojis := make([]string, 0, len(roles))
 	for _, rc := range roles {
+		suNames, ofNames := getTrialRoleSignups(ctx, signups, rc)
+
+		filledStr := fmt.Sprintf("(%d signed up", len(suNames))
+		if len(ofNames) != 0 {
+			filledStr += fmt.Sprintf("; %d overflow)", len(ofNames))
+		} else {
+			filledStr += ")"
+		}
+
 		emoji := rc.GetEmoji(msg.Context())
-		roleStrs = append(roleStrs, fmt.Sprintf("%s %s: %d", emoji, rc.GetRole(msg.Context()), rc.GetCount(msg.Context())))
+		roleStrs = append(roleStrs, fmt.Sprintf("%s %s: %d %s", emoji, rc.GetRole(msg.Context()), rc.GetCount(msg.Context()), filledStr))
 
 		if emoji != "" {
 			emojis = append(emojis, emoji)
