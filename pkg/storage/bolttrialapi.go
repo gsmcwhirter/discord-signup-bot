@@ -11,7 +11,7 @@ import (
 )
 
 // ErrTrialNotExist is the error returned if a trial does not exist
-var ErrTrialNotExist = errors.New("trial does not exist")
+var ErrTrialNotExist = errors.New("event does not exist")
 
 type boltTrialAPI struct {
 	db     *bolt.DB

@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/gsmcwhirter/go-util/v7/deferutil"
 	"github.com/gsmcwhirter/go-util/v7/errors"
@@ -59,11 +60,17 @@ func (c *reactionHandler) signup(msg reactions.Reaction) (cmdhandler.Response, e
 	role := ""
 	roleCounts := trial.GetRoleCounts(ctx)
 	for _, rc := range roleCounts {
-		if rc.GetEmoji(ctx) == msg.Emoji() {
+		rcEmoji := rc.GetEmoji(ctx)
+		if rcEmoji == msg.Emoji() || strings.HasPrefix(rcEmoji, fmt.Sprintf("<:%s:", msg.Emoji())) {
 			role = rc.GetRole(ctx)
 		}
 	}
 	if role == "" {
+		allEmojis := make([]string, 0, len(roleCounts))
+		for _, rc := range roleCounts {
+			allEmojis = append(allEmojis, rc.GetEmoji(ctx))
+		}
+		level.Error(logger).Message("could not find role based on emoji", "emoji", msg.Emoji(), "all_emojis", allEmojis)
 		return r, msghandler.ErrNoResponse
 	}
 

@@ -273,8 +273,8 @@ github.com/grpc-ecosystem/go-grpc-middleware v1.0.1-0.20190118093823-f849b5445de
 github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0/go.mod h1:8NvIoxWQoOIhqOTXgfV/d3M/q6VIi02HzZEHgUlZvzk=
 github.com/grpc-ecosystem/grpc-gateway v1.9.0/go.mod h1:vNeuVxBJEsws4ogUvrchl83t/GYV9WGTSLVdBhOQFDY=
 github.com/grpc-ecosystem/grpc-gateway v1.9.5/go.mod h1:vNeuVxBJEsws4ogUvrchl83t/GYV9WGTSLVdBhOQFDY=
-github.com/gsmcwhirter/discord-bot-lib/v18 v18.0.3 h1:6/Qb8Jcnh6G1fDI8VXjSSBQFftD7CJrQ95zDQXsGIuc=
-github.com/gsmcwhirter/discord-bot-lib/v18 v18.0.3/go.mod h1:dmrZayb0pmFO6TYPnwDujEQFA/TaYs3aE5VLqSXpJZk=
+github.com/gsmcwhirter/discord-bot-lib/v18 v18.0.5 h1:q2FGxe6N3Q3JkKxOVTZEk6BEHkkT80E7iDYBrp5oP/s=
+github.com/gsmcwhirter/discord-bot-lib/v18 v18.0.5/go.mod h1:dmrZayb0pmFO6TYPnwDujEQFA/TaYs3aE5VLqSXpJZk=
 github.com/gsmcwhirter/go-util/v7 v7.1.1 h1:yw9p580GPjxYxIJQfVC0W8ke7Wls7VGa5aLIcZDgPsc=
 github.com/gsmcwhirter/go-util/v7 v7.1.1/go.mod h1:TYr8z+tjE3LnU3hnQMUXyuggvO7TmEdfYaBo0Q+sQM4=
 github.com/hashicorp/consul/api v1.1.0/go.mod h1:VmuI/Lkw1nC05EYQWNKwWGbkg+FbDBtguAZLlVdkD9Q=
