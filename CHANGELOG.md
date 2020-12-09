@@ -1,5 +1,36 @@
 # Changelog
 
+# v0.25.0
+
+- Added `!myevents` command to show events you are signed up for
+- Added details to the `!admin announce` content for number of existing signups, if any
+- Added the ability to custom sort the roles for an event instead of it always being alphabetical (still defaults to alphabetical)
+
+## v0.24.0
+
+- Enabled support for custom server emojis in reaction signups
+
+## v0.23.0
+
+- Signup/Withdraw by reaction is now possible
+- Adjusted the `!show` formatting to make emojis always visible if enabled (previously they were only visible for signed-up roles)
+
+## v0.22.0
+
+- Start creating reactions in preparation for signup-by-reaction
+
+## v0.21.0
+
+- Switch to using replies instead of mentions
+
+## v0.20.1
+
+- Bugfixes with json deserialization
+
+## v0.20.0
+
+- Updated underlying libraries to deal with discord API changes
+
 ## v0.19.0
 
 - Adjust bot permissions (with new lib version) to ensure ability to embed/attach
