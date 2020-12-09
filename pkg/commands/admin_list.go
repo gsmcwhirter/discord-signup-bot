@@ -66,11 +66,11 @@ func (c *adminCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error
 
 	r.Fields = []cmdhandler.EmbedField{
 		{
-			Name: "*Available Trials*",
+			Name: "*Available Events*",
 			Val:  fmt.Sprintf("```\n%s\n```\n", strings.Join(tNamesOpen, "\n")),
 		},
 		{
-			Name: "*Closed Trials*",
+			Name: "*Closed Events*",
 			Val:  fmt.Sprintf("```\n%s\n```\n", strings.Join(tNamesClosed, "\n")),
 		},
 	}

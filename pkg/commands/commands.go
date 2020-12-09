@@ -49,6 +49,7 @@ func CommandHandler(deps dependencies, versionStr string, opts Options) (*cmdhan
 	}
 
 	ch.SetHandler("list", cmdhandler.NewMessageHandler(rh.list))
+	ch.SetHandler("myevents", cmdhandler.NewMessageHandler(rh.myEvents))
 	ch.SetHandler("show", cmdhandler.NewMessageHandler(rh.show))
 	ch.SetHandler("signup", cmdhandler.NewMessageHandler(rh.signup))
 	ch.SetHandler("su", cmdhandler.NewMessageHandler(rh.signup))

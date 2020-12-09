@@ -1,6 +1,6 @@
 # discord-signup-bot
 
-This is a bot that handles trial/event signups for discord servers.
+This is a bot that handles event signups for discord servers.
 It was written for use in Elder Scrolls Online communities, but could
 easily be used for other games and communities as well.
 
