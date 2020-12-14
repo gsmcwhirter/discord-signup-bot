@@ -7,6 +7,7 @@ import (
 	"github.com/gsmcwhirter/go-util/v7/deferutil"
 	"github.com/gsmcwhirter/go-util/v7/logging/level"
 
+	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
 	"github.com/gsmcwhirter/discord-bot-lib/v18/cmdhandler"
@@ -43,6 +44,10 @@ func (c *configCommands) stats(msg cmdhandler.Message) (cmdhandler.Response, err
 
 	r := &cmdhandler.SimpleEmbedResponse{
 		// To: cmdhandler.UserMentionString(msg.UserID()),
+	}
+
+	if msg.UserID().ToString() != "183367875350888466" {
+		return r, msghandler.ErrUnauthorized
 	}
 
 	r.SetReplyTo(msg)
