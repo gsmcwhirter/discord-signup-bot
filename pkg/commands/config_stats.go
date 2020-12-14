@@ -3,15 +3,16 @@ package commands
 import (
 	"context"
 	"fmt"
+	"runtime"
 
+	"github.com/dustin/go-humanize"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/logging"
 	"github.com/gsmcwhirter/go-util/v7/deferutil"
 	"github.com/gsmcwhirter/go-util/v7/logging/level"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
-
-	"github.com/gsmcwhirter/discord-bot-lib/v18/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v18/logging"
 )
 
 func (c *configCommands) collectStats(ctx context.Context, gid string) (stat, error) {
@@ -77,6 +78,67 @@ func (c *configCommands) stats(msg cmdhandler.Message) (cmdhandler.Response, err
 		s.closed += st.closed
 	}
 
-	r.Description = fmt.Sprintf("Total guilds: %d\nTotal events: %d\nCurrently open: %d\nCurrently closed: %d\n", len(allGuilds), s.trials, s.open, s.closed)
+	gids := c.deps.BotSession().GuildIDs()
+
+	ms := runtime.MemStats{}
+	runtime.ReadMemStats(&ms)
+
+	bc := c.deps.Bot().Config()
+
+	r.Description = fmt.Sprintf(`
+Database stats:
+%[1]s
+Total guilds: %[2]d
+Total events: %[3]d
+Currently open: %[4]d
+Currently closed: %[5]d
+%[1]s
+
+Session stats:
+%[1]s
+Total guilds: %[6]d
+%[1]s
+
+Runtime stats:
+%[1]s
+GOMAXPROCS: %[7]d
+CPUs: %[8]d
+Goroutines: %[9]d
+HeapAlloc: %[10]s
+Active Objects: %[11]d
+Last GC Pause Duration: %[12]d ns
+%[1]s
+
+Bot Configuration:
+%[1]s
+Client ID: %[13]s
+Num Workers: %[14]d
+%[1]s
+
+Recent Stats:
+%[1]s
+%[15]s
+%[1]s
+
+`, "```",
+		// db stats
+		len(allGuilds),
+		s.trials,
+		s.open,
+		s.closed,
+		// session stats
+		len(gids),
+		// runtime stats
+		runtime.GOMAXPROCS(0),
+		runtime.NumCPU(),
+		runtime.NumGoroutine(),
+		humanize.Bytes(ms.HeapAlloc),
+		ms.Mallocs-ms.Frees,
+		ms.PauseNs[(ms.NumGC+255)%256],
+		bc.ClientID,
+		bc.NumWorkers,
+		// rolling stats
+		c.deps.StatsHub().Report(""),
+	)
 	return r, nil
 }

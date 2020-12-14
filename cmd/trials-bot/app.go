@@ -100,6 +100,7 @@ func runAll(deps *dependencies, b bot.DiscordBot, srv *http.Server) func(context
 		g.Go(func() error { return b.Run(ctx) })
 		g.Go(serverStartFunc(deps, srv))
 		g.Go(serverShutdownFunc(ctx, deps, srv))
+		g.Go(func() error { return deps.statsHub.Start(ctx) })
 
 		return g.Wait()
 	}

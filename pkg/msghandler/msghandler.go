@@ -20,6 +20,7 @@ import (
 	"github.com/gsmcwhirter/discord-bot-lib/v18/wsclient"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/reactions"
+	"github.com/gsmcwhirter/discord-signup-bot/pkg/stats"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
 
@@ -43,6 +44,7 @@ type dependencies interface {
 	ReactionsRateLimiter() *rate.Limiter
 	BotSession() *etfapi.Session
 	Census() *telemetry.Census
+	StatsHub() *stats.Hub
 }
 
 // Handlers is the interface for a Handlers dependency that registers itself with a discrord bot
@@ -194,6 +196,10 @@ func (h *handlers) handleResponse(ctx context.Context, logger logging.Logger, re
 			return
 		}
 
+		if ar, ok := h.deps.StatsHub().Get("msg_sent"); ok {
+			ar.Incr(1)
+		}
+
 		sentMsg, err := h.bot.SendMessage(ctx, sendTo, res.ToMessage())
 		if err != nil {
 			level.Error(logger).Err("could not send message", err)
@@ -206,6 +212,10 @@ func (h *handlers) handleResponse(ctx context.Context, logger logging.Logger, re
 			if err != nil {
 				level.Error(logger).Err("error waiting for ratelimiting for reaction", err)
 				return
+			}
+
+			if ar, ok := h.deps.StatsHub().Get("reaction_sent"); ok {
+				ar.Incr(1)
 			}
 
 			resp, err := h.bot.CreateReaction(ctx, sendTo, sentMsg.IDSnowflake, reaction)
@@ -268,6 +278,10 @@ func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, resp
 		return gid
 	}
 
+	if ar, ok := h.deps.StatsHub().Get("msgs"); ok {
+		ar.Incr(1)
+	}
+
 	content = strings.TrimSpace(content)
 
 	msg := cmdhandler.NewSimpleMessage(req.Ctx, m.AuthorID(), gid, m.ChannelID(), m.ID(), "")
@@ -313,6 +327,10 @@ func (h *handlers) handleReactionAdd(p *etfapi.Payload, req wsclient.WSMessage, 
 	reaction := reactions.NewReaction(req.Ctx, r.UserID(), r.MessageID(), r.ChannelID(), r.GuildID(), r.Emoji())
 	logger = reactions.LoggerWithReaction(reaction, h.deps.Logger())
 
+	if ar, ok := h.deps.StatsHub().Get("reactions"); ok {
+		ar.Incr(1)
+	}
+
 	resp, err := h.deps.ReactionHandler().HandleReactionAdd(reaction)
 
 	h.handleResponse(req.Ctx, logger, resp, r.ChannelID(), gid, r.Emoji(), err)
@@ -347,6 +365,10 @@ func (h *handlers) handleReactionRemove(p *etfapi.Payload, req wsclient.WSMessag
 	req.Ctx = request.WithGuildID(req.Ctx, gid)
 	reaction := reactions.NewReaction(req.Ctx, r.UserID(), r.MessageID(), r.ChannelID(), r.GuildID(), r.Emoji())
 	logger = reactions.LoggerWithReaction(reaction, h.deps.Logger())
+
+	if ar, ok := h.deps.StatsHub().Get("reactions"); ok {
+		ar.Incr(1)
+	}
 
 	resp, err := h.deps.ReactionHandler().HandleReactionRemove(reaction)
 

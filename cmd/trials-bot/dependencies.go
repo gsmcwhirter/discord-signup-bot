@@ -13,7 +13,9 @@ import (
 	"github.com/gsmcwhirter/discord-bot-lib/v18/etfapi"
 	"github.com/gsmcwhirter/discord-bot-lib/v18/httpclient"
 	"github.com/gsmcwhirter/discord-bot-lib/v18/messagehandler"
+	bstats "github.com/gsmcwhirter/discord-bot-lib/v18/stats"
 	"github.com/gsmcwhirter/discord-bot-lib/v18/wsclient"
+	"github.com/gsmcwhirter/go-util/v7/errors"
 	log "github.com/gsmcwhirter/go-util/v7/logging"
 	"github.com/gsmcwhirter/go-util/v7/telemetry"
 	bolt "go.etcd.io/bbolt"
@@ -57,6 +59,8 @@ type dependencies struct {
 	promHandler http.Handler
 
 	bot bot.DiscordBot
+
+	statsHub *stats.Hub
 }
 
 func createDependencies(conf config, botPermissions, botIntents int) (*dependencies, error) {
@@ -69,6 +73,23 @@ func createDependencies(conf config, botPermissions, botIntents int) (*dependenc
 		messageRateLimiter:   rate.NewLimiter(rate.Every(60*time.Second), 120),
 		reactionsRateLimiter: rate.NewLimiter(rate.Every(500*time.Millisecond), 1),
 		botSession:           etfapi.NewSession(),
+		statsHub:             stats.NewHub(),
+	}
+
+	if err = d.statsHub.Add("raw_msgs", bstats.NewActivityRecorder(30.0)); err != nil {
+		return d, errors.Wrap(err, "could not create raw_msgs recorder")
+	}
+	if err = d.statsHub.Add("msgs", bstats.NewActivityRecorder(30.0)); err != nil {
+		return d, errors.Wrap(err, "could not create msgs recorder")
+	}
+	if err = d.statsHub.Add("reactions", bstats.NewActivityRecorder(30.0)); err != nil {
+		return d, errors.Wrap(err, "could not create reactions recorder")
+	}
+	if err = d.statsHub.Add("msg_sent", bstats.NewActivityRecorder(30.0)); err != nil {
+		return d, errors.Wrap(err, "could not create msg_sent recorder")
+	}
+	if err = d.statsHub.Add("reaction_sent", bstats.NewActivityRecorder(30.0)); err != nil {
+		return d, errors.Wrap(err, "could not create reaction_sent recorder")
 	}
 
 	var logger log.Logger
@@ -201,6 +222,11 @@ func (d *dependencies) MessageHandler() msghandler.Handlers        { return d.ms
 func (d *dependencies) ErrReporter() errreport.Reporter            { return d.rep }
 func (d *dependencies) Census() *telemetry.Census                  { return d.census }
 func (d *dependencies) Bot() bot.DiscordBot                        { return d.bot }
+func (d *dependencies) StatsHub() *stats.Hub                       { return d.statsHub }
 func (d *dependencies) DiscordMessageHandler() bot.DiscordMessageHandler {
 	return d.discordMsgHandler
+}
+func (d *dependencies) MessageHandlerRecorder() *bstats.ActivityRecorder {
+	ar, _ := d.statsHub.Get("raw_msgs")
+	return ar
 }

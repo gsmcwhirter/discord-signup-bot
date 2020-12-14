@@ -10,6 +10,7 @@ import (
 	"github.com/gsmcwhirter/go-util/v7/parser"
 	"github.com/gsmcwhirter/go-util/v7/telemetry"
 
+	"github.com/gsmcwhirter/discord-signup-bot/pkg/stats"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
 
@@ -66,6 +67,7 @@ type configDependencies interface {
 	BotSession() *etfapi.Session
 	Bot() bot.DiscordBot
 	Census() *telemetry.Census
+	StatsHub() *stats.Hub
 }
 
 // ConfigHandler creates a new command handler for !config-su

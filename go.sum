@@ -97,7 +97,10 @@ github.com/denis-tingajkin/go-header v0.3.1 h1:ymEpSiFjeItCy1FOP+x0M2KdCELdEAHUs
 github.com/denis-tingajkin/go-header v0.3.1/go.mod h1:sq/2IxMhaZX+RRcgHfCRx/m0M5na0fBt4/CRe7Lrji0=
 github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
 github.com/dgryski/go-sip13 v0.0.0-20181026042036-e10d5fee7954/go.mod h1:vAd38F8PWV+bWy6jNmig1y/TA+kYO4g3RSRF0IAv0no=
+github.com/dustin/go-humanize v0.0.0-20171111073723-bb3d318650d4 h1:qk/FSDDxo05wdJH28W+p5yivv7LuLYLRXPPD8KQCtZs=
 github.com/dustin/go-humanize v0.0.0-20171111073723-bb3d318650d4/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
+github.com/dustin/go-humanize v1.0.0 h1:VSnTsYCnlFHaM2/igO1h6X3HA71jcobQuxemgkq4zYo=
+github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
 github.com/eapache/go-resiliency v1.1.0/go.mod h1:kFI+JgMyC7bLPUVY133qvEBtVayf5mFgVsvEsIPBvNs=
 github.com/eapache/go-xerial-snappy v0.0.0-20180814174437-776d5712da21/go.mod h1:+020luEh2TKB4/GOp8oxxtq0Daoen/Cii55CzbTV6DU=
 github.com/eapache/queue v1.1.0/go.mod h1:6eCeP0CKFpHLu8blIFXhExK/dRa7WDZfr6jVFPTqq+I=
@@ -275,6 +278,12 @@ github.com/grpc-ecosystem/grpc-gateway v1.9.0/go.mod h1:vNeuVxBJEsws4ogUvrchl83t
 github.com/grpc-ecosystem/grpc-gateway v1.9.5/go.mod h1:vNeuVxBJEsws4ogUvrchl83t/GYV9WGTSLVdBhOQFDY=
 github.com/gsmcwhirter/discord-bot-lib/v18 v18.0.6 h1:qlnyyPmfWjac5kGi/93UZWDb+n7c7S0SlJ2jjAc6+n4=
 github.com/gsmcwhirter/discord-bot-lib/v18 v18.0.6/go.mod h1:dmrZayb0pmFO6TYPnwDujEQFA/TaYs3aE5VLqSXpJZk=
+github.com/gsmcwhirter/discord-bot-lib/v18 v18.0.7 h1:dyQsnALXwDVMlOkOPj8+NxIxbe+KLNH5s42AxUTfcWc=
+github.com/gsmcwhirter/discord-bot-lib/v18 v18.0.7/go.mod h1:VSPf5vwW9ssCz3VS+D7tj+xhITWNPOnNGyrllNhQQiM=
+github.com/gsmcwhirter/discord-bot-lib/v18 v18.1.0 h1:lpeisdJ4EX6GY/gXNXeeaVEQZMsBrLkPxHzUv7Zf7UU=
+github.com/gsmcwhirter/discord-bot-lib/v18 v18.1.0/go.mod h1:VSPf5vwW9ssCz3VS+D7tj+xhITWNPOnNGyrllNhQQiM=
+github.com/gsmcwhirter/discord-bot-lib/v18 v18.1.1 h1:aZ2yO0abV1LowjRcUPbvhsZYt1XqT2n8Ho+gHCqRCag=
+github.com/gsmcwhirter/discord-bot-lib/v18 v18.1.1/go.mod h1:VSPf5vwW9ssCz3VS+D7tj+xhITWNPOnNGyrllNhQQiM=
 github.com/gsmcwhirter/go-util/v7 v7.1.1 h1:yw9p580GPjxYxIJQfVC0W8ke7Wls7VGa5aLIcZDgPsc=
 github.com/gsmcwhirter/go-util/v7 v7.1.1/go.mod h1:TYr8z+tjE3LnU3hnQMUXyuggvO7TmEdfYaBo0Q+sQM4=
 github.com/hashicorp/consul/api v1.1.0/go.mod h1:VmuI/Lkw1nC05EYQWNKwWGbkg+FbDBtguAZLlVdkD9Q=
