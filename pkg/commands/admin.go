@@ -49,6 +49,7 @@ func AdminCommandHandler(deps adminDependencies, preCommand string) (*cmdhandler
 	ch.SetHandler("wd", cmdhandler.NewMessageHandler(cc.withdraw))
 	ch.SetHandler("clear", cmdhandler.NewMessageHandler(cc.clear))
 	ch.SetHandler("show", cmdhandler.NewMessageHandler(cc.show))
+	ch.SetHandler("debug", cmdhandler.NewMessageHandler(cc.debug))
 
 	return ch, nil
 }

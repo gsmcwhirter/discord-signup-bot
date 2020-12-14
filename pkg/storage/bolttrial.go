@@ -165,19 +165,21 @@ func (b *boltTrial) PrettySettings(ctx context.Context) string {
 
 	return fmt.Sprintf(`
 Event settings:
-
-	- State: '%[4]s',
-	- AnnounceChannel: '#%[1]s',
-	- SignupChannel: '#%[2]s',
-	- AnnounceTo: '%[3]s', 
-	- RoleOrder: '%[7]s',
+%[1]s
+	- State: '%[5]s',
+	- AnnounceChannel: '#%[2]s',
+	- SignupChannel: '#%[3]s',
+	- AnnounceTo: '%[4]s', 
+	- RoleOrder: '%[8]s',
 	- Roles:
-		%[5]s
+		%[6]s
+%[1]s
 
 Description:
-%[6]s
+%[1]s
+%[7]s
 
-	`, b.GetAnnounceChannel(ctx), b.GetSignupChannel(ctx), b.GetAnnounceTo(ctx), b.GetState(ctx), b.PrettyRoles(ctx, "    "), b.GetDescription(ctx), b.PrettyRoleOrder(ctx))
+%[1]s`, "", b.GetAnnounceChannel(ctx), b.GetSignupChannel(ctx), b.GetAnnounceTo(ctx), b.GetState(ctx), b.PrettyRoles(ctx, "		"), b.GetDescription(ctx), b.PrettyRoleOrder(ctx))
 }
 
 func (b *boltTrial) SetName(ctx context.Context, name string) {
