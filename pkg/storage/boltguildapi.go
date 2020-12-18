@@ -10,9 +10,6 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// ErrGuildNotExist is the error returned if a guild does not exist
-var ErrGuildNotExist = errors.New("guild does not exist")
-
 var settingsBucket = []byte("GuildRecords")
 
 type boltGuildAPI struct {
@@ -115,8 +112,9 @@ func (b *boltGuildAPITx) AddGuild(ctx context.Context, name string) (Guild, erro
 
 	guild, err := b.GetGuild(ctx, name)
 	if err == ErrGuildNotExist {
-		guild = &boltGuild{
+		guild = &protoGuild{
 			protoGuild: &ProtoGuild{Name: name},
+			census:     b.census,
 		}
 		err = nil
 	}
@@ -149,11 +147,14 @@ func (b *boltGuildAPITx) GetGuild(ctx context.Context, name string) (Guild, erro
 		return nil, ErrGuildNotExist
 	}
 
-	protoGuild := ProtoGuild{}
-	err := proto.Unmarshal(val, &protoGuild)
+	pGuild := ProtoGuild{}
+	err := proto.Unmarshal(val, &pGuild)
 	if err != nil {
 		return nil, errors.Wrap(err, "guild record is corrupt")
 	}
 
-	return &boltGuild{&protoGuild, b.census}, nil
+	return &protoGuild{
+		protoGuild: &pGuild,
+		census:     b.census,
+	}, nil
 }

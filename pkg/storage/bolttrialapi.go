@@ -89,7 +89,7 @@ func (b *boltTrialAPITx) AddTrial(ctx context.Context, name string) (Trial, erro
 
 	trial, err := b.GetTrial(ctx, name)
 	if err == ErrTrialNotExist {
-		trial = &boltTrial{
+		trial = &protoTrial{
 			protoTrial: &ProtoTrial{Name: name},
 			census:     b.census,
 		}
@@ -126,13 +126,13 @@ func (b *boltTrialAPITx) GetTrial(ctx context.Context, name string) (Trial, erro
 		}
 	}
 
-	protoTrial := ProtoTrial{}
-	err := proto.Unmarshal(val, &protoTrial)
+	pTrial := ProtoTrial{}
+	err := proto.Unmarshal(val, &pTrial)
 	if err != nil {
 		return nil, errors.Wrap(err, "trial record is corrupt")
 	}
 
-	return &boltTrial{&protoTrial, b.census}, nil
+	return &protoTrial{&pTrial, b.census}, nil
 }
 
 func (b *boltTrialAPITx) DeleteTrial(ctx context.Context, name string) error {
@@ -158,10 +158,10 @@ func (b *boltTrialAPITx) GetTrials(ctx context.Context) []Trial {
 
 	t := make([]Trial, 0, 10)
 	_ = bucket.ForEach(func(k []byte, v []byte) error {
-		protoTrial := ProtoTrial{}
-		err := proto.Unmarshal(v, &protoTrial)
+		pTrial := ProtoTrial{}
+		err := proto.Unmarshal(v, &pTrial)
 		if err == nil {
-			t = append(t, &boltTrial{&protoTrial, b.census})
+			t = append(t, &protoTrial{&pTrial, b.census})
 		}
 
 		return nil

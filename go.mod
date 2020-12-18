@@ -22,6 +22,6 @@ require (
 	go.etcd.io/bbolt v1.3.5
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
-	golang.org/x/tools v0.0.0-20201211185031-d93e913c1a58
+	golang.org/x/tools v0.0.0-20201218024724-ae774e9781d2
 	google.golang.org/protobuf v1.25.0
 )

@@ -7,28 +7,28 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type boltGuild struct {
+type protoGuild struct {
 	protoGuild *ProtoGuild
 	census     *telemetry.Census
 }
 
-func (g *boltGuild) GetName(ctx context.Context) string {
+func (g *protoGuild) GetName(ctx context.Context) string {
 	return g.protoGuild.Name
 }
 
-func (g *boltGuild) SetName(ctx context.Context, name string) {
+func (g *protoGuild) SetName(ctx context.Context, name string) {
 	g.protoGuild.Name = name
 }
 
-func (g *boltGuild) Serialize(ctx context.Context) ([]byte, error) {
-	_, span := g.census.StartSpan(ctx, "boltGuild.Serialize")
+func (g *protoGuild) Serialize(ctx context.Context) ([]byte, error) {
+	_, span := g.census.StartSpan(ctx, "protoGuild.Serialize")
 	defer span.End()
 
 	return proto.Marshal(g.protoGuild)
 }
 
-func (g *boltGuild) GetSettings(ctx context.Context) GuildSettings {
-	_, span := g.census.StartSpan(ctx, "boltGuild.GetSettings")
+func (g *protoGuild) GetSettings(ctx context.Context) GuildSettings {
+	_, span := g.census.StartSpan(ctx, "protoGuild.GetSettings")
 	defer span.End()
 
 	s := GuildSettings{
@@ -55,8 +55,8 @@ func (g *boltGuild) GetSettings(ctx context.Context) GuildSettings {
 	return s
 }
 
-func (g *boltGuild) SetSettings(ctx context.Context, s GuildSettings) {
-	_, span := g.census.StartSpan(ctx, "boltGuild.SetSettings")
+func (g *protoGuild) SetSettings(ctx context.Context, s GuildSettings) {
+	_, span := g.census.StartSpan(ctx, "protoGuild.SetSettings")
 	defer span.End()
 
 	g.protoGuild.CommandIndicator = s.ControlSequence

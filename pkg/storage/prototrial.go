@@ -15,50 +15,50 @@ const (
 	signupOk       string = "ok"
 )
 
-type boltTrial struct {
+type protoTrial struct {
 	protoTrial *ProtoTrial
 	census     *telemetry.Census
 }
 
-func (b *boltTrial) GetName(ctx context.Context) string {
-	_, span := b.census.StartSpan(ctx, "boltTrial.GetName")
+func (b *protoTrial) GetName(ctx context.Context) string {
+	_, span := b.census.StartSpan(ctx, "protoTrial.GetName")
 	defer span.End()
 	return b.protoTrial.Name
 }
 
-func (b *boltTrial) GetDescription(ctx context.Context) string {
-	_, span := b.census.StartSpan(ctx, "boltTrial.GetDescription")
+func (b *protoTrial) GetDescription(ctx context.Context) string {
+	_, span := b.census.StartSpan(ctx, "protoTrial.GetDescription")
 	defer span.End()
 	return b.protoTrial.Description
 }
 
-func (b *boltTrial) GetAnnounceTo(ctx context.Context) string {
-	_, span := b.census.StartSpan(ctx, "boltTrial.GetAnnounceTo")
+func (b *protoTrial) GetAnnounceTo(ctx context.Context) string {
+	_, span := b.census.StartSpan(ctx, "protoTrial.GetAnnounceTo")
 	defer span.End()
 	return b.protoTrial.AnnounceTo
 
 }
 
-func (b *boltTrial) GetAnnounceChannel(ctx context.Context) string {
-	_, span := b.census.StartSpan(ctx, "boltTrial.GetAnnounceChannel")
+func (b *protoTrial) GetAnnounceChannel(ctx context.Context) string {
+	_, span := b.census.StartSpan(ctx, "protoTrial.GetAnnounceChannel")
 	defer span.End()
 	return b.protoTrial.AnnounceChannel
 }
 
-func (b *boltTrial) GetSignupChannel(ctx context.Context) string {
-	_, span := b.census.StartSpan(ctx, "boltTrial.GetSignupChannel")
+func (b *protoTrial) GetSignupChannel(ctx context.Context) string {
+	_, span := b.census.StartSpan(ctx, "protoTrial.GetSignupChannel")
 	defer span.End()
 	return b.protoTrial.SignupChannel
 }
 
-func (b *boltTrial) GetState(ctx context.Context) TrialState {
-	_, span := b.census.StartSpan(ctx, "boltTrial.GetState")
+func (b *protoTrial) GetState(ctx context.Context) TrialState {
+	_, span := b.census.StartSpan(ctx, "protoTrial.GetState")
 	defer span.End()
 	return TrialState(b.protoTrial.State)
 }
 
-func (b *boltTrial) getSignups(ctx context.Context, raw bool) []TrialSignup {
-	_, span := b.census.StartSpan(ctx, "boltTrial.getSignups")
+func (b *protoTrial) getSignups(ctx context.Context, raw bool) []TrialSignup {
+	_, span := b.census.StartSpan(ctx, "protoTrial.getSignups")
 	defer span.End()
 
 	s := make([]TrialSignup, 0, len(b.protoTrial.Signups))
@@ -72,7 +72,7 @@ func (b *boltTrial) getSignups(ctx context.Context, raw bool) []TrialSignup {
 			name = userMentionOverflowFix(name)
 		}
 
-		s = append(s, &boltTrialSignup{
+		s = append(s, &protoTrialSignup{
 			name:   name,
 			role:   ps.Role,
 			census: b.census,
@@ -82,15 +82,15 @@ func (b *boltTrial) getSignups(ctx context.Context, raw bool) []TrialSignup {
 	return s
 }
 
-func (b *boltTrial) GetSignups(ctx context.Context) []TrialSignup {
-	ctx, span := b.census.StartSpan(ctx, "boltTrial.GetSignups")
+func (b *protoTrial) GetSignups(ctx context.Context) []TrialSignup {
+	ctx, span := b.census.StartSpan(ctx, "protoTrial.GetSignups")
 	defer span.End()
 
 	return b.getSignups(ctx, false)
 }
 
-func (b *boltTrial) GetRoleCounts(ctx context.Context) []RoleCount {
-	ctx, span := b.census.StartSpan(ctx, "boltTrial.GetRoleCounts")
+func (b *protoTrial) GetRoleCounts(ctx context.Context) []RoleCount {
+	ctx, span := b.census.StartSpan(ctx, "protoTrial.GetRoleCounts")
 	defer span.End()
 
 	b.migrateRoleCounts(ctx)
@@ -130,23 +130,23 @@ func (b *boltTrial) GetRoleCounts(ctx context.Context) []RoleCount {
 	return []RoleCount(s)
 }
 
-func (b *boltTrial) GetRoleOrder(ctx context.Context) []string {
-	_, span := b.census.StartSpan(ctx, "boltTrial.GetRoleOrder")
+func (b *protoTrial) GetRoleOrder(ctx context.Context) []string {
+	_, span := b.census.StartSpan(ctx, "protoTrial.GetRoleOrder")
 	defer span.End()
 
 	return b.protoTrial.RoleSortOrder
 }
 
-func (b *boltTrial) PrettyRoleOrder(ctx context.Context) string {
-	ctx, span := b.census.StartSpan(ctx, "boltTrial.PrettyRoleOrder")
+func (b *protoTrial) PrettyRoleOrder(ctx context.Context) string {
+	ctx, span := b.census.StartSpan(ctx, "protoTrial.PrettyRoleOrder")
 	defer span.End()
 
 	ord := b.GetRoleOrder(ctx)
 	return strings.Join(ord, ", ")
 }
 
-func (b *boltTrial) PrettyRoles(ctx context.Context, indent string) string {
-	ctx, span := b.census.StartSpan(ctx, "boltTrial.PrettyRoles")
+func (b *protoTrial) PrettyRoles(ctx context.Context, indent string) string {
+	ctx, span := b.census.StartSpan(ctx, "protoTrial.PrettyRoles")
 	defer span.End()
 
 	rcs := b.GetRoleCounts(ctx)
@@ -159,8 +159,8 @@ func (b *boltTrial) PrettyRoles(ctx context.Context, indent string) string {
 	return strings.Join(lines, "\n"+indent)
 }
 
-func (b *boltTrial) PrettySettings(ctx context.Context) string {
-	ctx, span := b.census.StartSpan(ctx, "boltTrial.PrettySettings")
+func (b *protoTrial) PrettySettings(ctx context.Context) string {
+	ctx, span := b.census.StartSpan(ctx, "protoTrial.PrettySettings")
 	defer span.End()
 
 	return fmt.Sprintf(`
@@ -182,38 +182,38 @@ Description:
 %[1]s`, "", b.GetAnnounceChannel(ctx), b.GetSignupChannel(ctx), b.GetAnnounceTo(ctx), b.GetState(ctx), b.PrettyRoles(ctx, "		"), b.GetDescription(ctx), b.PrettyRoleOrder(ctx))
 }
 
-func (b *boltTrial) SetName(ctx context.Context, name string) {
-	_, span := b.census.StartSpan(ctx, "boltTrial.SetName")
+func (b *protoTrial) SetName(ctx context.Context, name string) {
+	_, span := b.census.StartSpan(ctx, "protoTrial.SetName")
 	defer span.End()
 	b.protoTrial.Name = name
 }
 
-func (b *boltTrial) SetDescription(ctx context.Context, d string) {
-	_, span := b.census.StartSpan(ctx, "boltTrial.SetDescription")
+func (b *protoTrial) SetDescription(ctx context.Context, d string) {
+	_, span := b.census.StartSpan(ctx, "protoTrial.SetDescription")
 	defer span.End()
 	b.protoTrial.Description = d
 }
 
-func (b *boltTrial) SetAnnounceChannel(ctx context.Context, val string) {
-	_, span := b.census.StartSpan(ctx, "boltTrial.SetAnnounceChannel")
+func (b *protoTrial) SetAnnounceChannel(ctx context.Context, val string) {
+	_, span := b.census.StartSpan(ctx, "protoTrial.SetAnnounceChannel")
 	defer span.End()
 	b.protoTrial.AnnounceChannel = val
 }
 
-func (b *boltTrial) SetAnnounceTo(ctx context.Context, val string) {
-	_, span := b.census.StartSpan(ctx, "boltTrial.SetAnnounceTo")
+func (b *protoTrial) SetAnnounceTo(ctx context.Context, val string) {
+	_, span := b.census.StartSpan(ctx, "protoTrial.SetAnnounceTo")
 	defer span.End()
 	b.protoTrial.AnnounceTo = val
 }
 
-func (b *boltTrial) SetSignupChannel(ctx context.Context, val string) {
-	_, span := b.census.StartSpan(ctx, "boltTrial.SetSignupChannel")
+func (b *protoTrial) SetSignupChannel(ctx context.Context, val string) {
+	_, span := b.census.StartSpan(ctx, "protoTrial.SetSignupChannel")
 	defer span.End()
 	b.protoTrial.SignupChannel = val
 }
 
-func (b *boltTrial) SetState(ctx context.Context, state TrialState) {
-	_, span := b.census.StartSpan(ctx, "boltTrial.SetState")
+func (b *protoTrial) SetState(ctx context.Context, state TrialState) {
+	_, span := b.census.StartSpan(ctx, "protoTrial.SetState")
 	defer span.End()
 	b.protoTrial.State = string(state)
 }
@@ -222,8 +222,8 @@ func isSameUser(dbName, argName string) bool {
 	return dbName == argName || userMentionOverflowFix(dbName) == argName
 }
 
-func (b *boltTrial) AddSignup(ctx context.Context, name, role string) {
-	ctx, span := b.census.StartSpan(ctx, "boltTrial.AddSignup")
+func (b *protoTrial) AddSignup(ctx context.Context, name, role string) {
+	ctx, span := b.census.StartSpan(ctx, "protoTrial.AddSignup")
 	defer span.End()
 
 	lowerRole := strings.ToLower(role)
@@ -248,8 +248,8 @@ func (b *boltTrial) AddSignup(ctx context.Context, name, role string) {
 	})
 }
 
-func (b *boltTrial) RemoveSignup(ctx context.Context, name string) {
-	_, span := b.census.StartSpan(ctx, "boltTrial.RemoveSignup")
+func (b *protoTrial) RemoveSignup(ctx context.Context, name string) {
+	_, span := b.census.StartSpan(ctx, "protoTrial.RemoveSignup")
 	defer span.End()
 
 	for i := 0; i < len(b.protoTrial.Signups); i++ {
@@ -259,15 +259,15 @@ func (b *boltTrial) RemoveSignup(ctx context.Context, name string) {
 	}
 }
 
-func (b *boltTrial) ClearSignups(ctx context.Context) {
-	_, span := b.census.StartSpan(ctx, "boltTrial.ClearSignups")
+func (b *protoTrial) ClearSignups(ctx context.Context) {
+	_, span := b.census.StartSpan(ctx, "protoTrial.ClearSignups")
 	defer span.End()
 
 	b.protoTrial.Signups = nil
 }
 
-func (b *boltTrial) SetRoleCount(ctx context.Context, name, emoji string, ct uint64) {
-	ctx, span := b.census.StartSpan(ctx, "boltTrial.SetRoleCount")
+func (b *protoTrial) SetRoleCount(ctx context.Context, name, emoji string, ct uint64) {
+	ctx, span := b.census.StartSpan(ctx, "protoTrial.SetRoleCount")
 	defer span.End()
 
 	b.migrateRoleCounts(ctx)
@@ -289,8 +289,8 @@ func (b *boltTrial) SetRoleCount(ctx context.Context, name, emoji string, ct uin
 	b.protoTrial.RoleCountMap[lowerName] = prc
 }
 
-func (b *boltTrial) RemoveRole(ctx context.Context, name string) {
-	ctx, span := b.census.StartSpan(ctx, "boltTrial.RemoveRole")
+func (b *protoTrial) RemoveRole(ctx context.Context, name string) {
+	ctx, span := b.census.StartSpan(ctx, "protoTrial.RemoveRole")
 	defer span.End()
 
 	lowerName := strings.ToLower(name)
@@ -307,8 +307,8 @@ func (b *boltTrial) RemoveRole(ctx context.Context, name string) {
 	delete(b.protoTrial.RoleCountMap, lowerName)
 }
 
-func (b *boltTrial) SetRoleOrder(ctx context.Context, ord []string) {
-	_, span := b.census.StartSpan(ctx, "boltTrial.SetRoleOrder")
+func (b *protoTrial) SetRoleOrder(ctx context.Context, ord []string) {
+	_, span := b.census.StartSpan(ctx, "protoTrial.SetRoleOrder")
 	defer span.End()
 
 	b.protoTrial.RoleSortOrder = nil
@@ -317,16 +317,16 @@ func (b *boltTrial) SetRoleOrder(ctx context.Context, ord []string) {
 	}
 }
 
-func (b *boltTrial) Serialize(ctx context.Context) (out []byte, err error) {
-	_, span := b.census.StartSpan(ctx, "boltTrial.Serialize")
+func (b *protoTrial) Serialize(ctx context.Context) (out []byte, err error) {
+	_, span := b.census.StartSpan(ctx, "protoTrial.Serialize")
 	defer span.End()
 
 	out, err = proto.Marshal(b.protoTrial)
 	return
 }
 
-func (b *boltTrial) migrateRoleCounts(ctx context.Context) {
-	_, span := b.census.StartSpan(ctx, "boltTrial.migrateRoleCounts")
+func (b *protoTrial) migrateRoleCounts(ctx context.Context) {
+	_, span := b.census.StartSpan(ctx, "protoTrial.migrateRoleCounts")
 	defer span.End()
 
 	if b.protoTrial.RoleCountMap != nil {
@@ -343,21 +343,21 @@ func (b *boltTrial) migrateRoleCounts(ctx context.Context) {
 	}
 }
 
-type boltTrialSignup struct {
+type protoTrialSignup struct {
 	name   string
 	role   string
 	census *telemetry.Census
 }
 
-func (b *boltTrialSignup) GetName(ctx context.Context) string {
-	_, span := b.census.StartSpan(ctx, "boltTrialSignup.GetName")
+func (b *protoTrialSignup) GetName(ctx context.Context) string {
+	_, span := b.census.StartSpan(ctx, "protoTrialSignup.GetName")
 	defer span.End()
 
 	return b.name
 }
 
-func (b *boltTrialSignup) GetRole(ctx context.Context) string {
-	_, span := b.census.StartSpan(ctx, "boltTrialSignup.GetRole")
+func (b *protoTrialSignup) GetRole(ctx context.Context) string {
+	_, span := b.census.StartSpan(ctx, "protoTrialSignup.GetRole")
 	defer span.End()
 
 	return b.role
