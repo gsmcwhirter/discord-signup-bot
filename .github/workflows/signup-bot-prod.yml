@@ -3,6 +3,7 @@ name: CI/CD Prod
 on:
   push:
     branches: [ postgres ]
+  workflow_dispatch: {}
 
 jobs:
 
