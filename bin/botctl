@@ -58,7 +58,7 @@ Commands:
 
 : "${PROJECT:=github.com/gsmcwhirter/discord-signup-bot}"
 : "${TERRAFORM_PLAN_FILE:="$REPO_ROOT/terraform/plan.tfplan"}"
-: "${DOCKER_REGISTRY:=docker.pkg.github.com/gsmcwhirter/discord-signup-bot}"
+: "${DOCKER_REGISTRY:=ghcr.io/gsmcwhirter}"
 : "${GOPROXY:=https://proxy.golang.org}"
 
 main() {
@@ -283,7 +283,7 @@ docker:login() {
     ghuser=$(BOT_OP_INIT=1 _github_token_user)
     ghtoken=$(BOT_OP_INIT=1 _github_token)
 
-    echo "$ghtoken" | docker login docker.pkg.github.com -u "$ghuser" --password-stdin
+    echo "$ghtoken" | docker login ghcr.io -u "$ghuser" --password-stdin
 }
 
 docker:build() {

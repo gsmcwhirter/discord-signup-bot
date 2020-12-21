@@ -39,7 +39,7 @@ systemd:
         TimeoutStartSec=5
         ExecStartPre=-/bin/podman kill signup-bot
         ExecStartPre=-/bin/podman rm signup-bot
-        ExecStartPre=/bin/podman pull docker.pkg.github.com/gsmcwhirter/discord-signup-bot/signup-bot:prod-bot
+        ExecStartPre=/bin/podman pull ghcr.io/gsmcwhirter/signup-bot:prod-bot
         ExecStart=/bin/podman \
           run \
           --name=signup-bot \
@@ -51,7 +51,7 @@ systemd:
           --net=bridge \
           --init \
           --privileged=false \
-          docker.pkg.github.com/gsmcwhirter/discord-signup-bot/signup-bot:prod-bot
+          ghcr.io/gsmcwhirter/signup-bot:prod-bot
 
         [Install]
         WantedBy=multi-user.target

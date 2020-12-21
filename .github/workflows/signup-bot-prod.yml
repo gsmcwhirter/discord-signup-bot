@@ -18,7 +18,7 @@ jobs:
       env:
         GH_USER: gsmcwhirter
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
-      run: echo "$GH_TOKEN" | docker login docker.pkg.github.com -u "$GH_USER" --password-stdin
+      run: echo "$GH_TOKEN" | docker login ghcr.io -u "$GH_USER" --password-stdin
 
     - name: Build the bot image  
       run: ./bin/botctl docker build bot:$GITHUB_SHA bot
