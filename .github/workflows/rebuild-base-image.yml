@@ -1,0 +1,32 @@
+name: Rebuild Base Image
+
+on:
+  schedule:
+    - cron: "0 7 * * 0"
+  workflow_dispatch: {}
+    
+jobs:
+
+  build_deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Build the runtime base
+      run: ./bin/botctl docker build base:latest runtime
+
+    - name: Build the build base
+      run: ./bin/botctl docker build base:latest build
+
+    - name: Docker login
+      env:
+        GH_USER: ${{ secrets.GH_USER }}
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
+      run: echo "$GH_TOKEN" | docker login docker.pkg.github.com -u "$GH_USER" --password-stdin
+
+    - name: Push the runtime image
+      run: ./bin/botctl docker push signup-base:latest-runtime
+
+    - name: Push the runtime image
+      run: ./bin/botctl docker push signup-base:latest-build

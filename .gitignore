@@ -19,5 +19,11 @@ honeytail.conf
 
 *config.toml
 bin/
+out/
+run/
+
+*.profile
+.terraform
+*.tfplan
 
 *.log
