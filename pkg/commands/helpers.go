@@ -19,8 +19,10 @@ import (
 
 var ErrUnknownRole = errors.New("unknown role")
 
-var isAdminAuthorized = msghandler.IsAdminAuthorized
-var isAdminChannel = msghandler.IsAdminChannel
+var (
+	isAdminAuthorized = msghandler.IsAdminAuthorized
+	isAdminChannel    = msghandler.IsAdminChannel
+)
 
 func isSignupChannel(ctx context.Context, logger logging.Logger, msg msghandler.MessageLike, signupChannel, adminChannel, adminRole string, session *etfapi.Session, b bot.DiscordBot) bool {
 	if msghandler.IsSignupChannel(msg, signupChannel, session) {

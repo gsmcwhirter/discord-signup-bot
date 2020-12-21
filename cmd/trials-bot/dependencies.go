@@ -18,21 +18,25 @@ import (
 	"github.com/gsmcwhirter/go-util/v7/errors"
 	log "github.com/gsmcwhirter/go-util/v7/logging"
 	"github.com/gsmcwhirter/go-util/v7/telemetry"
-	bolt "go.etcd.io/bbolt"
+	"github.com/jackc/pgx/v4"
+	"github.com/jackc/pgx/v4/pgxpool"
 	"golang.org/x/time/rate"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/bugsnag"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/commands"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
+	"github.com/gsmcwhirter/discord-signup-bot/pkg/pgxutil"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/reactions"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/stats"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
 
+const DiscordAPI = "https://discord.com/api/v6"
+
 type dependencies struct {
 	logger log.Logger
 
-	db       *bolt.DB
+	db       *pgxpool.Pool
 	trialAPI storage.TrialAPI
 	guildAPI storage.GuildAPI
 
@@ -61,12 +65,17 @@ type dependencies struct {
 	bot bot.DiscordBot
 
 	statsHub *stats.Hub
+
+	sendAllowed bool
 }
 
 func createDependencies(conf config, botPermissions, botIntents int) (*dependencies, error) {
 	var err error
 
+	ctx := context.Background()
+
 	d := &dependencies{
+		sendAllowed:          !conf.DisableSends,
 		httpDoer:             &http.Client{},
 		wsDialer:             wsclient.WrapDialer(websocket.DefaultDialer),
 		connectRateLimiter:   rate.NewLimiter(rate.Every(5*time.Second), 1),
@@ -126,17 +135,30 @@ func createDependencies(conf config, botPermissions, botIntents int) (*dependenc
 
 	d.rep = bugsnag.NewReporter(logger, conf.BugsnagAPIKey, BuildVersion, conf.BugsnagReleaseStage)
 
-	d.db, err = bolt.Open(conf.Database, 0660, &bolt.Options{Timeout: 1 * time.Second})
+	poolConf, err := pgxpool.ParseConfig(conf.PgDetails)
 	if err != nil {
 		return d, err
 	}
 
-	d.trialAPI, err = storage.NewBoltTrialAPI(d.db, d.census)
+	poolConf.ConnConfig.Logger = &pgxutil.Logger{Logger: d.logger}
+	poolConf.ConnConfig.LogLevel = pgx.LogLevelWarn
+	poolConf.MaxConnLifetime = 60 * time.Minute
+	poolConf.MaxConnIdleTime = 15 * time.Minute
+	poolConf.MaxConns = conf.PostgresMaxPoolSize
+	poolConf.MinConns = conf.PostgresMinPoolSize
+	poolConf.HealthCheckPeriod = 1 * time.Minute
+
+	d.db, err = pgxpool.ConnectConfig(ctx, poolConf)
 	if err != nil {
 		return d, err
 	}
 
-	d.guildAPI, err = storage.NewBoltGuildAPI(context.Background(), d.db, d.census)
+	d.trialAPI, err = storage.NewPgTrialAPI(d.db, d.census)
+	if err != nil {
+		return d, err
+	}
+
+	d.guildAPI, err = storage.NewPgGuildAPI(ctx, d.db, d.census)
 	if err != nil {
 		return d, err
 	}
@@ -179,7 +201,7 @@ func createDependencies(conf config, botPermissions, botIntents int) (*dependenc
 		ClientID:     conf.ClientID,
 		ClientSecret: conf.ClientSecret,
 		BotToken:     conf.ClientToken,
-		APIURL:       conf.DiscordAPI,
+		APIURL:       DiscordAPI,
 		NumWorkers:   conf.NumWorkers,
 
 		OS:          "linux",
@@ -202,6 +224,7 @@ func (d *dependencies) Close() {
 	}
 }
 
+func (d *dependencies) SendAllowed() bool                          { return d.sendAllowed }
 func (d *dependencies) Logger() log.Logger                         { return d.logger }
 func (d *dependencies) GuildAPI() storage.GuildAPI                 { return d.guildAPI }
 func (d *dependencies) TrialAPI() storage.TrialAPI                 { return d.trialAPI }
@@ -226,6 +249,7 @@ func (d *dependencies) StatsHub() *stats.Hub                       { return d.st
 func (d *dependencies) DiscordMessageHandler() bot.DiscordMessageHandler {
 	return d.discordMsgHandler
 }
+
 func (d *dependencies) MessageHandlerRecorder() *bstats.ActivityRecorder {
 	ar, _ := d.statsHub.Get("raw_msgs")
 	return ar

@@ -1,0 +1,111 @@
+variant: fcos
+version: 1.1.0
+
+passwd:
+  groups:
+    - name: discordbot
+      gid: 1001
+  users:
+    - name: discordbot
+      uid: 1001
+      ssh_authorized_keys:
+        - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDVnX/0Nq9QNnFp8QUW8h2Fl3+dr73v5Z/TioBCtgn6tLtBYVheqruP/10kdbpkLox/Al8yY8FKaNTrnwA5VyMrayVcfAKywiQ5X4buNeeNXGI9IGr6layUVSB/vgQnRe+JyN7PHMT6OCy8ChL/shlyasyv5F1MWtSxZ36+5YorvSJT+z7rcjpjad1ZPEDLgXbrEHmhYUUYQJhT9rE28y95lxRMasOpmfaOcX2ZSuM7+LB91V2WtHMwZs0W8uFCJiggG+UpMoQrXfys5N4nFQyDaCx3CrYA8zl58M3VbBPP72aJXvWu+xVhAJd1YSjzC/uGugmc5mUcUo4STYp3K95gHZ1gzQ9ljQUC2bYBMUXjf6vQbJho4a4tyCriRvqgARmJ37Vjbh9HgWYmD9j9fywIRhoFRPkGALbiYXaEj/b6XjHLOso6bmF9FRtptfwBM1Bbqw90RhbXmml/D1dFneZL9DLGkXga1U3SYkDE8L+gDsWt4udVTJun3+NotRsqHmVwfohU4z2d8ItcHjRkhKOxd6BYdyAE8iK2tUAxOhiwMWJ/RrU6gCu9VnspYjwZlGRMifCTD8LXteCgkhKidi5w0YstnrPiH1wtNd7jDTsKyL4ObEsDrXe4mv+qY4gocrpV62GDtFjMZmIthDD5O8L8ZKn345YDqoZuIt/rE104Cw== gsmcwhirter@starnix-mbp2
+        - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDNmIN881vYqfbHA1/fqqucxRZ4mtbSe8b4u3C71FzHpBrR2u0y+WaM9vXPh/0JRJSpmOIq/EsPT8vXX4zsrYeMkG+B0tXOSJqqIpcMlnweuOQLjZy/xz6kNRXz2RsVC1/GddhpwOATaeJ+p2LzC1MDGKPaHwjjn6L5W1NfsGz1984ormB+wvsyurbl0/2TcFMU6l4Jx8ye5LSdn37oo7737sD/+MPbs9O0mIw0L5EJNQmnGc2eaXyUj9AZQOGCISmjJv25UkhkXn7vollCuYwaoXHrpCUBG1q8Q1QcPZSGTSWe2q9V/8b2Dhz0Qbb9/+yRPad3bfK0Z3KSJMQx9zwi4cKUDHZRPGQg7QzeZHkxYerejnMr0aq/O0FVgPncf/u1KhOor59huaDhvid2gbauIbXzFrSAvXb7Iws/DLxrEE6kaPAyzMCLFDzBJnhO9UFcqWqyucwDiymdZz6gwJkoDpPfDPLza6F/sPMjE5C8a35DDmMJfGeHu5VH89QIAmeuNHutREZHQK0vfTQ0QUscwGhtgNrQ5hw78O9lXem3Gkocamn3lNyYEVCOSHL876+B1l8lpjk7+a7PlPaEgKXQl99uI88nZxIQvxpfmQn3558QTLVJSmBtec+S5wd6Advi3lsNJ5wjyneZ1E7Nuuy75wsveiLv1oYFvthjuotEiQ== gsmcwhirter@starnix-mbp2
+      groups:
+        - docker
+        - discordbot
+      shell: /bin/bash
+    - name: cicd
+      uid: 1002
+      ssh_authorized_keys:
+        - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDVnX/0Nq9QNnFp8QUW8h2Fl3+dr73v5Z/TioBCtgn6tLtBYVheqruP/10kdbpkLox/Al8yY8FKaNTrnwA5VyMrayVcfAKywiQ5X4buNeeNXGI9IGr6layUVSB/vgQnRe+JyN7PHMT6OCy8ChL/shlyasyv5F1MWtSxZ36+5YorvSJT+z7rcjpjad1ZPEDLgXbrEHmhYUUYQJhT9rE28y95lxRMasOpmfaOcX2ZSuM7+LB91V2WtHMwZs0W8uFCJiggG+UpMoQrXfys5N4nFQyDaCx3CrYA8zl58M3VbBPP72aJXvWu+xVhAJd1YSjzC/uGugmc5mUcUo4STYp3K95gHZ1gzQ9ljQUC2bYBMUXjf6vQbJho4a4tyCriRvqgARmJ37Vjbh9HgWYmD9j9fywIRhoFRPkGALbiYXaEj/b6XjHLOso6bmF9FRtptfwBM1Bbqw90RhbXmml/D1dFneZL9DLGkXga1U3SYkDE8L+gDsWt4udVTJun3+NotRsqHmVwfohU4z2d8ItcHjRkhKOxd6BYdyAE8iK2tUAxOhiwMWJ/RrU6gCu9VnspYjwZlGRMifCTD8LXteCgkhKidi5w0YstnrPiH1wtNd7jDTsKyL4ObEsDrXe4mv+qY4gocrpV62GDtFjMZmIthDD5O8L8ZKn345YDqoZuIt/rE104Cw== gsmcwhirter@starnix-mbp2
+        - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDNmIN881vYqfbHA1/fqqucxRZ4mtbSe8b4u3C71FzHpBrR2u0y+WaM9vXPh/0JRJSpmOIq/EsPT8vXX4zsrYeMkG+B0tXOSJqqIpcMlnweuOQLjZy/xz6kNRXz2RsVC1/GddhpwOATaeJ+p2LzC1MDGKPaHwjjn6L5W1NfsGz1984ormB+wvsyurbl0/2TcFMU6l4Jx8ye5LSdn37oo7737sD/+MPbs9O0mIw0L5EJNQmnGc2eaXyUj9AZQOGCISmjJv25UkhkXn7vollCuYwaoXHrpCUBG1q8Q1QcPZSGTSWe2q9V/8b2Dhz0Qbb9/+yRPad3bfK0Z3KSJMQx9zwi4cKUDHZRPGQg7QzeZHkxYerejnMr0aq/O0FVgPncf/u1KhOor59huaDhvid2gbauIbXzFrSAvXb7Iws/DLxrEE6kaPAyzMCLFDzBJnhO9UFcqWqyucwDiymdZz6gwJkoDpPfDPLza6F/sPMjE5C8a35DDmMJfGeHu5VH89QIAmeuNHutREZHQK0vfTQ0QUscwGhtgNrQ5hw78O9lXem3Gkocamn3lNyYEVCOSHL876+B1l8lpjk7+a7PlPaEgKXQl99uI88nZxIQvxpfmQn3558QTLVJSmBtec+S5wd6Advi3lsNJ5wjyneZ1E7Nuuy75wsveiLv1oYFvthjuotEiQ== gsmcwhirter@starnix-mbp2
+        - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAz6adfarRwXXr614PXRtSdy3tV3RLLNTnp9TaGsLLuU greg+cicd@evogames.org
+      groups:
+        - discordbot
+      shell: /bin/bash
+
+systemd:
+  units:
+    - name: signup-bot.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Signup Bot
+        After=network-online.target
+        Wants=network-online.target
+
+        [Service]
+        TimeoutStartSec=5
+        ExecStartPre=-/bin/podman kill signup-bot
+        ExecStartPre=-/bin/podman rm signup-bot
+        ExecStartPre=/bin/podman pull docker.pkg.github.com/gsmcwhirter/discord-signup-bot/signup-bot:prod-bot
+        ExecStart=/bin/podman \
+          run \
+          --name=signup-bot \
+          --log-driver=journald \
+          --mount=type=volume,destination=/tmp \
+          --memory-swap=-1 \
+          --volume=/var/secrets/signup-bot:/secrets:ro \
+          --read-only \
+          --net=bridge \
+          --init \
+          --privileged=false \
+          docker.pkg.github.com/gsmcwhirter/discord-signup-bot/signup-bot:prod-bot
+
+        [Install]
+        WantedBy=multi-user.target
+
+storage:
+  directories:
+    - path: /var/secrets/signup-bot
+      mode: 0700
+      user: 
+        name: discordbot
+      group: 
+        name: discordbot
+  files:
+    - path: /etc/sudoers
+      append:
+        - inline: "%discordbot ALL= NOPASSWD: /bin/systemctl start signup-bot.service, /bin/systemctl stop signup-bot.service, /bin/systemctl restart signup-bot.service"
+
+    - path: /var/secrets/signup-bot/postgres
+      mode: 0400
+      user:
+        name: discordbot
+      group:
+        name: discordbot
+      contents:
+        inline: "${POSTGRES_SECRET}"
+    - path: /var/sercrets/signup-bot/bugsnag
+      mode: 0400
+      user:
+        name: discordbot
+      group:
+        name: discordbot
+      contents:
+        inline: "${BUGSNAG_KEY}"
+    - path: /var/secrets/signup-bot/honeycomb
+      mode: 0400
+      user:
+        name: discordbot
+      group:
+        name: discordbot
+      contents:
+        inline: "${HONEYCOMB_KEY}"
+    - path: /var/secrets/signup-bot/bot_login
+      mode: 0400
+      user:
+        name: discordbot
+      group:
+        name: discordbot
+      contents:
+        inline: "${BOT_LOGIN}"
+    - path: /var/secrets/signup-bot/bot_token
+      mode: 0400
+      user:
+        name: discordbot
+      group:
+        name: discordbot
+      contents:
+        inline: "${BOT_TOKEN}"

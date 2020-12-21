@@ -18,10 +18,13 @@ func setup(start func(config) error) *cli.Command {
 	var configFile string
 
 	c.Flags().StringVar(&configFile, "config", "./config.toml", "The config file to use")
-	c.Flags().String("client_id", "", "The discord bot client id")
-	c.Flags().String("client_secret", "", "The discord bot client secret")
-	c.Flags().String("client_token", "", "The discord bot client token")
-	c.Flags().String("database", "", "The database file")
+
+	c.Flags().String("client_secret_path", "", "The path to the client login file")
+	c.Flags().String("client_token_path", "", "The path to the client token file")
+	c.Flags().String("postgres_creds_path", "", "The path to the database credentials file")
+	c.Flags().String("bugsnag_apikey_path", "", "The path to the bugsnag api key file")
+	c.Flags().String("honeycomb_apikey_path", "", "The path to the honeycomb api key file")
+
 	c.Flags().String("log_format", "", "The logger format")
 	c.Flags().String("log_level", "", "The minimum log level to show")
 	c.Flags().Int("num_workers", 0, "The number of worker goroutines to run")
@@ -56,6 +59,11 @@ func setup(start func(config) error) *cli.Command {
 		err = v.Unmarshal(&conf)
 		if err != nil {
 			return errors.Wrap(err, "could not unmarshal config into struct")
+		}
+
+		err = conf.FillSecrets()
+		if err != nil {
+			return errors.Wrap(err, "could not fill in secrets into config struct")
 		}
 
 		conf.Version = cmd.Version

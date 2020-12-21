@@ -36,7 +36,6 @@ func NewBoltGuildAPI(ctx context.Context, db *bolt.DB, c *telemetry.Census) (Gui
 		}
 		return nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +58,6 @@ func (b *boltGuildAPI) AllGuilds(ctx context.Context) ([]string, error) {
 			return nil
 		})
 	})
-
 	if err != nil {
 		return nil, err
 	}

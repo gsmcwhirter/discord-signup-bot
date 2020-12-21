@@ -10,9 +10,6 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// ErrTrialNotExist is the error returned if a trial does not exist
-var ErrTrialNotExist = errors.New("event does not exist")
-
 type boltTrialAPI struct {
 	db     *bolt.DB
 	census *telemetry.Census
@@ -41,7 +38,6 @@ func (b *boltTrialAPI) NewTransaction(ctx context.Context, guild string, writabl
 		}
 		return nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -84,8 +80,6 @@ func (b *boltTrialAPITx) Rollback(ctx context.Context) error {
 func (b *boltTrialAPITx) AddTrial(ctx context.Context, name string) (Trial, error) {
 	ctx, span := b.census.StartSpan(ctx, "boltTrialAPITx.AddTrial")
 	defer span.End()
-
-	name = strings.ToLower(name)
 
 	trial, err := b.GetTrial(ctx, name)
 	if err == ErrTrialNotExist {

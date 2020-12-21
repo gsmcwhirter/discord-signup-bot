@@ -45,6 +45,7 @@ type dependencies interface {
 	BotSession() *etfapi.Session
 	Census() *telemetry.Census
 	StatsHub() *stats.Hub
+	SendAllowed() bool
 }
 
 // Handlers is the interface for a Handlers dependency that registers itself with a discrord bot
@@ -190,6 +191,11 @@ func (h *handlers) handleResponse(ctx context.Context, logger logging.Logger, re
 	level.Info(logger).Message("sending message split", "split_count", len(splitResp))
 
 	for _, res := range splitResp {
+		if !h.deps.SendAllowed() {
+			level.Info(logger).Message("message send disabled", "message_to_send", fmt.Sprintf("%#v", res.ToMessage()), "reactions", res.MessageReactions())
+			continue
+		}
+
 		err = h.deps.MessageRateLimiter().Wait(ctx)
 		if err != nil {
 			level.Error(logger).Err("error waiting for ratelimiting", err)

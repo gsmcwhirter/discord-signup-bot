@@ -27,7 +27,6 @@ func IsAdminAuthorized(ctx context.Context, logger logging.Logger, msg MessageLi
 
 // IsAdminChannel determines if a message is occurring in the admin channel for a guild
 func IsAdminChannel(logger logging.Logger, msg MessageLike, adminChannel string, session *etfapi.Session) bool {
-
 	g, ok := session.Guild(msg.GuildID())
 	if !ok {
 		level.Error(logger).Message("could not find guild in session")

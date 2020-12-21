@@ -1,0 +1,585 @@
+#!/usr/bin/env bash
+
+source $(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/botlib
+
+USAGE="\
+Usage: $(basename "$0") <cmd>
+
+Commands:
+    fcos            Run commands relevant to setting up Fedora CoreOS
+    terraform       Run terraform commands
+"
+
+USAGE_FCOS="\
+Usage: $(basename "$0") fcos <cmd>
+
+Commands:
+    ignition
+    new-image
+    latest-image
+"
+
+USAGE_TERRAFORM="\
+Usage: $(basename "$0") terraform <cmd>
+
+Commands:
+    init
+    plan
+    apply
+"
+
+USAGE_DOCKER="\
+Usage: $(basename "$0") docker <cmd>
+
+Commands:
+    login
+    build
+    push
+"
+
+USAGE_GO="\
+Usage: $(basename "$0") go <cmd>
+
+Commands:
+    format
+    generate
+    test
+    lint
+    build
+    deps
+"
+
+USAGE_DB="\
+Usage: $(basename "$0") db <cmd>
+
+Commands:
+    migrate
+"
+
+: "${PROJECT:=github.com/gsmcwhirter/discord-signup-bot}"
+: "${TERRAFORM_PLAN_FILE:="$REPO_ROOT/terraform/plan.tfplan"}"
+: "${DOCKER_REGISTRY:=docker.pkg.github.com/gsmcwhirter/discord-signup-bot}"
+: "${GOPROXY:=https://proxy.golang.org}"
+
+main() {
+    (dispatch "command" "$@") ||
+        usage "" "$USAGE"
+}
+
+_op_signin() {
+    [[ ${BOT_OP_INIT-} ]] && return
+    export BOT_OP_INIT=1
+    # Set flag to indicate already run:
+    eval $(op signin bellemare)
+}
+
+_get_password_doc() {
+    local docname
+    docname=$1; shift
+
+    _op_signin
+    op get item --vault=DiscordBots "$docname"
+}
+
+_digitalocean_token() {
+    # _get_password_doc "DigitalOcean Access Token" | jq -r .details.password
+    _get_password_doc "DigitalOcean Access Token" | dasel -r json --plain '.details.password'
+}
+
+_spaces_access_key() {
+    # _get_password_doc "Terraform API" | jq -r '.details.fields[]|select(.name=="username").value'
+    _get_password_doc "Terraform API" | dasel -r json --plain '.details.fields.(name=username).value'
+}
+
+_spaces_secret_key() {
+    # _get_password_doc "Terraform API" | jq -r '.details.fields[]|select(.name=="password").value'
+    _get_password_doc "Terraform API" | dasel -r json --plain '.details.fields.(name=password).value'
+}
+
+_postgres_pass() {
+    # _get_password_doc "Postgres User" | jq -r '.details.fields[]|select(.name=="password").value'
+    _get_password_doc "Postgres User" | dasel -r json --plain '.details.fields.(name=password).value'
+}
+
+_postgres_userpass() {
+    echo -n "signup_bot:$(_postgres_pass)"
+}
+
+_bugsnag_key() {
+    # _get_password_doc "Bugsnag API Key" | jq -r .details.password
+    _get_password_doc "Bugsnag API Key" | dasel -r json --plain '.details.password'
+}
+
+_honeycomb_key() {
+    # _get_password_doc "Honeycomb API Key" | jq -r .details.password
+    _get_password_doc "Honeycomb API Key" | dasel -r json --plain '.details.password'
+}
+
+_bot_token() {
+    # _get_password_doc "Bot Token" | jq -r .details.password
+    _get_password_doc "Bot Token" | dasel -r json --plain '.details.password'
+}
+
+_bot_login() {
+    local doc user pass
+    doc=$(_get_password_doc "Bot Login")
+    # user=$(echo "$doc" | jq -r '.details.fields[]|select(.name=="username").value')
+    # pass=$(echo "$doc" | jq -r '.details.fields[]|select(.name=="password").value')
+    user=$(echo "$doc" | dasel -r json --plain '.details.fields.(name=username).value')
+    pass=$(echo "$doc" | dasel -r json --plain '.details.fields.(name=password).value')
+    echo -n "$user:$pass"
+}
+
+_github_token_user() {
+    # _get_password_doc "Github Token" | jq -r '.details.fields[]|select(.name=="username").value'
+    _get_password_doc "Github Token" | dasel -r json --plain '.details.fields.(name=username).value'
+}
+
+_github_token() {
+    # _get_password_doc "Github Token" | jq -r '.details.fields[]|select(.name=="password").value'
+    _get_password_doc "Github Token" | dasel -r json --plain '.details.fields.(name=password).value'
+}
+
+_doctl() {
+    : "${DIGITALOCEAN_ACCESS_TOKEN:=$(_digitalocean_token)}"
+    doctl "$@"
+}
+
+_terraform() {
+    _op_signin
+    AWS_ACCESS_KEY_ID=$(BOT_OP_INIT=1 _spaces_access_key) AWS_SECRET_ACCESS_KEY=$(BOT_OP_INIT=1 _spaces_secret_key) \
+    terraform "$@"
+}
+
+command:fcos() {
+    (dispatch "fcos" "$@") || 
+        usage "" "$USAGE_FCOS"
+}
+
+command:terraform() {
+    (dispatch "terraform" "$@") || 
+        usage "" "$USAGE_TERRAFORM"
+}
+
+terraform:init() {
+    _terraform init $REPO_ROOT/terraform
+}
+
+terraform:plan() {
+    local user_data_string postgres_user_pw
+
+    terraform:init
+
+    : "${DIGITALOCEAN_ACCESS_TOKEN:=$(_digitalocean_token)}"
+
+    user_data_string="$(fcos:ignition signup_bot 2>/dev/null)"
+    postgres_user_pw="$(_postgres_pass)"
+
+    _terraform plan \
+        -var="do_token=$DIGITALOCEAN_ACCESS_TOKEN" \
+        -var="latest_image=$(DIGITALOCEAN_ACCESS_TOKEN=$DIGITALOCEAN_ACCESS_TOKEN fcos:latest-image)" \
+        -var="app_user_data=$user_data_string" \
+        -var="postgres_user_pw=$postgres_pw" \
+        -out "$TERRAFORM_PLAN_FILE" \
+        "$REPO_ROOT/terraform"
+}
+
+terraform:apply() {
+    [[ -f "$TERRAFORM_PLAN_FILE" ]] ||
+        die "Missing plan file"
+
+    _terraform apply \
+        "$TERRAFORM_PLAN_FILE"
+    
+    rm "$TERRAFORM_PLAN_FILE"
+}
+
+fcos:ignition() {
+    _op_signin
+
+    local kind dir fccfile
+    kind=$1; shift
+
+    fccfile="$REPO_ROOT/fcos/$kind.fcc"
+
+    docker pull quay.io/coreos/fcct:release >&2
+    cat "$fccfile" | BOT_OP_INIT=1 _envsubst_secrets | docker run --rm -i quay.io/coreos/fcct:release --pretty --strict
+}
+
+_envsubst_secrets() {
+    env \
+        POSTGRES_SECRET=$(_postgres_userpass) \
+        BUGSNAG_KEY=$(_bugsnag_key) \
+        HONEYCOMB_KEY=$(_honeycomb_key) \
+        BOT_LOGIN=$(_bot_login) \
+        BOT_TOKEN=$(_bot_token) \
+    envsubst
+}
+
+_image-id() {
+    local imagename imageid
+
+    imagename=$1; shift
+
+    imageid=$(_doctl compute image list-user -o json | jq -r ".[]|select(.name==\"$imagename\").id")
+
+    [[ "$imageid" != "" ]] ||
+        return 1
+
+    echo "$imageid"
+}
+
+fcos:new-image() {
+    local fcosjson version imageurl imagename
+
+    fcosjson="$REPO_ROOT/fcos/stable.json.tmp"
+
+    trap "rm $fcosjson" EXIT
+
+    curl -s -o "$fcosjson" "https://builds.coreos.fedoraproject.org/streams/stable.json"
+    version=$(jq -r '.architectures.x86_64.artifacts.digitalocean.release' "$fcosjson")
+    imageurl=$(jq -r '.architectures.x86_64.artifacts.digitalocean.formats["qcow2.gz"].disk.location' "$fcosjson")
+
+    echo "Version: $version"
+    echo "Image: $imageurl"
+
+    imagename="fcos-$version"
+
+    if _image-id "$imagename"; then
+        echo "Image already exists"
+        exit 1
+    fi
+
+    _doctl compute image create "$imagename" --region sfo2 --image-url "$imageurl"
+    echo "$imagename" > "$REPO_ROOT/fcos/latest-image.txt"
+    echo "Image created. Waiting for it to be available."
+    
+    while ! _image-id "$imagename"; do 
+        sleep 5; 
+    done
+    echo "Image is available."
+}
+
+fcos:latest-image() {
+    local imagename imageid
+    imagename=$(cat "$REPO_ROOT/fcos/latest-image.txt")
+    imageid=$(_image-id "$imagename")
+
+    [[ "$imageid" != "" ]] ||
+        die "could not find image id for '$imagename'"
+
+    echo "$imageid"
+}
+
+command:docker() {
+    (dispatch "docker" "$@") || 
+        usage "" "$USAGE_DOCKER"
+}
+
+docker:login() {
+    _op_signin
+
+    local ghuser ghtoken
+    ghuser=$(BOT_OP_INIT=1 _github_token_user)
+    ghtoken=$(BOT_OP_INIT=1 _github_token)
+
+    echo "$ghtoken" | docker login docker.pkg.github.com -u "$ghuser" --password-stdin
+}
+
+docker:build() {
+    # app [target]
+    [[ $# -gt 0 ]] ||
+        die "You must specify the app to build"
+
+    local app image justtag tag dockerfile
+    app="$1"; shift
+
+    if [[ "$app" =~ : ]]; then
+        justtag="${app#*:}"
+        app="${app%:*}"
+    else
+        justtag="$(git describe --tags --always --dirty)"
+    fi
+
+    local args=()
+
+    if [[ "$app" = "base" ]]; then
+        args+=(--no-cache)
+    fi
+
+    # : "${STALE_BUILD:=0}"
+    # [[ "$STALE_BUILD" -eq 1 ]] || 
+    #     args+=(--pull)
+
+    image="signup-$app"
+    dockerfile="$REPO_ROOT/docker/$app.dockerfile"
+    tag="$image:$justtag"
+
+    [[ -f "$dockerfile" ]] ||
+        die "You should specify an existing app"
+
+    echo "Building $tag"
+
+    [[ $# -eq 0 ]] || {
+        target="$1"; shift
+        
+        tag="$tag-$target"
+        args+=(--target "$target")
+    }
+
+    args+=(
+        --file "$dockerfile"
+        --tag "$tag"
+        --build-arg REPO="$DOCKER_REGISTRY"
+    )
+
+    DOCKER_BUILDKIT=1 docker build \
+        "${args[@]}" \
+        "$REPO_ROOT"
+
+    echo "Built $tag"
+}
+
+docker:push() {
+    [[ $# -gt 0 ]] ||
+        die "You must specify the image to push"
+
+    local image remote_image
+    image="$1"; shift
+    remote_image="$DOCKER_REGISTRY/$image"
+
+    docker tag "$image" "$remote_image"
+    docker push "$remote_image"
+}
+
+docker:dev() {
+    # app target
+    [[ $# -gt 1 ]] ||
+        die "You must specify the app and target to run"
+
+    local app target secretdir
+
+    app="$1"; shift
+    target="$1"; shift
+
+    : "${STALE:=0}"
+
+    [[ "$STALE" -eq 1 ]] ||
+        docker:build "$app:dev" "$target"
+
+    secretdir="$REPO_ROOT/run/secrets"
+    mkdir -p "$secretdir"
+    _op_signin
+    BOT_OP_INIT=1 _postgres_userpass > "$secretdir/postgres"
+    BOT_OP_INIT=1 _bugsnag_key > "$secretdir/bugsnag"
+    BOT_OP_INIT=1 _honeycomb_key > "$secretdir/honeycomb"
+    BOT_OP_INIT=1 _bot_login > "$secretdir/bot_login"
+    BOT_OP_INIT=1 _bot_token > "$secretdir/bot_token"
+
+    docker run \
+        --rm \
+        --name=signup-bot \
+        --log-driver=json-file \
+        --mount=type=volume,destination=/tmp \
+        --memory-swap=-1 \
+        --volume="$secretdir:/secrets:ro" \
+        --volume="$REPO_ROOT/config.toml:/app/config.toml:ro" \
+        --read-only \
+        --net=bridge \
+        --init \
+        --privileged=false \
+        "signup-$app:dev-$target"
+}
+
+command:go() {
+    (dispatch "go" "$@") || 
+        usage "" "$USAGE_GO"
+}
+
+_toolpaths() {
+    awk '
+        ($1=="_" && match($2, "^\"[^\"]*\"")){
+            print substr($2, 2, RLENGTH-2)
+        }
+    ' "$REPO_ROOT/tools/tools.go"
+}
+
+go:deps() {
+    go mod download
+
+    _toolpaths | while read -r tool; do
+        go get "$tool"
+    done
+}
+
+go:format() {
+    local project
+    project="./..."
+    [[ $# -eq 0 ]] || {
+        project="$1"
+        shift
+    }
+
+    [[ "$project" =~ /...$ ]] || 
+        project="$project/..."
+
+    echo "Running formatters on $project"
+
+    for d in $(go list -f '{{.Dir}}' "$project"); do 
+        gofumpt -s -w "$d"/*.go || die "Couldn't gofumpt $d"
+    done
+
+    for d in $(go list -f '{{.Dir}}' "$project"); do 
+        gofumports -w -local "$PROJECT" "$d"/*.go || die "Could gofumports $d"
+    done
+}
+
+go:generate() {
+    local project
+    project="./..."
+    [[ $# -eq 0 ]] || {
+        project="$1"
+        shift
+    }
+
+    [[ "$project" =~ /...$ ]] || 
+        project="$project/..."
+
+    echo "Running generate on $project"
+
+    go generate "$project"
+}
+
+go:lint() {
+    local project
+    project="./..."
+    [[ $# -eq 0 ]] || {
+        project="$1"
+        shift
+    }
+
+    [[ "$project" =~ /...$ ]] || 
+        project="$project/..."
+
+    go:format "$project"
+
+    echo "Running linters on $project"
+
+    golangci-lint run -E golint,gosimple,staticcheck "$project"
+    golangci-lint run -E deadcode,depguard,errcheck,gocritic,gofmt,goimports,gosec,govet,ineffassign,nakedret,prealloc,structcheck,typecheck,unconvert,varcheck "$project"
+}
+
+go:test() {
+    local project
+    project="./..."
+    [[ $# -eq 0 ]] || {
+        project="$1"
+        shift
+    }
+
+    [[ "$project" =~ /...$ ]] || 
+        project="$project/..."
+
+    echo "Running tests for $project"
+
+    go test -mod readonly -cover -coverprofile=./cover.profile "$project"
+}
+
+go:build() {
+    local app project
+    
+    [[ $# -gt 0 ]] ||
+        die "Must specify a project to build"
+
+    project="$1"
+    shift
+
+    [[ "$project" =~ /...$ ]] || 
+        project="$project/..."
+
+    app="$(basename "${project%/*}")"
+    echo "Building $project to $REPO_ROOT/out/$app"
+    
+    go build \
+        -mod readonly \
+        -v \
+        -ldflags "-s -w -X main.AppName=$app -X main.BuildDate='' -X main.BuildVersion='' -X main.BuildSHA=''" \
+        -o "$REPO_ROOT/out/$app" \
+        $project
+}
+
+go:gt() {
+    local failures=()
+
+    go:generate "$@" ||
+        failures+=("FAIL: generate failed")
+
+    go:test "$@" ||
+        failures+=("FAIL: tests failed")
+
+    [[ ${#failures[*]} -eq 0 ]] ||
+        die "" "${failures[@]}"
+}
+
+go:gtl() {
+    local failures=()
+
+    go:generate "$@" ||
+        failures+=("FAIL: generate failed")
+
+    go:test "$@" ||
+        failures+=("FAIL: tests failed")
+
+    go:lint "$@" ||
+        failures+=("FAIL: vet failed")
+
+    [[ ${#failures[*]} -eq 0 ]] ||
+        die "" "${failures[@]}"
+}
+
+command:db() {
+    (dispatch "db" "$@") || 
+        usage "" "$USAGE_DB"
+}
+
+db:migrate() {
+    local cmd
+
+    [[ $# -gt 0 ]] || {
+        echo "Missing command"
+        exit 1
+    }
+
+    cmd="$1";
+
+    local args=()
+
+    [[ "$cmd" = "new" ]] || 
+        args+=(--config "$REPO_ROOT/migrations/tern.conf")
+
+    if [[ "$cmd" = "up" ]]; then
+        cmd="migrate"
+        args+=(--port "$(dasel -f "$REPO_ROOT/config.toml" --plain .postgres_port)")
+    fi
+
+    args+=(--migrations "$REPO_ROOT/migrations")
+
+    : "${SIGNUP_BOT_PG_HOST:=$(dasel -f "$REPO_ROOT/config.toml" --plain .postgres_host)}"
+    : "${SIGNUP_BOT_PG_USER:=signup_bot}"
+    : "${SIGNUP_BOT_PGPASSWORD:=$(_postgres_pass)}"
+
+    env \
+        SIGNUP_BOT_PG_HOST="$SIGNUP_BOT_PG_HOST" \
+        SIGNUP_BOT_PG_USER="$SIGNUP_BOT_PG_USER" \
+        SIGNUP_BOT_PGPASSWORD="$SIGNUP_BOT_PGPASSWORD" \
+        tern "$cmd" "${args[@]}" "$@"
+}
+
+usage() {
+    errstr=$1; shift
+    usagemsg=$1; shift
+
+    die "$errstr" "$usagemsg"
+}
+
+main "$@"

@@ -15,30 +15,6 @@ import (
 	"github.com/gsmcwhirter/discord-bot-lib/v18/bot"
 )
 
-type config struct {
-	BotID               string  `mapstructure:"bot_id"`
-	BotName             string  `mapstructure:"bot_name"`
-	BotPresence         string  `mapstructure:"bot_presence"`
-	DiscordAPI          string  `mapstructure:"discord_api"`
-	ClientID            string  `mapstructure:"client_id"`
-	ClientSecret        string  `mapstructure:"client_secret"`
-	ClientToken         string  `mapstructure:"client_token"`
-	Database            string  `mapstructure:"database"`
-	ClientURL           string  `mapstructure:"client_url"`
-	LogFormat           string  `mapstructure:"log_format"`
-	LogLevel            string  `mapstructure:"log_level"`
-	PProfHostPort       string  `mapstructure:"pprof_hostport"`
-	Version             string  `mapstructure:"-"`
-	NumWorkers          int     `mapstructure:"num_workers"`
-	BugsnagAPIKey       string  `mapstructure:"bugsnag_api_key"`
-	BugsnagReleaseStage string  `mapstructure:"bugsnag_release_stage"`
-	HoneycombAPIKey     string  `mapstructure:"honeycomb_api_key"`
-	HoneycombDataset    string  `mapstructure:"honeycomb_dataset"`
-	TraceProbability    float64 `mapstructure:"trace_probability"`
-	PrometheusNamespace string  `mapstructure:"prometheus_namespace"`
-	PrometheusHostPort  string  `mapstructure:"prometheus_hostport"`
-}
-
 func start(c config) error {
 	// See https://discordapp.com/developers/docs/topics/permissions#permissions-bitwise-permission-flags
 	botPermissions := 0x00000040 // add reactions
