@@ -16,7 +16,7 @@ jobs:
 
     - name: Docker login
       env:
-        GH_USER: ${{ secrets.GH_USER }}
+        GH_USER: gsmcwhirter
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
       run: echo "$GH_TOKEN" | docker login docker.pkg.github.com -u "$GH_USER" --password-stdin
 
