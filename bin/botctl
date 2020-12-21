@@ -336,6 +336,7 @@ docker:build() {
     DOCKER_BUILDKIT=1 docker build \
         "${args[@]}" \
         "$REPO_ROOT"
+    echo $?
 
     echo "Built $tag"
 }

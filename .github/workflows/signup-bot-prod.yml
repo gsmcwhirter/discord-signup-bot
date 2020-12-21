@@ -14,14 +14,14 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Build the bot image  
-      run: ./bin/botctl docker build bot:$GITHUB_SHA bot
-
     - name: Docker login
       env:
         GH_USER: ${{ secrets.GH_USER }}
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
       run: echo "$GH_TOKEN" | docker login docker.pkg.github.com -u "$GH_USER" --password-stdin
+
+    - name: Build the bot image  
+      run: ./bin/botctl docker build bot:$GITHUB_SHA bot
 
     - name: Push the bot image w/ sha
       run: ./bin/botctl docker push bot:$GITHUB_SHA-bot
@@ -34,10 +34,11 @@ jobs:
 
     - name: Deploy the docker image
       env:
+        DEPLOY_SERVER: ${{ secrets.DEPLOY_SERVER }}
         SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
       run: |
         mkdir -p ~/.ssh/ && \
         echo "$SSH_PRIVATE_KEY" > ../github_do.key && \
         sudo chmod 600 ../github_do.key && \
-        ssh-keyscan -H ${{ secrets.DEPLOY_SERVER }} > ~/.ssh/known_hosts && \
-        ssh -i ../github_do.key cicd@${{ secrets.DEPLOY_SERVER }} 'sudo /bin/systemctl restart signup-bot.service'
+        ssh-keyscan -H "$DEPLOY_SERVER" > ~/.ssh/known_hosts && \
+        ssh -i ../github_do.key cicd@"$DEPLOY_SERVER" 'sudo /bin/systemctl restart signup-bot.service'
