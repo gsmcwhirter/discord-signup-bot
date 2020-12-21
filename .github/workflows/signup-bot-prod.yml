@@ -14,14 +14,14 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
+    - name: Build the bot image  
+      run: ./bin/botctl docker build bot:$GITHUB_SHA bot
+
     - name: Docker login
       env:
         GH_USER: gsmcwhirter
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
       run: echo "$GH_TOKEN" | docker login ghcr.io -u "$GH_USER" --password-stdin
-
-    - name: Build the bot image  
-      run: ./bin/botctl docker build bot:$GITHUB_SHA bot
 
     - name: Push the bot image w/ sha
       run: ./bin/botctl docker push signup-bot:$GITHUB_SHA-bot
