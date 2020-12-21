@@ -24,13 +24,13 @@ jobs:
       run: ./bin/botctl docker build bot:$GITHUB_SHA bot
 
     - name: Push the bot image w/ sha
-      run: ./bin/botctl docker push bot:$GITHUB_SHA-bot
+      run: ./bin/botctl docker push signup-bot:$GITHUB_SHA-bot
 
     - name: Re-tag the bot image prod
       run: docker tag signup-bot:$GITHUB_SHA-bot signup-bot:prod-bot
 
     - name: Push the prod bot image
-      run: ./bin/botctl docker push bot:prod-bot
+      run: ./bin/botctl docker push signup-bot:prod-bot
 
     - name: Deploy the docker image
       env:
