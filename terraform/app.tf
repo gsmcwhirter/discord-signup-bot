@@ -1,5 +1,5 @@
 resource "digitalocean_droplet" "app" {
-    count = 0
+    count = 1
     image = var.latest_image
     name = "app-${count.index}"
     region = "sfo2"
@@ -10,4 +10,6 @@ resource "digitalocean_droplet" "app" {
     ssh_keys = [
       data.digitalocean_ssh_key.terraform.id
     ]
+
+    tags = ["signup_bot"]
 }

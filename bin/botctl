@@ -201,18 +201,23 @@ fcos:ignition() {
     kind=$1; shift
 
     fccfile="$REPO_ROOT/fcos/$kind.fcc"
+    ignition_file="$REPO_ROOT/fcos/$kind.ign"
 
     docker pull quay.io/coreos/fcct:release >&2
-    cat "$fccfile" | BOT_OP_INIT=1 _envsubst_secrets | docker run --rm -i quay.io/coreos/fcct:release --pretty --strict
+    cat "$fccfile" | BOT_OP_INIT=1 _envsubst_secrets | docker run --rm -i quay.io/coreos/fcct:release --pretty --strict > "$ignition_file"
+    docker run --rm -i quay.io/coreos/ignition-validate:release - < "$ignition_file"
+
+    cat "$ignition_file"
+    rm "$ignition_file"
 }
 
 _envsubst_secrets() {
     env \
-        POSTGRES_SECRET=$(_postgres_userpass) \
-        BUGSNAG_KEY=$(_bugsnag_key) \
-        HONEYCOMB_KEY=$(_honeycomb_key) \
-        BOT_LOGIN=$(_bot_login) \
-        BOT_TOKEN=$(_bot_token) \
+        POSTGRES_SECRET="$(_postgres_userpass)" \
+        BUGSNAG_KEY="$(_bugsnag_key)" \
+        HONEYCOMB_KEY="$(_honeycomb_key)" \
+        BOT_LOGIN="$(_bot_login)" \
+        BOT_TOKEN="$(_bot_token)" \
     envsubst
 }
 

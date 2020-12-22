@@ -24,8 +24,8 @@ resource "digitalocean_database_firewall" "signup-bot-pg" {
         value = "192.168.1.1"  # yes, this is localhost -- will configure manually in UI
     }
 
-    # rule {
-    #     type = "droplet"
-    #     value = digitalocean_droplet.app.id
-    # }
+    rule {
+        type = "tag"
+        value = "signup_bot"
+    }
 }
