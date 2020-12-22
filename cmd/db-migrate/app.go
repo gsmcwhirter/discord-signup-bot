@@ -90,6 +90,8 @@ func migrateAllGuildEvents(ctx context.Context, deps *dependencies) error {
 }
 
 func migrateOneGuildEvents(ctx context.Context, deps *dependencies, guildID string) error {
+	level.Info(deps.Logger()).Message("migrating events for guild", "guild_id", guildID)
+
 	readTx, err := deps.OldTrialAPI().NewTransaction(ctx, guildID, false)
 	if err != nil {
 		return errors.Wrap(err, "could not start read transation")
@@ -105,6 +107,7 @@ func migrateOneGuildEvents(ctx context.Context, deps *dependencies, guildID stri
 	events := readTx.GetTrials(ctx)
 	for _, event := range events {
 		eventName := event.GetName(ctx)
+		level.Info(deps.Logger()).Message("migrating event", "guild_id", guildID, "event_name", eventName)
 		if len(eventName) > 255 {
 			level.Error(deps.Logger()).Err("event name is too long; skipping", err, "guild_id", guildID, "event_name", eventName)
 			continue
