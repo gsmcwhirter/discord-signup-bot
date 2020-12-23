@@ -47,6 +47,8 @@ systemd:
         User=discordbot
         Group=discordbot
 
+        Restart=always
+
         TimeoutStartSec=60
         ExecStartPre=-/bin/podman kill signup-bot
         ExecStartPre=-/bin/podman rm signup-bot
@@ -75,6 +77,8 @@ systemd:
         Wants=network-online.target
 
         [Service]
+        Restart=always
+
         TimeoutStartSec=60
         ExecStartPre=-/bin/podman kill do-agent
         ExecStartPre=-/bin/podman rm do-agent
@@ -114,6 +118,16 @@ storage:
           %botctrl ALL= NOPASSWD: /bin/systemctl start signup-bot.service
           %botctrl ALL= NOPASSWD: /bin/systemctl stop signup-bot.service
           %botctrl ALL= NOPASSWD: /bin/systemctl restart signup-bot.service
+    - path: /usr/local/bin/prettify
+      mode: 0755
+      user:
+        name: core
+      group:
+        name: botctrl
+      contents:
+        source: "https://github.com/gsmcwhirter/prettify/blob/master/bin/prettify-linux?raw=true"
+        verification:
+          hash: sha256-bf411e43aeb6ffd877d28e277c54688a1c77508d739dda86ce048e176fc3af4c
 
     - path: /var/secrets/signup-bot/postgres
       mode: 0400
