@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 
-source $(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/botlib
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/botlib"
 
 USAGE="\
 Usage: $(basename "$0") <cmd>
 
 Commands:
+    db              Run database-related commands
+    docker          Run commands to build and push docker images
     fcos            Run commands relevant to setting up Fedora CoreOS
+    go              Run commands to analyze and build go binaries
     terraform       Run terraform commands
 "
 
@@ -15,45 +18,52 @@ Usage: $(basename "$0") fcos <cmd>
 
 Commands:
     ignition
-    new-image
     latest-image
+    new-image
 "
 
 USAGE_TERRAFORM="\
 Usage: $(basename "$0") terraform <cmd>
 
 Commands:
-    init
-    plan
-    apply
+    init            Run terraform init
+    plan            Run a terraform plan
+    apply           Run a terraform apply of the existing plan
 "
 
 USAGE_DOCKER="\
 Usage: $(basename "$0") docker <cmd>
 
 Commands:
-    login
-    build
-    push
+    login           Log in to the docker server
+    build           Build a docker image
+    dev             Build and run a docker image for development
+    push            Re-tag and push a docker image
 "
 
 USAGE_GO="\
 Usage: $(basename "$0") go <cmd>
 
 Commands:
-    format
-    generate
-    test
-    lint
-    build
-    deps
+    build           Build a docker binary
+    deps            Download dependencies and install tools
+    format          Run gofumpt and gofumports on the codebase
+    generate        Run generators
+    list-tools      List the tools that are installed as part of deps
+    lint            Run the code linters (and formatter)
+    test            Run the test suite
+
+Compound Commands:
+    gt              Run generate + test
+    gtl             Run generate + test + lint
 "
 
 USAGE_DB="\
 Usage: $(basename "$0") db <cmd>
 
 Commands:
-    migrate
+    migrate [up|destination|status] [args...]       Run the database migrations
+    shell                                           Connect to the database shell
 "
 
 : "${PROJECT:=github.com/gsmcwhirter/discord-signup-bot}"
@@ -62,15 +72,14 @@ Commands:
 : "${GOPROXY:=https://proxy.golang.org}"
 
 main() {
-    (dispatch "command" "$@") ||
-        usage "" "$USAGE"
+    dispatch "command" "$USAGE" "$@"
 }
 
 _op_signin() {
     [[ ${BOT_OP_INIT-} ]] && return
     export BOT_OP_INIT=1
     # Set flag to indicate already run:
-    eval $(op signin bellemare)
+    eval "$(op signin bellemare)"
 }
 
 _get_password_doc() {
@@ -152,34 +161,30 @@ _terraform() {
 }
 
 command:fcos() {
-    (dispatch "fcos" "$@") || 
-        usage "" "$USAGE_FCOS"
+    dispatch "fcos" "$USAGE_FCOS" "$@"
 }
 
 command:terraform() {
-    (dispatch "terraform" "$@") || 
-        usage "" "$USAGE_TERRAFORM"
+    dispatch "terraform" "$USAGE_TERRAFORM" "$@"
 }
 
 terraform:init() {
-    _terraform init $REPO_ROOT/terraform
+    _terraform init "$REPO_ROOT/terraform"
 }
 
 terraform:plan() {
-    local user_data_string postgres_user_pw
+    local user_data_string
 
     terraform:init
 
     : "${DIGITALOCEAN_ACCESS_TOKEN:=$(_digitalocean_token)}"
 
     user_data_string="$(fcos:ignition signup_bot 2>/dev/null)"
-    postgres_user_pw="$(_postgres_pass)"
 
     _terraform plan \
         -var="do_token=$DIGITALOCEAN_ACCESS_TOKEN" \
         -var="latest_image=$(DIGITALOCEAN_ACCESS_TOKEN=$DIGITALOCEAN_ACCESS_TOKEN fcos:latest-image)" \
         -var="app_user_data=$user_data_string" \
-        -var="postgres_user_pw=$postgres_pw" \
         -out "$TERRAFORM_PLAN_FILE" \
         "$REPO_ROOT/terraform"
 }
@@ -197,14 +202,14 @@ terraform:apply() {
 fcos:ignition() {
     _op_signin
 
-    local kind dir fccfile
+    local kind fccfile
     kind=$1; shift
 
     fccfile="$REPO_ROOT/fcos/$kind.fcc"
     ignition_file="$REPO_ROOT/fcos/$kind.ign"
 
     docker pull quay.io/coreos/fcct:release >&2
-    cat "$fccfile" | BOT_OP_INIT=1 _envsubst_secrets | docker run --rm -i quay.io/coreos/fcct:release --pretty --strict > "$ignition_file"
+    BOT_OP_INIT=1 _envsubst_secrets < "$fccfile" | docker run --rm -i quay.io/coreos/fcct:release --pretty --strict > "$ignition_file"
     docker run --rm -i quay.io/coreos/ignition-validate:release - < "$ignition_file"
 
     cat "$ignition_file"
@@ -239,7 +244,7 @@ fcos:new-image() {
 
     fcosjson="$REPO_ROOT/fcos/stable.json.tmp"
 
-    trap "rm $fcosjson" EXIT
+    trap 'rm "$fcosjson"' EXIT
 
     curl -s -o "$fcosjson" "https://builds.coreos.fedoraproject.org/streams/stable.json"
     version=$(jq -r '.architectures.x86_64.artifacts.digitalocean.release' "$fcosjson")
@@ -277,8 +282,7 @@ fcos:latest-image() {
 }
 
 command:docker() {
-    (dispatch "docker" "$@") || 
-        usage "" "$USAGE_DOCKER"
+    dispatch "docker" "$USAGE_DOCKER" "$@"
 }
 
 docker:login() {
@@ -398,11 +402,10 @@ docker:dev() {
 }
 
 command:go() {
-    (dispatch "go" "$@") || 
-        usage "" "$USAGE_GO"
+    dispatch "go" "$USAGE_GO" "$@"
 }
 
-_toolpaths() {
+go:list-tools() {
     awk '
         ($1=="_" && match($2, "^\"[^\"]*\"")){
             print substr($2, 2, RLENGTH-2)
@@ -413,7 +416,8 @@ _toolpaths() {
 go:deps() {
     go mod download
 
-    _toolpaths | while read -r tool; do
+    go:list-tools | while read -r tool; do
+        echo "Installing $tool"
         go get "$tool"
     done
 }
@@ -511,7 +515,7 @@ go:build() {
         -v \
         -ldflags "-s -w -X main.AppName=$app -X main.BuildDate='' -X main.BuildVersion='' -X main.BuildSHA=''" \
         -o "$REPO_ROOT/out/$app" \
-        $project
+        "$project"
 }
 
 go:gt() {
@@ -544,8 +548,7 @@ go:gtl() {
 }
 
 command:db() {
-    (dispatch "db" "$@") || 
-        usage "" "$USAGE_DB"
+    dispatch "db" "$USAGE_DB" "$@"
 }
 
 db:migrate() {
@@ -565,27 +568,27 @@ db:migrate() {
 
     if [[ "$cmd" = "up" ]]; then
         cmd="migrate"
-        args+=(--port "$(dasel -f "$REPO_ROOT/config.toml" --plain .postgres_port)")
     fi
 
     args+=(--migrations "$REPO_ROOT/migrations")
 
-    : "${SIGNUP_BOT_PG_HOST:=$(dasel -f "$REPO_ROOT/config.toml" --plain .postgres_host)}"
-    : "${SIGNUP_BOT_PG_USER:=signup_bot}"
-    : "${SIGNUP_BOT_PGPASSWORD:=$(_postgres_pass)}"
-
     env \
-        SIGNUP_BOT_PG_HOST="$SIGNUP_BOT_PG_HOST" \
-        SIGNUP_BOT_PG_USER="$SIGNUP_BOT_PG_USER" \
-        SIGNUP_BOT_PGPASSWORD="$SIGNUP_BOT_PGPASSWORD" \
+        SIGNUP_BOT_PG_HOST="$(dasel -f "$REPO_ROOT/config.toml" --plain .postgres_host)" \
+        SIGNUP_BOT_PG_PORT="$(dasel -f "$REPO_ROOT/config.toml" --plain .postgres_port)" \
+        SIGNUP_BOT_PG_DATABASE="$(dasel -f "$REPO_ROOT/config.toml" --plain .postgres_database)" \
+        SIGNUP_BOT_PG_USER="signup_bot" \
+        SIGNUP_BOT_PGPASSWORD="$(_postgres_pass)" \
         tern "$cmd" "${args[@]}" "$@"
 }
 
-usage() {
-    errstr=$1; shift
-    usagemsg=$1; shift
-
-    die "$errstr" "$usagemsg"
+db:shell() {
+    env \
+        PGPASSWORD="$(_postgres_pass)" \
+        psql \
+        -h "$(dasel -f "$REPO_ROOT/config.toml" --plain .postgres_host)" \
+        -p "$(dasel -f "$REPO_ROOT/config.toml" --plain .postgres_port)" \
+        -U "signup_bot" \
+        -d "$(dasel -f "$REPO_ROOT/config.toml" --plain .postgres_database)"
 }
 
 main "$@"

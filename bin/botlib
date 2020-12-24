@@ -70,20 +70,25 @@ echo_all() {
 }
 
 dispatch() {
+    local prefix kind usage
     [[ $# -gt 0 ]] ||
         die "need sub-command prefix"
 
-    [[ $# -gt 1 ]] ||
+    [[ $# -gt 1 ]] || 
+        die "missing usage string"
+
+    [[ $# -gt 2 ]] ||
         die "missing sub-command"
 
-    prefix=$1; shift
-    kind=$1; shift
+    prefix="$1"; shift
+    usage="$1"; shift
+    kind="$1"; shift
 
     [[ $kind =~ ^[-_[:alnum:]]+$ ]] ||
-        die "'$kind' is improper sub-command format"
+        die "'$kind' is improper sub-command format" "$usage"
 
     can "$prefix:$kind" ||
-        die "'$kind' is an unknown sub-command"
+        die "'$kind' is an unknown sub-command" "$usage"
 
-    (set +u; "$prefix:$kind" "$@")
+    "$prefix:$kind" "$@" || die "" "$usage"
 }
