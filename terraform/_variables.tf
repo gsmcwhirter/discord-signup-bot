@@ -9,8 +9,3 @@ variable app_user_data {
     type = string
     description = "app server user data string"
 }
-
-variable postgres_user_pw {
-    type = string
-    description = "postgres user password"
-}
