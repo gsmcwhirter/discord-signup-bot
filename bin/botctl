@@ -509,11 +509,14 @@ go:build() {
 
     app="$(basename "${project%/*}")"
     echo "Building $project to $REPO_ROOT/out/$app"
-    
+
+    : "${GITHUB_SHA:=$(git rev-parse HEAD)}"
+    : "${VERSION:=$(git describe --tags --always --dirty 2>/dev/null || 'unknown')}"
+
     go build \
         -mod readonly \
         -v \
-        -ldflags "-s -w -X main.AppName=$app -X main.BuildDate='' -X main.BuildVersion='' -X main.BuildSHA=''" \
+        -ldflags "-s -w -X main.AppName=$app -X main.BuildDate='$(date -u +%Y%m%d)' -X main.BuildVersion='$VERSION' -X main.BuildSHA='$GITHUB_SHA'" \
         -o "$REPO_ROOT/out/$app" \
         "$project"
 }
