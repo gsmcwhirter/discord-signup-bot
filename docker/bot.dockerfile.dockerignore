@@ -1,0 +1,9 @@
+.github/
+.terraform/
+.tool-versions
+docker/
+fcos/
+migrations/
+terraform/
+
+!docker/web.*

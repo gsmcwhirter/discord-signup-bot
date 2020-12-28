@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+
+# shellcheck shell=bash
+
+# This should only run once:
+[[ ${BOT_BASH_INIT-} ]] && return
+# Set flag to indicate already run:
+BOT_BASH_INIT=1
+
+
+# Use BASH_DEBUG=1 to debug bash:
+[[ ${BASH_DEBUG-} ]] && set -x
+
+# Set REPO_ROOT upon which other things are based:
+REPO_ROOT=$(
+    set -e
+    path=${BASH_SOURCE[0]}
+    while [[ -h $path ]]; do
+        dir=$(cd -P "$(dirname "$path")" && pwd)
+        path=$(readlink "$path")
+        [[ $path == /* ]] || path=$dir/$path
+    done
+    cd -P "$(dirname "$path")"/..
+    pwd
+) || exit
+export REPO_ROOT
+
+# Set sane, consistent Bash shopt settings:
+set -o errexit              # Exit on any bash error
+set -o nounset              # Fail when unset variable is used
+set -o pipefail             # Fail on any error in a pipeline
+
+# Nicer pipe semantics
+set +o monitor              # Turn off job control
+# shopt -s lastpipe           # Run end of pipe in current process
+
+# Sane globbing options
+# shopt -s inherit_errexit    # Inherit errexit in function calls
+# shopt -s globstar           # Support ** path globbing
+shopt -s nullglob           # Allow globs to return nothing
+# shopt -s globasciiranges    # [A-C] doesn't include b (lowercase)
+
+export LC_COLLATE=C         # Get ascii sort order in all locales
+
+# Some common bash helper functions:
+
+# Check if a command or function is callable:
+# eg: can foo-bar || die "Can't foo-bar"
+can() {
+    type "$1" &>/dev/null
+}
+
+# Print a message to stderr and exit with error code:
+# eg: die 'Something is wrong'
+die() {
+    printf "\e[31m%s\e[0m\n" "$@" >&2
+    exit 1
+}
+
+# Join a list of strings with a (single char) delimiter:
+# eg: join , 1 2 3   # => 1,2,3
+join() {
+    (IFS=$1; shift; echo "$*")
+}
+
+echo_all() {
+    for arg in "$@"; do
+        echo "$arg"
+    done
+}
+
+dispatch() {
+    local prefix kind usage
+    [[ $# -gt 0 ]] ||
+        die "need sub-command prefix"
+
+    [[ $# -gt 1 ]] || 
+        die "missing usage string"
+
+    [[ $# -gt 2 ]] ||
+        die "missing sub-command"
+
+    prefix="$1"; shift
+    usage="$1"; shift
+    kind="$1"; shift
+
+    [[ $kind =~ ^[-_[:alnum:]]+$ ]] ||
+        die "'$kind' is improper sub-command format" "$usage"
+
+    can "$prefix:$kind" ||
+        die "'$kind' is an unknown sub-command" "$usage"
+
+    "$prefix:$kind" "$@" || die "" "$usage"
+}

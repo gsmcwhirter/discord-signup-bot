@@ -1,0 +1,29 @@
+bot_name = "signup-bot#4495"
+bot_presence = "Event Signups"
+client_url = "https://www.evogames.org"
+log_format = "json"
+log_level = "info"
+pprof_hostport = "127.0.0.1:6060"
+num_workers = 64
+trace_probability = 0.1
+prometheus_namespace = "signup_bot"
+prometheus_hostport = ":9091"
+bugsnag_release_stage = "production"
+honeycomb_dataset = "signup-bot"
+postgres_host = "signup-bot-pg-do-user-6400249-0-799d.b.db.ondigitalocean.com"
+postgres_port = 25060
+postgres_ssl_mode = "require"
+postgres_database = "signup_bot"
+postgres_statement_cache_capacity = 512
+postgres_statement_cache_mode = "prepare"
+postgres_min_pool_size = 4
+postgres_max_pool_size = 20
+
+disable_sends = false
+
+client_secret_path = "/secrets/bot_login"
+client_token_path = "/secrets/bot_token"
+postgres_creds_path = "/secrets/postgres"
+bugsnag_apikey_path = "/secrets/bugsnag"
+honeycomb_apikey_path = "/secrets/honeycomb"
+

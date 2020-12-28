@@ -1,3 +1,5 @@
+// +build tools
+
 package tools
 
 // This is a list of tools to be maintained; some non-main
@@ -5,9 +7,14 @@ package tools
 // go.mod.
 
 import (
-	_ "github.com/golangci/golangci-lint/pkg/golinters" // for golangci-lint
-	_ "golang.org/x/tools/imports"                      // for goimports
-	// _ "github.com/mailru/easyjson"  // for easyjson
-	// _ "github.com/valyala/quicktemplate"  // for qtc
-	// _ "golang.org/x/tools/go/packages"  // for stringer
+	_ "github.com/golangci/golangci-lint/cmd/golangci-lint"
+	_ "github.com/google/pprof"
+	_ "github.com/jackc/tern"
+	_ "github.com/mailru/easyjson/easyjson"
+	_ "github.com/tomwright/dasel/cmd/dasel"
+	_ "golang.org/x/tools/cmd/godoc"
+	_ "golang.org/x/tools/cmd/stringer"
+	_ "google.golang.org/protobuf/cmd/protoc-gen-go"
+	_ "mvdan.cc/gofumpt"
+	_ "mvdan.cc/gofumpt/gofumports"
 )

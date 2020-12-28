@@ -64,8 +64,10 @@ func (r *reaction) ContentErr() error {
 	return nil
 }
 
-var _ Reaction = (*reaction)(nil)
-var _ cmdhandler.Message = (*reaction)(nil)
+var (
+	_ Reaction           = (*reaction)(nil)
+	_ cmdhandler.Message = (*reaction)(nil)
+)
 
 func NewReaction(ctx context.Context, uid, mid, cid, gid snowflake.Snowflake, emoji string) Reaction {
 	return &reaction{

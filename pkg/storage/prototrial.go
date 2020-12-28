@@ -36,7 +36,6 @@ func (b *protoTrial) GetAnnounceTo(ctx context.Context) string {
 	_, span := b.census.StartSpan(ctx, "protoTrial.GetAnnounceTo")
 	defer span.End()
 	return b.protoTrial.AnnounceTo
-
 }
 
 func (b *protoTrial) GetAnnounceChannel(ctx context.Context) string {

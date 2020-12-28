@@ -29,7 +29,7 @@ func createDependencies(conf config) (*dependencies, error) {
 	logger = log.With(logger, "timestamp", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
 	d.logger = logger
 
-	d.db, err = bolt.Open(conf.Database, 0660, &bolt.Options{Timeout: 1 * time.Second})
+	d.db, err = bolt.Open(conf.Database, 0o660, &bolt.Options{Timeout: 1 * time.Second})
 	if err != nil {
 		return d, err
 	}

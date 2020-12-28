@@ -2,7 +2,7 @@ name: CI/CD Prod
 
 on:
   push:
-    branches: [ postgres ]
+    branches: [ prod ]
   workflow_dispatch: {}
 
 jobs:
@@ -19,25 +19,26 @@ jobs:
 
     - name: Docker login
       env:
-        GH_USER: ${{ secrets.GH_USER }}
+        GH_USER: gsmcwhirter
         GH_TOKEN: ${{ secrets.GH_TOKEN }}
-      run: echo "$GH_TOKEN" | docker login docker.pkg.github.com -u "$GH_USER" --password-stdin
+      run: echo "$GH_TOKEN" | docker login ghcr.io -u "$GH_USER" --password-stdin
 
     - name: Push the bot image w/ sha
-      run: ./bin/botctl docker push bot:$GITHUB_SHA-bot
+      run: ./bin/botctl docker push signup-bot:$GITHUB_SHA-bot
 
     - name: Re-tag the bot image prod
       run: docker tag signup-bot:$GITHUB_SHA-bot signup-bot:prod-bot
 
     - name: Push the prod bot image
-      run: ./bin/botctl docker push bot:prod-bot
+      run: ./bin/botctl docker push signup-bot:prod-bot
 
     - name: Deploy the docker image
       env:
+        DEPLOY_SERVER: ${{ secrets.DEPLOY_SERVER }}
         SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
       run: |
         mkdir -p ~/.ssh/ && \
         echo "$SSH_PRIVATE_KEY" > ../github_do.key && \
         sudo chmod 600 ../github_do.key && \
-        ssh-keyscan -H ${{ secrets.DEPLOY_SERVER }} > ~/.ssh/known_hosts && \
-        ssh -i ../github_do.key cicd@${{ secrets.DEPLOY_SERVER }} 'sudo /bin/systemctl restart signup-bot.service'
+        ssh-keyscan -H "$DEPLOY_SERVER" > ~/.ssh/known_hosts && \
+        ssh -i ../github_do.key cicd@"$DEPLOY_SERVER" 'sudo /bin/systemctl restart signup-bot.service'

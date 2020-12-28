@@ -23,7 +23,6 @@ func main() {
 }
 
 func run() (int, error) {
-
 	cli := setup(start)
 	err := cli.Execute()
 	if err != nil {
