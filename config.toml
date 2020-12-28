@@ -19,7 +19,7 @@ postgres_statement_cache_mode = "prepare"
 postgres_min_pool_size = 4
 postgres_max_pool_size = 20
 
-disable_sends = true
+disable_sends = false
 
 client_secret_path = "/secrets/bot_login"
 client_token_path = "/secrets/bot_token"
