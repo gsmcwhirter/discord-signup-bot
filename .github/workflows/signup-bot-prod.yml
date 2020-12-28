@@ -42,3 +42,10 @@ jobs:
         sudo chmod 600 ../github_do.key && \
         ssh-keyscan -H "$DEPLOY_SERVER" > ~/.ssh/known_hosts && \
         ssh -i ../github_do.key cicd@"$DEPLOY_SERVER" 'sudo /bin/systemctl restart signup-bot.service'
+
+    - name: 
+      uses: appleboy/discord-action@master
+      with:
+        webhook_id: ${{ secrets.DISCORD_WEBHOOK_ID }}
+        webhook_token: ${{ secrets.DISCORD_WEBHOOK_TOKEN }}
+        message: Bot has been deployed (`$GITHUB_SHA`)
