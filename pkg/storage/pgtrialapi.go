@@ -79,6 +79,8 @@ func (p *pgTrialAPITx) GetTrial(ctx context.Context, name string) (Trial, error)
 	_, span := p.census.StartSpan(ctx, "pgTrialAPITx.GetTrial")
 	defer span.End()
 
+	name = strings.ToLower(name)
+
 	r := p.tx.QueryRow(ctx, `
 	SELECT event_data 
 	FROM events 
