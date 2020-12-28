@@ -513,6 +513,8 @@ go:build() {
     : "${GITHUB_SHA:=$(git rev-parse HEAD)}"
     : "${VERSION:=$(git describe --tags --always --dirty 2>/dev/null || 'unknown')}"
 
+    echo "Building binary with version=$VERSION, sha=$GITHUB_SHA"
+
     go build \
         -mod readonly \
         -v \
