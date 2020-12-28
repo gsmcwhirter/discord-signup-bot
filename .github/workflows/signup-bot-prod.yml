@@ -13,6 +13,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
 
     - name: Build the bot image  
       run: ./bin/botctl docker build bot:$GITHUB_SHA bot
@@ -48,4 +50,4 @@ jobs:
       with:
         webhook_id: ${{ secrets.DISCORD_WEBHOOK_ID }}
         webhook_token: ${{ secrets.DISCORD_WEBHOOK_TOKEN }}
-        message: Bot has been deployed (`$GITHUB_SHA`)
+        message: Bot has been deployed
