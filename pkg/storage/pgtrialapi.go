@@ -11,6 +11,8 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+var ErrTooManyRows = errors.New("too many rows")
+
 type pgTrialAPI struct {
 	db     *pgxpool.Pool
 	census *telemetry.Census
@@ -153,12 +155,18 @@ func (p *pgTrialAPITx) DeleteTrial(ctx context.Context, name string) error {
 
 	name = strings.ToLower(name)
 
-	_, err = p.tx.Exec(ctx, `
+	res, err := p.tx.Exec(ctx, `
 	DELETE FROM events 
-	WHERE guild_id = $1 AND event_name = $2 
-	LIMIT 1`, p.guildID, name)
+	WHERE guild_id = $1 AND event_name = $2`, p.guildID, name)
+	if err != nil {
+		return err
+	}
 
-	return err
+	if res.RowsAffected() > 1 {
+		return ErrTooManyRows
+	}
+
+	return nil
 }
 
 func (p *pgTrialAPITx) GetTrials(ctx context.Context) []Trial {
