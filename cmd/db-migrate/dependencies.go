@@ -39,15 +39,15 @@ func createDependencies(ctx context.Context, conf config) (*dependencies, error)
 		return d, err
 	}
 
-	d.oldTrialAPI, err = storage.NewBoltTrialAPI(d.db, d.census)
-	if err != nil {
-		return d, err
-	}
+	// d.oldTrialAPI, err = storage.NewBoltTrialAPI(d.db, d.census)
+	// if err != nil {
+	// 	return d, err
+	// }
 
-	d.oldGuildAPI, err = storage.NewBoltGuildAPI(ctx, d.db, d.census)
-	if err != nil {
-		return d, err
-	}
+	// d.oldGuildAPI, err = storage.NewBoltGuildAPI(ctx, d.db, d.census)
+	// if err != nil {
+	// 	return d, err
+	// }
 
 	poolConf, err := pgxpool.ParseConfig(conf.Pg)
 	if err != nil {
