@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/gsmcwhirter/go-util/v7/deferutil"
 	"github.com/gsmcwhirter/go-util/v7/errors"
@@ -68,6 +69,11 @@ func (c *configCommands) debug(msg cmdhandler.Message) (cmdhandler.Response, err
 		}
 	}
 
+	adminRoles := make([]string, 0, len(s.AdminRoles))
+	for _, rname := range s.AdminRoles {
+		adminRoles = append(adminRoles, fmt.Sprintf("<@&%s>", rname))
+	}
+
 	dbgString := fmt.Sprintf(`
 GuildSettings:
 	- Guild ID: %[1]s,
@@ -88,8 +94,8 @@ GuildSettings:
 	- AdminChannel: '#%[5]s',
 	- AdminChannel ID: %[13]s,
 
-	- AdminRole: '<@&%[9]s>',
-	- AdminRole ID: %[9]s,
+	- AdminRole: '%[9]s',
+	- AdminRole IDs: %[15]s,
 
 	`,
 		msg.GuildID().ToString(),
@@ -100,12 +106,13 @@ GuildSettings:
 		s.AnnounceTo,
 		s.ShowAfterSignup,
 		s.ShowAfterWithdraw,
-		s.AdminRole,
+		strings.Join(adminRoles, ", "),
 		msg.UserID().ToString(),
 		announceChannelID.ToString(),
 		signupChannelID.ToString(),
 		adminChannelID.ToString(),
-		msg.ChannelID().ToString())
+		msg.ChannelID().ToString(),
+		s.AdminRoles)
 
 	r.Description = dbgString
 	return r, nil

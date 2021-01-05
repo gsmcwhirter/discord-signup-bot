@@ -125,7 +125,7 @@ func (h *handlers) attemptConfigAndAdminHandlers(msg cmdhandler.Message, cmdIndi
 		level.Error(logger).Err("could not retrieve guild settings", err)
 	}
 
-	if !IsAdminAuthorized(ctx, logger, msg, s.AdminRole, h.deps.BotSession(), h.bot) {
+	if !IsAdminAuthorized(ctx, logger, msg, s.AdminRoles, h.deps.BotSession(), h.bot) {
 		level.Info(logger).Message("non-admin trying to config")
 		return nil, ErrUnauthorized
 	}

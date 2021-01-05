@@ -56,12 +56,26 @@ func (c *configCommands) set(msg cmdhandler.Message) (cmdhandler.Response, error
 			if !ok {
 				return r, errors.New("could not find guild to look up role")
 			}
-			rid, ok := g.RoleWithName(argPairList[1])
-			if !ok {
-				return r, fmt.Errorf("could not find role with name '%s'", argPairList[1])
+
+			parts := strings.Split(argPairList[1], ",")
+			rids := make([]string, 0, len(parts))
+
+			for _, rn := range parts {
+				rn = strings.TrimSpace(rn)
+				if rn == "" {
+					continue
+				}
+
+				rid, ok := g.RoleWithName(rn)
+				if !ok {
+					return r, fmt.Errorf("could not find role with name '%s'", rn)
+				}
+
+				rids = append(rids, rid.ToString())
 			}
 
-			ap.val = rid.ToString()
+			ap.val = strings.Join(rids, ",")
+
 		default:
 			ap.val = argPairList[1]
 		}

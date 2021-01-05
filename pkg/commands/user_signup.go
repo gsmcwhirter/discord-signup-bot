@@ -62,7 +62,7 @@ func (c *userCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, erro
 			return r, err
 		}
 
-		if !isSignupChannel(ctx, logger, msg, trial.GetSignupChannel(msg.Context()), gsettings.AdminChannel, gsettings.AdminRole, c.deps.BotSession(), c.deps.Bot()) {
+		if !isSignupChannel(ctx, logger, msg, trial.GetSignupChannel(msg.Context()), gsettings.AdminChannel, gsettings.AdminRoles, c.deps.BotSession(), c.deps.Bot()) {
 			level.Info(logger).Message("command not in signup channel", "signup_channel", trial.GetSignupChannel(msg.Context()))
 			return r, msghandler.ErrNoResponse
 		}

@@ -24,7 +24,7 @@ var (
 	isAdminChannel    = msghandler.IsAdminChannel
 )
 
-func isSignupChannel(ctx context.Context, logger logging.Logger, msg msghandler.MessageLike, signupChannel, adminChannel, adminRole string, session *etfapi.Session, b bot.DiscordBot) bool {
+func isSignupChannel(ctx context.Context, logger logging.Logger, msg msghandler.MessageLike, signupChannel, adminChannel string, adminRoles []string, session *etfapi.Session, b bot.DiscordBot) bool {
 	if msghandler.IsSignupChannel(msg, signupChannel, session) {
 		return true
 	}
@@ -33,7 +33,7 @@ func isSignupChannel(ctx context.Context, logger logging.Logger, msg msghandler.
 		return false
 	}
 
-	return isAdminAuthorized(ctx, logger, msg, adminRole, session, b)
+	return isAdminAuthorized(ctx, logger, msg, adminRoles, session, b)
 }
 
 func signupsForRole(ctx context.Context, role string, signups []storage.TrialSignup, sorted bool) []string {

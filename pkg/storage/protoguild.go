@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"strings"
 
 	"github.com/gsmcwhirter/go-util/v7/telemetry"
 	"google.golang.org/protobuf/proto"
@@ -11,6 +12,8 @@ type protoGuild struct {
 	protoGuild *ProtoGuild
 	census     *telemetry.Census
 }
+
+var _ Guild = (*protoGuild)(nil)
 
 func (g *protoGuild) GetName(ctx context.Context) string {
 	return g.protoGuild.Name
@@ -38,7 +41,10 @@ func (g *protoGuild) GetSettings(ctx context.Context) GuildSettings {
 		AdminChannel:    g.protoGuild.AdminChannel,
 		SignupChannel:   g.protoGuild.SignupChannel,
 		AnnounceTo:      g.protoGuild.AnnounceTo,
-		AdminRole:       g.protoGuild.AdminRole,
+	}
+
+	if g.protoGuild.AdminRole != "" {
+		s.AdminRoles = strings.Split(g.protoGuild.AdminRole, ",")
 	}
 
 	if g.protoGuild.ShowAfterSignup {
@@ -64,7 +70,7 @@ func (g *protoGuild) SetSettings(ctx context.Context, s GuildSettings) {
 	g.protoGuild.AdminChannel = s.AdminChannel
 	g.protoGuild.SignupChannel = s.SignupChannel
 	g.protoGuild.AnnounceTo = s.AnnounceTo
-	g.protoGuild.AdminRole = s.AdminRole
+	g.protoGuild.AdminRole = strings.Join(s.AdminRoles, ",")
 
 	g.protoGuild.ShowAfterSignup = s.ShowAfterSignup == "true"
 	g.protoGuild.ShowAfterWithdraw = s.ShowAfterWithdraw == "true"

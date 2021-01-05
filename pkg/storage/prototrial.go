@@ -20,6 +20,8 @@ type protoTrial struct {
 	census     *telemetry.Census
 }
 
+var _ Trial = (*protoTrial)(nil)
+
 func (b *protoTrial) GetName(ctx context.Context) string {
 	_, span := b.census.StartSpan(ctx, "protoTrial.GetName")
 	defer span.End()
@@ -115,7 +117,7 @@ func (b *protoTrial) GetRoleCounts(ctx context.Context) []RoleCount {
 		}
 
 		r := b.protoTrial.RoleCountMap[rName]
-		s = append(s, &boltRoleCount{
+		s = append(s, &protoRoleCount{
 			role:   r.Name,
 			count:  r.Count,
 			emoji:  r.Emoji,
@@ -348,6 +350,8 @@ type protoTrialSignup struct {
 	census *telemetry.Census
 }
 
+var _ TrialSignup = (*protoTrialSignup)(nil)
+
 func (b *protoTrialSignup) GetName(ctx context.Context) string {
 	_, span := b.census.StartSpan(ctx, "protoTrialSignup.GetName")
 	defer span.End()
@@ -376,7 +380,7 @@ func (s RoleCountSlice) Swap(i, j int) {
 	s[i], s[j] = s[j], s[i]
 }
 
-type boltRoleCount struct {
+type protoRoleCount struct {
 	role   string
 	count  uint64
 	emoji  string
@@ -384,27 +388,29 @@ type boltRoleCount struct {
 	index  int
 }
 
-func (b *boltRoleCount) GetRole(ctx context.Context) string {
-	_, span := b.census.StartSpan(ctx, "boltRoleCount.GetRole")
+var _ RoleCount = (*protoRoleCount)(nil)
+
+func (b *protoRoleCount) GetRole(ctx context.Context) string {
+	_, span := b.census.StartSpan(ctx, "protoRoleCount.GetRole")
 	defer span.End()
 
 	return b.role
 }
 
-func (b *boltRoleCount) GetCount(ctx context.Context) uint64 {
-	_, span := b.census.StartSpan(ctx, "boltRoleCount.GetCount")
+func (b *protoRoleCount) GetCount(ctx context.Context) uint64 {
+	_, span := b.census.StartSpan(ctx, "protoRoleCount.GetCount")
 	defer span.End()
 
 	return b.count
 }
 
-func (b *boltRoleCount) GetEmoji(ctx context.Context) string {
-	_, span := b.census.StartSpan(ctx, "boltRoleCount.GetEmoji")
+func (b *protoRoleCount) GetEmoji(ctx context.Context) string {
+	_, span := b.census.StartSpan(ctx, "protoRoleCount.GetEmoji")
 	defer span.End()
 
 	return b.emoji
 }
 
-func (b *boltRoleCount) Index() int {
+func (b *protoRoleCount) Index() int {
 	return b.index
 }

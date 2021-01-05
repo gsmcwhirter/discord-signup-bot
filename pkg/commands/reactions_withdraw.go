@@ -48,7 +48,7 @@ func (c *reactionHandler) withdraw(msg reactions.Reaction) (cmdhandler.Response,
 		return r, err
 	}
 
-	if !isSignupChannel(ctx, logger, msg, trial.GetSignupChannel(ctx), gsettings.AdminChannel, gsettings.AdminRole, c.deps.BotSession(), c.deps.Bot()) {
+	if !isSignupChannel(ctx, logger, msg, trial.GetSignupChannel(ctx), gsettings.AdminChannel, gsettings.AdminRoles, c.deps.BotSession(), c.deps.Bot()) {
 		level.Info(logger).Message("command not in signup channel", "signup_channel", trial.GetSignupChannel(ctx))
 		return r, msghandler.ErrNoResponse
 	}

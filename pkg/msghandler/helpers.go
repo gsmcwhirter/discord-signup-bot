@@ -5,6 +5,7 @@ import (
 
 	"github.com/gsmcwhirter/discord-bot-lib/v18/bot"
 	"github.com/gsmcwhirter/discord-bot-lib/v18/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/jsonapi"
 	"github.com/gsmcwhirter/discord-bot-lib/v18/logging"
 	"github.com/gsmcwhirter/discord-bot-lib/v18/snowflake"
 	"github.com/gsmcwhirter/go-util/v7/logging/level"
@@ -17,10 +18,10 @@ type MessageLike interface {
 }
 
 // IsAdminAuthorized determines if a user can take admin actions with the bot (ignoring channel)
-func IsAdminAuthorized(ctx context.Context, logger logging.Logger, msg MessageLike, adminRole string, session *etfapi.Session, b bot.DiscordBot) bool {
+func IsAdminAuthorized(ctx context.Context, logger logging.Logger, msg MessageLike, adminRoles []string, session *etfapi.Session, b bot.DiscordBot) bool {
 	authorized := false
 	authorized = authorized || session.IsGuildAdmin(msg.GuildID(), msg.UserID())
-	authorized = authorized || HasAdminRole(ctx, logger, msg, adminRole, b)
+	authorized = authorized || HasAdminRole(ctx, logger, msg, adminRoles, b)
 
 	return authorized
 }
@@ -60,30 +61,33 @@ func IsSignupChannel(msg MessageLike, signupChannel string, session *etfapi.Sess
 	return cid == msg.ChannelID()
 }
 
-// HasAdminRole determines if the message author is an authorized bot admin (not super-admin)
-func HasAdminRole(ctx context.Context, logger logging.Logger, msg MessageLike, adminRole string, b bot.DiscordBot) bool {
-	if adminRole == "" {
-		return false
-	}
-
-	rid, err := snowflake.FromString(adminRole)
+func hasAdminRole(ctx context.Context, logger logging.Logger, gm jsonapi.GuildMemberResponse, role string) bool {
+	rid, err := snowflake.FromString(role)
 	if err != nil {
-		level.Error(logger).Err("could not parse AdminRole", err, "admin_role", adminRole)
+		level.Error(logger).Err("could not parse AdminRole", err, "admin_role", role)
 		return false
 	}
 
-	// g, ok := session.Guild(msg.GuildID())
-	// if !ok {
-	// 	level.Error(logger).Message("could not find guild in session")
-	// 	return false
-	// }
+	return gm.HasRole(rid)
+}
 
-	// return g.HasRole(msg.UserID(), rid)
+// HasAdminRole determines if the message author is an authorized bot admin (not super-admin)
+func HasAdminRole(ctx context.Context, logger logging.Logger, msg MessageLike, adminRoles []string, b bot.DiscordBot) bool {
+	if len(adminRoles) == 0 {
+		return false
+	}
 
 	gm, err := b.GetGuildMember(ctx, msg.GuildID(), msg.UserID())
 	if err != nil {
 		level.Error(logger).Err("could not get guild member", err, "guild_id", msg.GuildID(), "member_id", msg.UserID())
 		return false
 	}
-	return gm.HasRole(rid)
+
+	for _, role := range adminRoles {
+		if hasAdminRole(ctx, logger, gm, role) {
+			return true
+		}
+	}
+
+	return false
 }

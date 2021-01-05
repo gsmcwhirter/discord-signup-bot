@@ -24,13 +24,18 @@ type GuildSettings struct {
 	AnnounceTo        string
 	ShowAfterSignup   string
 	ShowAfterWithdraw string
-	AdminRole         string
+	AdminRoles        []string
 }
 
 // PrettyString returns a multi-line string describing the settings
 func (s *GuildSettings) PrettyString(ctx context.Context) string {
 	_, span := s.census.StartSpan(ctx, "GuildSettings.PrettyString")
 	defer span.End()
+
+	adminRoles := make([]string, 0, len(s.AdminRoles))
+	for _, rname := range s.AdminRoles {
+		adminRoles = append(adminRoles, fmt.Sprintf("<@&%s>", rname))
+	}
 
 	return fmt.Sprintf(`
 GuildSettings:
@@ -42,9 +47,9 @@ GuildSettings:
 	- AnnounceTo: '%[6]s', 
 	- ShowAfterSignup: '%[7]s',
 	- ShowAfterWithdraw: '%[8]s',
-	- AdminRole: '<@&%[9]s>',
+	- AdminRoles: '%[9]s',
 
-	`, "```", s.ControlSequence, s.AnnounceChannel, s.SignupChannel, s.AdminChannel, s.AnnounceTo, s.ShowAfterSignup, s.ShowAfterWithdraw, s.AdminRole)
+	`, "```", s.ControlSequence, s.AnnounceChannel, s.SignupChannel, s.AdminChannel, s.AnnounceTo, s.ShowAfterSignup, s.ShowAfterWithdraw, strings.Join(adminRoles, ", "))
 }
 
 // GetSettingString gets the value of a setting
@@ -68,7 +73,7 @@ func (s *GuildSettings) GetSettingString(ctx context.Context, name string) (stri
 	case "showafterwithdraw":
 		return s.ShowAfterWithdraw, nil
 	case "adminrole":
-		return s.AdminRole, nil
+		return strings.Join(s.AdminRoles, ","), nil
 	default:
 		return "", ErrBadSetting
 	}
@@ -121,7 +126,11 @@ func (s *GuildSettings) SetSettingString(ctx context.Context, name, val string) 
 		s.ShowAfterWithdraw = v
 		return nil
 	case "adminrole":
-		s.AdminRole = val
+		if val == "" {
+			s.AdminRoles = nil
+		} else {
+			s.AdminRoles = strings.Split(val, ",")
+		}
 		return nil
 	default:
 		return ErrBadSetting
