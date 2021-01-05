@@ -13,13 +13,5 @@ CREATE TABLE events (
     PRIMARY KEY(guild_id, event_name)
 );
 
-
-
----- create above / drop below ----
-
-DROP table guild_settings;
-DROP table events;
-
-
 -- Write your migrate down statements here. If this migration is irreversible
 -- Then delete the separator line above.
