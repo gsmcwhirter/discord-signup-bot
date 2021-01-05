@@ -11,9 +11,7 @@ RUN bin/botctl go deps
 COPY . .
 RUN bin/botctl go gtl ./... && \
     bin/botctl go build ./cmd/db-migrate/... && \
-    bin/botctl go build ./cmd/trials-bot/... && \
-    bin/botctl go build ./cmd/trials-cleanup/... && \
-    bin/botctl go build ./cmd/trials-dump/...
+    bin/botctl go build ./cmd/trials-bot/...
 
 ################################################################################
 FROM $REPO/signup-base:latest-runtime as bot
