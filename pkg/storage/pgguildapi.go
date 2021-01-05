@@ -2,6 +2,7 @@ package storage
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/gsmcwhirter/go-util/v7/errors"
 	"github.com/gsmcwhirter/go-util/v7/telemetry"
@@ -147,20 +148,110 @@ func (p *pgGuildAPITx) AddGuild(ctx context.Context, name string) (Guild, error)
 	return guild, err
 }
 
-func (p *pgGuildAPITx) SaveGuild(ctx context.Context, guild Guild) error {
-	_, span := p.census.StartSpan(ctx, "pgGuildAPITx.SaveGuild")
-	defer span.End()
+func (p *pgGuildAPITx) getAdminRoles(ctx context.Context, gid string) ([]string, error) {
+	var roles []string
+
+	rs, err := p.tx.Query(ctx, `
+	SELECT admin_role 
+	FROM guild_admin_roles
+	WHERE guild_id = $1`, gid)
+
+	if err != nil && err != pgx.ErrNoRows {
+		return nil, err
+	}
+	defer rs.Close()
+
+	var ar string
+	for rs.Next() {
+		if err := rs.Scan(&ar); err != nil {
+			return nil, errors.Wrap(err, "could not scan role name")
+		}
+
+		roles = append(roles, ar)
+	}
+
+	return roles, nil
+}
+
+func (p *pgGuildAPITx) saveProtoGuild(ctx context.Context, guild Guild) error {
+	gid := guild.GetName(ctx)
+	gs := guild.GetSettings(ctx)
 
 	serial, err := guild.Serialize(ctx)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "could not serialize guild data")
 	}
 
 	_, err = p.tx.Exec(ctx, `
-	INSERT INTO guild_settings (guild_id, settings)
-	VALUES ($1, $2)
+	INSERT INTO guild_settings (guild_id, settings, command_indicator, announce_channel, signup_channel, admin_channel, announce_to, show_after_signup, show_after_withdraw)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 	ON CONFLICT (guild_id) DO UPDATE
-	SET settings = EXCLUDED.settings`, guild.GetName(ctx), serial)
+	SET 
+		settings = EXCLUDED.settings,
+		command_indicator = EXCLUDED.command_indicator,
+		announce_channel = EXCLUDED.announce_channel,
+		signup_channel = EXCLUDED.signup_channel,
+		admin_channel = EXCLUDED.admin_channel,
+		announce_to = EXCLUDED.announce_to,
+		show_after_signup = EXCLUDED.show_after_signup,
+		show_after_withdraw = EXCLUDED.show_after_withdraw
+	`, gid, serial, gs.ControlSequence, gs.AnnounceChannel, gs.SignupChannel, gs.AdminChannel, gs.AnnounceTo, gs.ShowAfterSignup, gs.ShowAfterWithdraw)
 
-	return err
+	if err != nil {
+		return errors.Wrap(err, "could not upsert guild_settings")
+	}
+
+	existingRoles, err := p.getAdminRoles(ctx, gid)
+	if err != nil {
+		return errors.Wrap(err, "could not get existing admin roles")
+	}
+
+	toInsert, toDelete := diffStringSlices(gs.AdminRoles, existingRoles)
+
+	if len(toInsert) > 0 {
+		insertArgs := make([]interface{}, len(toInsert)+1)
+		insertArgs[0] = gid
+		for i, v := range toInsert {
+			insertArgs[i+1] = v
+		}
+
+		_, err = p.tx.Exec(ctx, fmt.Sprintf(`
+		INSERT INTO guild_admin_roles (guild_id, admin_role)
+		VALUES %s
+		`, genPlaceholders("($1, %s)", ", ", 2, len(toInsert))), insertArgs...)
+
+		if err != nil {
+			return errors.Wrap(err, "could not insert new admin roles")
+		}
+	}
+
+	if len(toDelete) > 0 {
+		deleteArgs := make([]interface{}, len(toDelete)+1)
+		deleteArgs[0] = gid
+		for i, v := range toDelete {
+			deleteArgs[i+1] = v
+		}
+
+		res, err := p.tx.Exec(ctx, fmt.Sprintf(`
+		DELETE FROM guild_admin_roles
+		WHERE guild_id = $1
+		AND admin_role IN (%s)
+		`, genPlaceholders("%s", ", ", 2, len(toDelete))), deleteArgs...)
+		if err != nil {
+			return errors.Wrap(err, "could not delete old admin roles")
+		}
+
+		if res.RowsAffected() != int64(len(toDelete)) {
+			return errors.Wrap(ErrTooManyRows, "could not delete old admin roles")
+		}
+	}
+
+	return nil
+}
+
+func (p *pgGuildAPITx) SaveGuild(ctx context.Context, guild Guild) error {
+	ctx, span := p.census.StartSpan(ctx, "pgGuildAPITx.SaveGuild")
+	defer span.End()
+
+	return p.saveProtoGuild(ctx, guild)
 }

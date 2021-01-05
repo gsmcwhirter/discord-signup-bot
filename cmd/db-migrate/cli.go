@@ -16,7 +16,6 @@ func setup(start func(config) error) *cli.Command {
 	var configFile string
 
 	c.Flags().StringVar(&configFile, "config", "./config.toml", "The config file to use")
-	c.Flags().String("database", "", "The database file")
 	c.Flags().String("pg", "", "The postgres connection string")
 
 	c.SetRunFunc(func(cmd *cli.Command, args []string) (err error) {

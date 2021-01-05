@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"time"
 
 	bolt "go.etcd.io/bbolt"
 
@@ -16,14 +15,12 @@ import (
 )
 
 type dependencies struct {
-	logger      log.Logger
-	db          *bolt.DB
-	oldTrialAPI storage.TrialAPI
-	oldGuildAPI storage.GuildAPI
-	census      *telemetry.Census
-	pgpool      *pgxpool.Pool
-	newTrialAPI storage.TrialAPI
-	newGuildAPI storage.GuildAPI
+	logger   log.Logger
+	db       *bolt.DB
+	trialAPI storage.TrialAPI
+	guildAPI storage.GuildAPI
+	census   *telemetry.Census
+	pgpool   *pgxpool.Pool
 }
 
 func createDependencies(ctx context.Context, conf config) (*dependencies, error) {
@@ -33,21 +30,6 @@ func createDependencies(ctx context.Context, conf config) (*dependencies, error)
 	logger := log.NewJSONLogger()
 	logger = log.With(logger, "timestamp", log.DefaultTimestampUTC, "caller", log.DefaultCaller)
 	d.logger = logger
-
-	d.db, err = bolt.Open(conf.Database, 0o660, &bolt.Options{Timeout: 1 * time.Second})
-	if err != nil {
-		return d, err
-	}
-
-	// d.oldTrialAPI, err = storage.NewBoltTrialAPI(d.db, d.census)
-	// if err != nil {
-	// 	return d, err
-	// }
-
-	// d.oldGuildAPI, err = storage.NewBoltGuildAPI(ctx, d.db, d.census)
-	// if err != nil {
-	// 	return d, err
-	// }
 
 	poolConf, err := pgxpool.ParseConfig(conf.Pg)
 	if err != nil {
@@ -62,12 +44,12 @@ func createDependencies(ctx context.Context, conf config) (*dependencies, error)
 		return d, err
 	}
 
-	d.newGuildAPI, err = storage.NewPgGuildAPI(ctx, d.pgpool, d.census)
+	d.guildAPI, err = storage.NewPgGuildAPI(ctx, d.pgpool, d.census)
 	if err != nil {
 		return d, err
 	}
 
-	d.newTrialAPI, err = storage.NewPgTrialAPI(d.pgpool, d.census)
+	d.trialAPI, err = storage.NewPgTrialAPI(d.pgpool, d.census)
 	if err != nil {
 		return d, err
 	}
@@ -85,8 +67,6 @@ func (d *dependencies) Close() {
 	}
 }
 
-func (d *dependencies) Logger() log.Logger            { return d.logger }
-func (d *dependencies) OldTrialAPI() storage.TrialAPI { return d.oldTrialAPI }
-func (d *dependencies) OldGuildAPI() storage.GuildAPI { return d.oldGuildAPI }
-func (d *dependencies) NewTrialAPI() storage.TrialAPI { return d.newTrialAPI }
-func (d *dependencies) NewGuildAPI() storage.GuildAPI { return d.newGuildAPI }
+func (d *dependencies) Logger() log.Logger         { return d.logger }
+func (d *dependencies) TrialAPI() storage.TrialAPI { return d.trialAPI }
+func (d *dependencies) GuildAPI() storage.GuildAPI { return d.guildAPI }
