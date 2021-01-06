@@ -14,7 +14,7 @@ require (
 	github.com/golangci/golangci-lint v1.33.0
 	github.com/google/pprof v0.0.0-20201218002935-b9804c9f04c2
 	github.com/gorilla/websocket v1.4.2
-	github.com/gsmcwhirter/discord-bot-lib/v18 v18.1.1
+	github.com/gsmcwhirter/discord-bot-lib/v18 v18.2.0
 	github.com/gsmcwhirter/go-util/v7 v7.1.1
 	github.com/hashicorp/go-multierror v1.1.0
 	github.com/honeycombio/opencensus-exporter v1.0.1
@@ -27,7 +27,7 @@ require (
 	go.etcd.io/bbolt v1.3.5
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
-	golang.org/x/tools v0.0.0-20201224003254-57089f8fd729
+	golang.org/x/tools v0.0.0-20210105210202-9ed45478a130
 	google.golang.org/protobuf v1.25.0
 	mvdan.cc/gofumpt v0.0.0-20201217210418-dbaa36cfdf8e
 )

@@ -21,7 +21,7 @@ type MessageLike interface {
 func IsAdminAuthorized(ctx context.Context, logger logging.Logger, msg MessageLike, adminRoles []string, session *etfapi.Session, b bot.DiscordBot) bool {
 	authorized := false
 	authorized = authorized || session.IsGuildAdmin(msg.GuildID(), msg.UserID())
-	authorized = authorized || HasAdminRole(ctx, logger, msg, adminRoles, b)
+	authorized = authorized || HasAdminRole(ctx, logger, session, msg, adminRoles, b)
 
 	return authorized
 }
@@ -71,15 +71,35 @@ func hasAdminRole(ctx context.Context, logger logging.Logger, gm jsonapi.GuildMe
 	return gm.HasRole(rid)
 }
 
-// HasAdminRole determines if the message author is an authorized bot admin (not super-admin)
-func HasAdminRole(ctx context.Context, logger logging.Logger, msg MessageLike, adminRoles []string, b bot.DiscordBot) bool {
-	if len(adminRoles) == 0 {
+func hasRoleWithAdministrator(ctx context.Context, logger logging.Logger, session *etfapi.Session, gid snowflake.Snowflake, gm jsonapi.GuildMemberResponse) bool {
+	g, ok := session.Guild(gid)
+	if !ok {
+		level.Error(logger).Message("could not find guild in the session", "guild_id", gid)
 		return false
 	}
 
+	for _, rid := range gm.RoleSnowflakes {
+		if g.RoleIsAdministrator(rid) {
+			return true
+		}
+	}
+
+	return false
+}
+
+// HasAdminRole determines if the message author is an authorized bot admin (not super-admin)
+func HasAdminRole(ctx context.Context, logger logging.Logger, session *etfapi.Session, msg MessageLike, adminRoles []string, b bot.DiscordBot) bool {
 	gm, err := b.GetGuildMember(ctx, msg.GuildID(), msg.UserID())
 	if err != nil {
 		level.Error(logger).Err("could not get guild member", err, "guild_id", msg.GuildID(), "member_id", msg.UserID())
+		return false
+	}
+
+	if hasRoleWithAdministrator(ctx, logger, session, msg.GuildID(), gm) {
+		return true
+	}
+
+	if len(adminRoles) == 0 {
 		return false
 	}
 
