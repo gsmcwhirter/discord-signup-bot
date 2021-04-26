@@ -92,8 +92,9 @@ func (c *adminCommands) grouping(msg cmdhandler.Message) (cmdhandler.Response, e
 	toStr := strings.Join(userMentions, ", ")
 
 	r = &cmdhandler.SimpleEmbedResponse{
-		To:        fmt.Sprintf("%s\n\n%s", toStr, phrase),
-		ToChannel: announceCid,
+		To:          toStr,
+		ToChannel:   announceCid,
+		Description: phrase,
 	}
 
 	level.Info(logger).Message("trial grouping", "trial_name", trialName, "announce_channel", r.ToChannel.ToString(), "announce_to", r.To)
