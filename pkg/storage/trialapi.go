@@ -4,7 +4,7 @@ import (
 	"context"
 )
 
-//go:generate protoc --go_out=. --proto_path=. ./trialapi.proto
+//go:generate protoc --go_out=./proto --proto_path=. ./proto/trialapi.proto
 
 // TrialState represents the state of a trial
 type TrialState string

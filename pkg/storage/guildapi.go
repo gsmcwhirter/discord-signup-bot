@@ -1,6 +1,6 @@
 package storage
 
-//go:generate protoc --go_out=. --proto_path=. ./guildapi.proto
+//go:generate protoc --go_out=./proto --proto_path=. ./proto/guildapi.proto
 
 import (
 	"context"
