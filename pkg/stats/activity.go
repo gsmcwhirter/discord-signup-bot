@@ -6,8 +6,8 @@ import (
 	"sort"
 	"strings"
 
-	bstats "github.com/gsmcwhirter/discord-bot-lib/v19/stats"
-	"github.com/gsmcwhirter/go-util/v8/errors"
+	bstats "github.com/gsmcwhirter/discord-bot-lib/v18/stats"
+	"github.com/gsmcwhirter/go-util/v7/errors"
 	"golang.org/x/sync/errgroup"
 )
 

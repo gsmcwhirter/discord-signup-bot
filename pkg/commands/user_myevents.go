@@ -5,13 +5,13 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/gsmcwhirter/go-util/v8/deferutil"
-	"github.com/gsmcwhirter/go-util/v8/logging/level"
+	"github.com/gsmcwhirter/go-util/v7/deferutil"
+	"github.com/gsmcwhirter/go-util/v7/logging/level"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v19/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v19/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/logging"
 )
 
 func (c *userCommands) myEvents(msg cmdhandler.Message) (cmdhandler.Response, error) {
@@ -32,31 +32,31 @@ func (c *userCommands) myEvents(msg cmdhandler.Message) (cmdhandler.Response, er
 		return r, msg.ContentErr()
 	}
 
-	t, err := c.deps.TrialAPI().NewTransaction(ctx, msg.GuildID().ToString(), false)
+	t, err := c.deps.TrialAPI().NewTransaction(msg.Context(), msg.GuildID().ToString(), false)
 	if err != nil {
 		return r, err
 	}
-	defer deferutil.CheckDefer(func() error { return t.Rollback(ctx) })
+	defer deferutil.CheckDefer(func() error { return t.Rollback(msg.Context()) })
 
 	g, ok := c.deps.BotSession().Guild(msg.GuildID())
 	if !ok {
 		return r, ErrGuildNotFound
 	}
 
-	trials := t.GetTrials(ctx)
+	trials := t.GetTrials(msg.Context())
 	tNames := make([]string, 0, len(trials))
 	for _, trial := range trials {
-		if trial.GetState(ctx) == storage.TrialStateClosed {
+		if trial.GetState(msg.Context()) == storage.TrialStateClosed {
 			continue
 		}
 
-		signups := trial.GetSignups(ctx)
+		signups := trial.GetSignups(msg.Context())
 		signedUp := false
 		role := ""
 		for _, su := range signups {
-			if su.GetName(ctx) == cmdhandler.UserMentionString(msg.UserID()) {
+			if su.GetName(msg.Context()) == cmdhandler.UserMentionString(msg.UserID()) {
 				signedUp = true
-				role = su.GetRole(ctx)
+				role = su.GetRole(msg.Context())
 				break
 			}
 		}
@@ -65,10 +65,10 @@ func (c *userCommands) myEvents(msg cmdhandler.Message) (cmdhandler.Response, er
 			continue
 		}
 
-		if tscID, ok := g.ChannelWithName(trial.GetSignupChannel(ctx)); ok {
-			tNames = append(tNames, fmt.Sprintf("%s as %s (%s)", trial.GetName(ctx), role, cmdhandler.ChannelMentionString(tscID)))
+		if tscID, ok := g.ChannelWithName(trial.GetSignupChannel(msg.Context())); ok {
+			tNames = append(tNames, fmt.Sprintf("%s as %s (%s)", trial.GetName(msg.Context()), role, cmdhandler.ChannelMentionString(tscID)))
 		} else {
-			tNames = append(tNames, fmt.Sprintf("%s as %s", trial.GetName(ctx), role))
+			tNames = append(tNames, fmt.Sprintf("%s as %s", trial.GetName(msg.Context()), role))
 		}
 	}
 	sort.Strings(tNames)

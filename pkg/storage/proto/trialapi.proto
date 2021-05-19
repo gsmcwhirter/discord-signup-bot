@@ -29,7 +29,4 @@ message ProtoTrial {
     map<string, ProtoRoleCount> role_count_map = 8;
 
     repeated string role_sort_order = 10;
-
-    bool hide_reactions_announce = 11;
-    bool hide_reactions_show = 12;
 }

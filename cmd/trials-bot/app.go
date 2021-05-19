@@ -7,12 +7,12 @@ import (
 
 	// _ "net/http/pprof"
 
-	"github.com/gsmcwhirter/go-util/v8/deferutil"
-	"github.com/gsmcwhirter/go-util/v8/logging/level"
-	"github.com/gsmcwhirter/go-util/v8/pprofsidecar"
+	"github.com/gsmcwhirter/go-util/v7/deferutil"
+	"github.com/gsmcwhirter/go-util/v7/logging/level"
+	"github.com/gsmcwhirter/go-util/v7/pprofsidecar"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v19/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/bot"
 )
 
 func start(c config) error {
@@ -69,7 +69,7 @@ func start(c config) error {
 	return err
 }
 
-func runAll(deps *dependencies, b *bot.DiscordBot, srv *http.Server) func(context.Context) error {
+func runAll(deps *dependencies, b bot.DiscordBot, srv *http.Server) func(context.Context) error {
 	return func(ctx context.Context) error {
 		g, ctx := errgroup.WithContext(ctx)
 

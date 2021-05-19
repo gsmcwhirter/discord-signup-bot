@@ -3,15 +3,15 @@ package commands
 import (
 	"strings"
 
-	"github.com/gsmcwhirter/go-util/v8/deferutil"
-	"github.com/gsmcwhirter/go-util/v8/errors"
-	"github.com/gsmcwhirter/go-util/v8/logging/level"
+	"github.com/gsmcwhirter/go-util/v7/deferutil"
+	"github.com/gsmcwhirter/go-util/v7/errors"
+	"github.com/gsmcwhirter/go-util/v7/logging/level"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v19/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v19/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/logging"
 )
 
 func (c *userCommands) show(msg cmdhandler.Message) (cmdhandler.Response, error) {
@@ -38,28 +38,28 @@ func (c *userCommands) show(msg cmdhandler.Message) (cmdhandler.Response, error)
 
 	trialName := strings.TrimSpace(msg.Contents()[0])
 
-	gsettings, err := storage.GetSettings(ctx, c.deps.GuildAPI(), msg.GuildID())
+	gsettings, err := storage.GetSettings(msg.Context(), c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
 		return r, err
 	}
 
-	t, err := c.deps.TrialAPI().NewTransaction(ctx, msg.GuildID().ToString(), false)
+	t, err := c.deps.TrialAPI().NewTransaction(msg.Context(), msg.GuildID().ToString(), false)
 	if err != nil {
 		return r, err
 	}
-	defer deferutil.CheckDefer(func() error { return t.Rollback(ctx) })
+	defer deferutil.CheckDefer(func() error { return t.Rollback(msg.Context()) })
 
-	trial, err := t.GetTrial(ctx, trialName)
+	trial, err := t.GetTrial(msg.Context(), trialName)
 	if err != nil {
 		return r, err
 	}
 
-	if !isSignupChannel(ctx, logger, msg, trial.GetSignupChannel(ctx), gsettings.AdminChannel, gsettings.AdminRoles, c.deps.BotSession(), c.deps.Bot()) {
-		level.Info(logger).Message("command not in signup channel", "signup_channel", trial.GetSignupChannel(ctx))
+	if !isSignupChannel(ctx, logger, msg, trial.GetSignupChannel(msg.Context()), gsettings.AdminChannel, gsettings.AdminRoles, c.deps.BotSession(), c.deps.Bot()) {
+		level.Info(logger).Message("command not in signup channel", "signup_channel", trial.GetSignupChannel(msg.Context()))
 		return r, msghandler.ErrNoResponse
 	}
 
-	r2 := formatTrialDisplay(ctx, trial, true)
+	r2 := formatTrialDisplay(msg.Context(), trial, true)
 	// r2.To = cmdhandler.UserMentionString(msg.UserID())
 	r2.SetReplyTo(msg)
 

@@ -1,15 +1,15 @@
 package commands
 
 import (
-	"github.com/gsmcwhirter/go-util/v8/deferutil"
-	"github.com/gsmcwhirter/go-util/v8/errors"
-	"github.com/gsmcwhirter/go-util/v8/logging/level"
+	"github.com/gsmcwhirter/go-util/v7/deferutil"
+	"github.com/gsmcwhirter/go-util/v7/errors"
+	"github.com/gsmcwhirter/go-util/v7/logging/level"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v19/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v19/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/logging"
 )
 
 func (c *adminCommands) show(msg cmdhandler.Message) (cmdhandler.Response, error) {
@@ -26,7 +26,7 @@ func (c *adminCommands) show(msg cmdhandler.Message) (cmdhandler.Response, error
 	logger := logging.WithMessage(msg, c.deps.Logger())
 	level.Info(logger).Message("handling adminCommand", "command", "show", "args", msg.Contents())
 
-	gsettings, err := storage.GetSettings(ctx, c.deps.GuildAPI(), msg.GuildID())
+	gsettings, err := storage.GetSettings(msg.Context(), c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
 		return r, err
 	}
@@ -50,18 +50,18 @@ func (c *adminCommands) show(msg cmdhandler.Message) (cmdhandler.Response, error
 
 	trialName := msg.Contents()[0]
 
-	t, err := c.deps.TrialAPI().NewTransaction(ctx, msg.GuildID().ToString(), false)
+	t, err := c.deps.TrialAPI().NewTransaction(msg.Context(), msg.GuildID().ToString(), false)
 	if err != nil {
 		return r, err
 	}
-	defer deferutil.CheckDefer(func() error { return t.Rollback(ctx) })
+	defer deferutil.CheckDefer(func() error { return t.Rollback(msg.Context()) })
 
-	trial, err := t.GetTrial(ctx, trialName)
+	trial, err := t.GetTrial(msg.Context(), trialName)
 	if err != nil {
 		return r, err
 	}
 
-	r.Description = trial.PrettySettings(ctx)
+	r.Description = trial.PrettySettings(msg.Context())
 
 	level.Info(logger).Message("trial shown", "trial_name", trialName)
 

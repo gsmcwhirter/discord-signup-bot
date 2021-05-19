@@ -5,8 +5,8 @@ import (
 
 	bolt "go.etcd.io/bbolt"
 
-	log "github.com/gsmcwhirter/go-util/v8/logging"
-	"github.com/gsmcwhirter/go-util/v8/telemetry"
+	log "github.com/gsmcwhirter/go-util/v7/logging"
+	"github.com/gsmcwhirter/go-util/v7/telemetry"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 

@@ -4,16 +4,16 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gsmcwhirter/go-util/v8/deferutil"
-	"github.com/gsmcwhirter/go-util/v8/errors"
-	"github.com/gsmcwhirter/go-util/v8/logging/level"
+	"github.com/gsmcwhirter/go-util/v7/deferutil"
+	"github.com/gsmcwhirter/go-util/v7/errors"
+	"github.com/gsmcwhirter/go-util/v7/logging/level"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v19/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v19/logging"
-	"github.com/gsmcwhirter/discord-bot-lib/v19/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/snowflake"
 )
 
 func (c *adminCommands) grouping(msg cmdhandler.Message) (cmdhandler.Response, error) {
@@ -30,7 +30,7 @@ func (c *adminCommands) grouping(msg cmdhandler.Message) (cmdhandler.Response, e
 	logger := logging.WithMessage(msg, c.deps.Logger())
 	level.Info(logger).Message("handling adminCommand", "command", "grouping", "args", msg.Contents())
 
-	gsettings, err := storage.GetSettings(ctx, c.deps.GuildAPI(), msg.GuildID())
+	gsettings, err := storage.GetSettings(msg.Context(), c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
 		return r, err
 	}
@@ -54,13 +54,13 @@ func (c *adminCommands) grouping(msg cmdhandler.Message) (cmdhandler.Response, e
 		phrase = strings.Join(msg.Contents()[1:], " ")
 	}
 
-	t, err := c.deps.TrialAPI().NewTransaction(ctx, msg.GuildID().ToString(), false)
+	t, err := c.deps.TrialAPI().NewTransaction(msg.Context(), msg.GuildID().ToString(), false)
 	if err != nil {
 		return r, err
 	}
-	defer deferutil.CheckDefer(func() error { return t.Rollback(ctx) })
+	defer deferutil.CheckDefer(func() error { return t.Rollback(msg.Context()) })
 
-	trial, err := t.GetTrial(ctx, trialName)
+	trial, err := t.GetTrial(msg.Context(), trialName)
 	if err != nil {
 		return r, err
 	}
@@ -71,17 +71,17 @@ func (c *adminCommands) grouping(msg cmdhandler.Message) (cmdhandler.Response, e
 	}
 
 	var announceCid snowflake.Snowflake
-	if acID, ok := sessionGuild.ChannelWithName(trial.GetAnnounceChannel(ctx)); ok {
+	if acID, ok := sessionGuild.ChannelWithName(trial.GetAnnounceChannel(msg.Context())); ok {
 		announceCid = acID
 	}
 
-	roleCounts := trial.GetRoleCounts(ctx) // already sorted by name
-	signups := trial.GetSignups(ctx)
+	roleCounts := trial.GetRoleCounts(msg.Context()) // already sorted by name
+	signups := trial.GetSignups(msg.Context())
 
 	userMentions := make([]string, 0, len(signups))
 
 	for _, rc := range roleCounts {
-		suNames, ofNames := getTrialRoleSignups(ctx, signups, rc)
+		suNames, ofNames := getTrialRoleSignups(msg.Context(), signups, rc)
 
 		userMentions = append(userMentions, suNames...)
 		userMentions = append(userMentions, ofNames...)

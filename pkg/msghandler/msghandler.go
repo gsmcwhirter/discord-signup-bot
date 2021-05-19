@@ -5,20 +5,19 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gsmcwhirter/go-util/v8/errors"
-	"github.com/gsmcwhirter/go-util/v8/logging/level"
-	"github.com/gsmcwhirter/go-util/v8/parser"
-	"github.com/gsmcwhirter/go-util/v8/telemetry"
+	"github.com/gsmcwhirter/go-util/v7/errors"
+	"github.com/gsmcwhirter/go-util/v7/logging/level"
+	"github.com/gsmcwhirter/go-util/v7/parser"
+	"github.com/gsmcwhirter/go-util/v7/telemetry"
 	"golang.org/x/time/rate"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v19/bot"
-	"github.com/gsmcwhirter/discord-bot-lib/v19/bot/session"
-	"github.com/gsmcwhirter/discord-bot-lib/v19/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v19/dispatcher"
-	"github.com/gsmcwhirter/discord-bot-lib/v19/logging"
-	"github.com/gsmcwhirter/discord-bot-lib/v19/request"
-	"github.com/gsmcwhirter/discord-bot-lib/v19/snowflake"
-	"github.com/gsmcwhirter/discord-bot-lib/v19/wsapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/request"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/wsclient"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/reactions"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/stats"
@@ -34,7 +33,7 @@ var ErrUnauthorized = errors.New("unauthorized")
 var ErrNoResponse = errors.New("no response")
 
 type dependencies interface {
-	Logger() Logger
+	Logger() logging.Logger
 	GuildAPI() storage.GuildAPI
 	CommandHandler() *cmdhandler.CommandHandler
 	ConfigHandler() *cmdhandler.CommandHandler
@@ -43,7 +42,7 @@ type dependencies interface {
 	ReactionHandler() reactions.Handler
 	MessageRateLimiter() *rate.Limiter
 	ReactionsRateLimiter() *rate.Limiter
-	BotSession() *session.Session
+	BotSession() *etfapi.Session
 	Census() *telemetry.Census
 	StatsHub() *stats.Hub
 	SendAllowed() bool
@@ -51,11 +50,11 @@ type dependencies interface {
 
 // Handlers is the interface for a Handlers dependency that registers itself with a discrord bot
 type Handlers interface {
-	ConnectToBot(*bot.DiscordBot)
+	ConnectToBot(bot.DiscordBot)
 }
 
 type handlers struct {
-	bot                     *bot.DiscordBot
+	bot                     bot.DiscordBot
 	deps                    dependencies
 	defaultCommandIndicator string
 	successColor            int
@@ -81,7 +80,7 @@ func NewHandlers(deps dependencies, opts Options) Handlers {
 	return &h
 }
 
-func (h *handlers) ConnectToBot(b *bot.DiscordBot) {
+func (h *handlers) ConnectToBot(b bot.DiscordBot) {
 	h.bot = b
 
 	b.AddMessageHandler("MESSAGE_CREATE", h.handleMessage)
@@ -164,7 +163,7 @@ func (h *handlers) attemptConfigAndAdminHandlers(msg cmdhandler.Message, cmdIndi
 	return h.deps.AdminHandler().HandleMessage(cmdhandler.NewWithContents(msg, cmdContent))
 }
 
-func (h *handlers) handleResponse(ctx context.Context, logger Logger, resp cmdhandler.Response, cid, gid snowflake.Snowflake, content string, err error) {
+func (h *handlers) handleResponse(ctx context.Context, logger logging.Logger, resp cmdhandler.Response, cid, gid snowflake.Snowflake, content string, err error) {
 	if err == ErrNoResponse || err == parser.ErrUnknownCommand {
 		return
 	}
@@ -207,7 +206,7 @@ func (h *handlers) handleResponse(ctx context.Context, logger Logger, resp cmdha
 			ar.Incr(1)
 		}
 
-		sentMsg, err := h.bot.API().SendMessage(ctx, sendTo, res.ToMessage())
+		sentMsg, err := h.bot.SendMessage(ctx, sendTo, res.ToMessage())
 		if err != nil {
 			level.Error(logger).Err("could not send message", err)
 			return
@@ -225,7 +224,7 @@ func (h *handlers) handleResponse(ctx context.Context, logger Logger, resp cmdha
 				ar.Incr(1)
 			}
 
-			resp, err := h.bot.API().CreateReaction(ctx, sendTo, sentMsg.IDSnowflake, reaction)
+			resp, err := h.bot.CreateReaction(ctx, sendTo, sentMsg.IDSnowflake, reaction)
 			if err != nil {
 				status := 0
 				if resp != nil {
@@ -240,7 +239,7 @@ func (h *handlers) handleResponse(ctx context.Context, logger Logger, resp cmdha
 	level.Info(logger).Message("successfully sent message(s) to channel", "channel_id", sendTo.ToString(), "message_ct", len(splitResp))
 }
 
-func (h *handlers) handleMessage(p bot.Payload, req wsapi.WSMessage, respChan chan<- wsapi.WSMessage) snowflake.Snowflake {
+func (h *handlers) handleMessage(p *etfapi.Payload, req wsclient.WSMessage, respChan chan<- wsclient.WSMessage) snowflake.Snowflake {
 	ctx, span := h.deps.Census().StartSpan(req.Ctx, "handlers.handleMessage")
 	defer span.End()
 	req.Ctx = ctx
@@ -257,13 +256,13 @@ func (h *handlers) handleMessage(p bot.Payload, req wsapi.WSMessage, respChan ch
 
 	logger := logging.WithContext(req.Ctx, h.deps.Logger())
 
-	m, err := dispatcher.MessageFromElementMap(p.Contents())
+	m, err := etfapi.MessageFromElementMap(p.Data)
 	if err != nil {
 		level.Error(logger).Err("error inflating message", err)
 		return 0
 	}
 
-	if m.MessageType() != dispatcher.DefaultMessage {
+	if m.MessageType() != etfapi.DefaultMessage {
 		level.Info(logger).Message("message was not a default type")
 		return 0
 	}
@@ -306,7 +305,7 @@ func (h *handlers) handleMessage(p bot.Payload, req wsapi.WSMessage, respChan ch
 	return gid
 }
 
-func (h *handlers) handleReactionAdd(p bot.Payload, req wsapi.WSMessage, respChan chan<- wsapi.WSMessage) snowflake.Snowflake {
+func (h *handlers) handleReactionAdd(p *etfapi.Payload, req wsclient.WSMessage, respChan chan<- wsclient.WSMessage) snowflake.Snowflake {
 	ctx, span := h.deps.Census().StartSpan(req.Ctx, "handlers.handleReactionAdd")
 	defer span.End()
 	req.Ctx = ctx
@@ -323,7 +322,7 @@ func (h *handlers) handleReactionAdd(p bot.Payload, req wsapi.WSMessage, respCha
 
 	logger := logging.WithContext(req.Ctx, h.deps.Logger())
 
-	r, err := dispatcher.ReactionFromElementMap(p.Contents())
+	r, err := etfapi.ReactionFromElementMap(p.Data)
 	if err != nil {
 		level.Error(logger).Err("error inflating reaction", err)
 		return 0
@@ -345,7 +344,7 @@ func (h *handlers) handleReactionAdd(p bot.Payload, req wsapi.WSMessage, respCha
 	return gid
 }
 
-func (h *handlers) handleReactionRemove(p bot.Payload, req wsapi.WSMessage, respChan chan<- wsapi.WSMessage) snowflake.Snowflake {
+func (h *handlers) handleReactionRemove(p *etfapi.Payload, req wsclient.WSMessage, respChan chan<- wsclient.WSMessage) snowflake.Snowflake {
 	ctx, span := h.deps.Census().StartSpan(req.Ctx, "handlers.handleReactionAdd")
 	defer span.End()
 	req.Ctx = ctx
@@ -362,7 +361,7 @@ func (h *handlers) handleReactionRemove(p bot.Payload, req wsapi.WSMessage, resp
 
 	logger := logging.WithContext(req.Ctx, h.deps.Logger())
 
-	r, err := dispatcher.ReactionFromElementMap(p.Contents())
+	r, err := etfapi.ReactionFromElementMap(p.Data)
 	if err != nil {
 		level.Error(logger).Err("error inflating reaction", err)
 		return 0

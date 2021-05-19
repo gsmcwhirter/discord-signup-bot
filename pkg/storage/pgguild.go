@@ -3,8 +3,8 @@ package storage
 import (
 	"context"
 
-	"github.com/gsmcwhirter/go-util/v8/errors"
-	"github.com/gsmcwhirter/go-util/v8/telemetry"
+	"github.com/gsmcwhirter/go-util/v7/errors"
+	"github.com/gsmcwhirter/go-util/v7/telemetry"
 )
 
 type guildData struct {

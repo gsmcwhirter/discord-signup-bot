@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gsmcwhirter/go-util/v8/deferutil"
-	"github.com/gsmcwhirter/go-util/v8/errors"
-	"github.com/gsmcwhirter/go-util/v8/logging/level"
+	"github.com/gsmcwhirter/go-util/v7/deferutil"
+	"github.com/gsmcwhirter/go-util/v7/errors"
+	"github.com/gsmcwhirter/go-util/v7/logging/level"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v19/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v19/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/logging"
 )
 
 func (c *adminCommands) create(msg cmdhandler.Message) (cmdhandler.Response, error) {
@@ -29,7 +29,7 @@ func (c *adminCommands) create(msg cmdhandler.Message) (cmdhandler.Response, err
 	logger := logging.WithMessage(msg, c.deps.Logger())
 	level.Info(logger).Message("handling adminCommand", "command", "create", "args", msg.Contents())
 
-	gsettings, err := storage.GetSettings(ctx, c.deps.GuildAPI(), msg.GuildID())
+	gsettings, err := storage.GetSettings(msg.Context(), c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
 		return r, err
 	}
@@ -50,13 +50,13 @@ func (c *adminCommands) create(msg cmdhandler.Message) (cmdhandler.Response, err
 	trialName := msg.Contents()[0]
 	settings := msg.Contents()[1:]
 
-	t, err := c.deps.TrialAPI().NewTransaction(ctx, msg.GuildID().ToString(), true)
+	t, err := c.deps.TrialAPI().NewTransaction(msg.Context(), msg.GuildID().ToString(), true)
 	if err != nil {
 		return r, err
 	}
-	defer deferutil.CheckDefer(func() error { return t.Rollback(ctx) })
+	defer deferutil.CheckDefer(func() error { return t.Rollback(msg.Context()) })
 
-	trial, err := t.AddTrial(ctx, trialName)
+	trial, err := t.AddTrial(msg.Context(), trialName)
 	if err != nil {
 		return r, err
 	}
@@ -66,42 +66,24 @@ func (c *adminCommands) create(msg cmdhandler.Message) (cmdhandler.Response, err
 		return r, err
 	}
 
-	trial.SetName(ctx, trialName)
-	trial.SetDescription(ctx, settingMap["description"])
-	trial.SetState(ctx, storage.TrialStateOpen)
+	trial.SetName(msg.Context(), trialName)
+	trial.SetDescription(msg.Context(), settingMap["description"])
+	trial.SetState(msg.Context(), storage.TrialStateOpen)
 
 	if v, ok := settingMap["announcechannel"]; !ok {
-		trial.SetAnnounceChannel(ctx, gsettings.AnnounceChannel)
+		trial.SetAnnounceChannel(msg.Context(), gsettings.AnnounceChannel)
 	} else {
-		trial.SetAnnounceChannel(ctx, v)
+		trial.SetAnnounceChannel(msg.Context(), v)
 	}
 
 	if v, ok := settingMap["announceto"]; ok {
-		trial.SetAnnounceTo(ctx, v)
+		trial.SetAnnounceTo(msg.Context(), v)
 	}
 
 	if v, ok := settingMap["signupchannel"]; !ok {
-		trial.SetSignupChannel(ctx, gsettings.SignupChannel)
+		trial.SetSignupChannel(msg.Context(), gsettings.SignupChannel)
 	} else {
-		trial.SetSignupChannel(ctx, v)
-	}
-
-	if v, ok := settingMap["hidereactionsannounce"]; !ok {
-		err = trial.SetHideReactionsAnnounce(ctx, gsettings.HideReactionsAnnounce)
-	} else {
-		err = trial.SetHideReactionsAnnounce(ctx, v)
-	}
-	if err != nil {
-		return r, err
-	}
-
-	if v, ok := settingMap["hidereactionsshow"]; !ok {
-		err = trial.SetHideReactionsShow(ctx, gsettings.HideReactionsShow)
-	} else {
-		err = trial.SetHideReactionsShow(ctx, v)
-	}
-	if err != nil {
-		return r, err
+		trial.SetSignupChannel(msg.Context(), v)
 	}
 
 	if v, ok := settingMap["roleorder"]; ok {
@@ -109,7 +91,7 @@ func (c *adminCommands) create(msg cmdhandler.Message) (cmdhandler.Response, err
 		for i := range roleOrder {
 			roleOrder[i] = strings.TrimSpace(roleOrder[i])
 		}
-		trial.SetRoleOrder(ctx, roleOrder)
+		trial.SetRoleOrder(msg.Context(), roleOrder)
 	}
 
 	roleCtEmoList, err := parseRolesString(settingMap["roles"])
@@ -118,15 +100,15 @@ func (c *adminCommands) create(msg cmdhandler.Message) (cmdhandler.Response, err
 	}
 	for _, rce := range roleCtEmoList {
 		if rce.ct != 0 {
-			trial.SetRoleCount(ctx, rce.role, rce.emo, rce.ct)
+			trial.SetRoleCount(msg.Context(), rce.role, rce.emo, rce.ct)
 		}
 	}
 
-	if err = t.SaveTrial(ctx, trial); err != nil {
+	if err = t.SaveTrial(msg.Context(), trial); err != nil {
 		return r, errors.Wrap(err, "could not save event")
 	}
 
-	if err = t.Commit(ctx); err != nil {
+	if err = t.Commit(msg.Context()); err != nil {
 		return r, errors.Wrap(err, "could not save event")
 	}
 

@@ -62,8 +62,8 @@ USAGE_DB="\
 Usage: $(basename "$0") db <cmd>
 
 Commands:
-    migrate [up|destination|status|new] [args...]       Run the database migrations
-    shell                                               Connect to the database shell
+    migrate [up|destination|status] [args...]       Run the database migrations
+    shell                                           Connect to the database shell
 "
 
 : "${PROJECT:=github.com/gsmcwhirter/discord-signup-bot}"

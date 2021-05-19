@@ -44,8 +44,6 @@ type Trial interface {
 	GetSignups(ctx context.Context) []TrialSignup
 	GetRoleCounts(ctx context.Context) []RoleCount
 	GetRoleOrder(ctx context.Context) []string
-	HideReactionsAnnounce(ctx context.Context) bool
-	HideReactionsShow(ctx context.Context) bool
 	PrettySettings(ctx context.Context) string
 
 	SetName(ctx context.Context, name string)
@@ -59,8 +57,6 @@ type Trial interface {
 	SetRoleCount(ctx context.Context, name, emoji string, ct uint64)
 	RemoveRole(ctx context.Context, name string)
 	SetRoleOrder(ctx context.Context, ord []string)
-	SetHideReactionsAnnounce(ctx context.Context, val string) error
-	SetHideReactionsShow(ctx context.Context, val string) error
 
 	ClearSignups(ctx context.Context)
 

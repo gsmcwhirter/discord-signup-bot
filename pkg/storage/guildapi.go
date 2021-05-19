@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gsmcwhirter/go-util/v8/errors"
-	"github.com/gsmcwhirter/go-util/v8/telemetry"
+	"github.com/gsmcwhirter/go-util/v7/errors"
+	"github.com/gsmcwhirter/go-util/v7/telemetry"
 )
 
 // ErrBadSetting is the error returned if an unknown setting is accessed
@@ -16,17 +16,15 @@ var ErrBadSetting = errors.New("bad setting")
 
 // GuildSettings is the set of configuration settings for a guild
 type GuildSettings struct {
-	census                *telemetry.Census
-	ControlSequence       string
-	AnnounceChannel       string
-	SignupChannel         string
-	AdminChannel          string
-	AnnounceTo            string
-	ShowAfterSignup       string
-	ShowAfterWithdraw     string
-	HideReactionsAnnounce string
-	HideReactionsShow     string
-	AdminRoles            []string
+	census            *telemetry.Census
+	ControlSequence   string
+	AnnounceChannel   string
+	SignupChannel     string
+	AdminChannel      string
+	AnnounceTo        string
+	ShowAfterSignup   string
+	ShowAfterWithdraw string
+	AdminRoles        []string
 }
 
 // PrettyString returns a multi-line string describing the settings
@@ -49,11 +47,9 @@ GuildSettings:
 	- AnnounceTo: '%[6]s', 
 	- ShowAfterSignup: '%[7]s',
 	- ShowAfterWithdraw: '%[8]s',
-	- HideReactionsAnnounce: '%[10]s',
-	- HideReactionsShow: '%[11]s',
 	- AdminRoles: '%[9]s',
 
-	`, "```", s.ControlSequence, s.AnnounceChannel, s.SignupChannel, s.AdminChannel, s.AnnounceTo, s.ShowAfterSignup, s.ShowAfterWithdraw, strings.Join(adminRoles, ", "), s.HideReactionsAnnounce, s.HideReactionsShow)
+	`, "```", s.ControlSequence, s.AnnounceChannel, s.SignupChannel, s.AdminChannel, s.AnnounceTo, s.ShowAfterSignup, s.ShowAfterWithdraw, strings.Join(adminRoles, ", "))
 }
 
 // GetSettingString gets the value of a setting
@@ -76,10 +72,6 @@ func (s *GuildSettings) GetSettingString(ctx context.Context, name string) (stri
 		return s.ShowAfterSignup, nil
 	case "showafterwithdraw":
 		return s.ShowAfterWithdraw, nil
-	case "hidereactionsannounce":
-		return s.HideReactionsAnnounce, nil
-	case "hidereactionsshow":
-		return s.HideReactionsShow, nil
 	case "adminrole":
 		return strings.Join(s.AdminRoles, ","), nil
 	default:
@@ -132,20 +124,6 @@ func (s *GuildSettings) SetSettingString(ctx context.Context, name, val string) 
 			return errors.Wrap(err, "could not set ShowAfterWithdraw")
 		}
 		s.ShowAfterWithdraw = v
-		return nil
-	case "hidereactionsannounce":
-		v, err := normalizeTrueFalseString(val)
-		if err != nil {
-			return errors.Wrap(err, "could not set HideReactionsAnnounce")
-		}
-		s.HideReactionsAnnounce = v
-		return nil
-	case "hidereactionsshow":
-		v, err := normalizeTrueFalseString(val)
-		if err != nil {
-			return errors.Wrap(err, "could not set HideReactionsShow")
-		}
-		s.HideReactionsShow = v
 		return nil
 	case "adminrole":
 		if val == "" {

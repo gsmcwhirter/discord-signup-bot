@@ -7,19 +7,17 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
-	"github.com/gsmcwhirter/discord-bot-lib/v19/bot"
-	"github.com/gsmcwhirter/discord-bot-lib/v19/bot/session"
-	"github.com/gsmcwhirter/discord-bot-lib/v19/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v19/discordapi/json"
-	"github.com/gsmcwhirter/discord-bot-lib/v19/dispatcher"
-	"github.com/gsmcwhirter/discord-bot-lib/v19/errreport"
-	"github.com/gsmcwhirter/discord-bot-lib/v19/httpclient"
-	bstats "github.com/gsmcwhirter/discord-bot-lib/v19/stats"
-	"github.com/gsmcwhirter/discord-bot-lib/v19/wsapi"
-	"github.com/gsmcwhirter/discord-bot-lib/v19/wsclient"
-	"github.com/gsmcwhirter/go-util/v8/errors"
-	log "github.com/gsmcwhirter/go-util/v8/logging"
-	"github.com/gsmcwhirter/go-util/v8/telemetry"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/errreport"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/etfapi"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/httpclient"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/messagehandler"
+	bstats "github.com/gsmcwhirter/discord-bot-lib/v18/stats"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/wsclient"
+	"github.com/gsmcwhirter/go-util/v7/errors"
+	log "github.com/gsmcwhirter/go-util/v7/logging"
+	"github.com/gsmcwhirter/go-util/v7/telemetry"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
 	"golang.org/x/time/rate"
@@ -35,44 +33,36 @@ import (
 
 const DiscordAPI = "https://discord.com/api/v6"
 
-type Logger = interface {
-	Log(keyvals ...interface{}) error
-	Message(string, ...interface{})
-	Err(string, error, ...interface{})
-	Printf(string, ...interface{})
-}
-
 type dependencies struct {
-	logger Logger
+	logger log.Logger
 
 	db       *pgxpool.Pool
 	trialAPI storage.TrialAPI
 	guildAPI storage.GuildAPI
 
 	httpDoer   httpclient.Doer
-	httpClient *httpclient.HTTPClient
+	httpClient httpclient.HTTPClient
 	wsDialer   wsclient.Dialer
-	wsClient   *wsclient.WSClient
-	jsClient   *json.DiscordJSONClient
+	wsClient   wsclient.WSClient
 
 	messageRateLimiter   *rate.Limiter
 	connectRateLimiter   *rate.Limiter
 	reactionsRateLimiter *rate.Limiter
-	botSession           *session.Session
+	botSession           *etfapi.Session
 
 	cmdHandler        *cmdhandler.CommandHandler
 	configHandler     *cmdhandler.CommandHandler
 	adminHandler      *cmdhandler.CommandHandler
 	debugHandler      *cmdhandler.CommandHandler
 	reactionHandler   reactions.Handler
-	discordMsgHandler *dispatcher.Dispatcher
+	discordMsgHandler bot.DiscordMessageHandler
 	msgHandlers       msghandler.Handlers
 
 	rep         bugsnag.Reporter
 	census      *telemetry.Census
 	promHandler http.Handler
 
-	bot *bot.DiscordBot
+	bot bot.DiscordBot
 
 	statsHub *stats.Hub
 
@@ -91,7 +81,7 @@ func createDependencies(conf config, botPermissions, botIntents int) (*dependenc
 		connectRateLimiter:   rate.NewLimiter(rate.Every(5*time.Second), 1),
 		messageRateLimiter:   rate.NewLimiter(rate.Every(60*time.Second), 120),
 		reactionsRateLimiter: rate.NewLimiter(rate.Every(500*time.Millisecond), 1),
-		botSession:           session.NewSession(),
+		botSession:           etfapi.NewSession(),
 		statsHub:             stats.NewHub(),
 	}
 
@@ -111,7 +101,7 @@ func createDependencies(conf config, botPermissions, botIntents int) (*dependenc
 		return d, errors.Wrap(err, "could not create reaction_sent recorder")
 	}
 
-	var logger Logger
+	var logger log.Logger
 	if conf.LogFormat == "json" {
 		logger = log.NewJSONLogger()
 	} else {
@@ -180,7 +170,6 @@ func createDependencies(conf config, botPermissions, botIntents int) (*dependenc
 	d.httpClient.SetHeaders(h)
 
 	d.wsClient = wsclient.NewWSClient(d, wsclient.Options{MaxConcurrentHandlers: conf.NumWorkers})
-	d.jsClient = json.NewDiscordJSONClient(d, DiscordAPI)
 
 	d.cmdHandler, err = commands.CommandHandler(d, conf.Version, commands.Options{CmdIndicator: "!"})
 	if err != nil {
@@ -200,7 +189,7 @@ func createDependencies(conf config, botPermissions, botIntents int) (*dependenc
 	}
 	d.reactionHandler = commands.NewReactionHandler(d)
 
-	d.discordMsgHandler = dispatcher.NewDispatcher(d)
+	d.discordMsgHandler = messagehandler.NewDiscordMessageHandler(d)
 
 	d.msgHandlers = msghandler.NewHandlers(d, msghandler.Options{
 		DefaultCommandIndicator: "!",
@@ -236,18 +225,17 @@ func (d *dependencies) Close() {
 }
 
 func (d *dependencies) SendAllowed() bool                          { return d.sendAllowed }
-func (d *dependencies) Logger() Logger                             { return d.logger }
+func (d *dependencies) Logger() log.Logger                         { return d.logger }
 func (d *dependencies) GuildAPI() storage.GuildAPI                 { return d.guildAPI }
 func (d *dependencies) TrialAPI() storage.TrialAPI                 { return d.trialAPI }
 func (d *dependencies) HTTPDoer() httpclient.Doer                  { return d.httpDoer }
-func (d *dependencies) HTTPClient() json.HTTPClient                { return d.httpClient }
+func (d *dependencies) HTTPClient() httpclient.HTTPClient          { return d.httpClient }
 func (d *dependencies) WSDialer() wsclient.Dialer                  { return d.wsDialer }
-func (d *dependencies) WSClient() wsapi.WSClient                   { return d.wsClient }
-func (d *dependencies) DiscordJSONClient() *json.DiscordJSONClient { return d.jsClient }
+func (d *dependencies) WSClient() wsclient.WSClient                { return d.wsClient }
 func (d *dependencies) MessageRateLimiter() *rate.Limiter          { return d.messageRateLimiter }
 func (d *dependencies) ConnectRateLimiter() *rate.Limiter          { return d.connectRateLimiter }
 func (d *dependencies) ReactionsRateLimiter() *rate.Limiter        { return d.reactionsRateLimiter }
-func (d *dependencies) BotSession() *session.Session               { return d.botSession }
+func (d *dependencies) BotSession() *etfapi.Session                { return d.botSession }
 func (d *dependencies) CommandHandler() *cmdhandler.CommandHandler { return d.cmdHandler }
 func (d *dependencies) ConfigHandler() *cmdhandler.CommandHandler  { return d.configHandler }
 func (d *dependencies) AdminHandler() *cmdhandler.CommandHandler   { return d.adminHandler }
@@ -256,9 +244,11 @@ func (d *dependencies) ReactionHandler() reactions.Handler         { return d.re
 func (d *dependencies) MessageHandler() msghandler.Handlers        { return d.msgHandlers }
 func (d *dependencies) ErrReporter() errreport.Reporter            { return d.rep }
 func (d *dependencies) Census() *telemetry.Census                  { return d.census }
-func (d *dependencies) Bot() *bot.DiscordBot                       { return d.bot }
+func (d *dependencies) Bot() bot.DiscordBot                        { return d.bot }
 func (d *dependencies) StatsHub() *stats.Hub                       { return d.statsHub }
-func (d *dependencies) Dispatcher() bot.Dispatcher                 { return d.discordMsgHandler }
+func (d *dependencies) DiscordMessageHandler() bot.DiscordMessageHandler {
+	return d.discordMsgHandler
+}
 
 func (d *dependencies) MessageHandlerRecorder() *bstats.ActivityRecorder {
 	ar, _ := d.statsHub.Get("raw_msgs")

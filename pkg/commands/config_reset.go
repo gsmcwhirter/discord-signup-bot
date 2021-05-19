@@ -1,14 +1,14 @@
 package commands
 
 import (
-	"github.com/gsmcwhirter/go-util/v8/deferutil"
-	"github.com/gsmcwhirter/go-util/v8/errors"
-	"github.com/gsmcwhirter/go-util/v8/logging/level"
+	"github.com/gsmcwhirter/go-util/v7/deferutil"
+	"github.com/gsmcwhirter/go-util/v7/errors"
+	"github.com/gsmcwhirter/go-util/v7/logging/level"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v19/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v19/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/logging"
 )
 
 func (c *configCommands) reset(msg cmdhandler.Message) (cmdhandler.Response, error) {
@@ -29,26 +29,26 @@ func (c *configCommands) reset(msg cmdhandler.Message) (cmdhandler.Response, err
 		return r, msg.ContentErr()
 	}
 
-	t, err := c.deps.GuildAPI().NewTransaction(ctx, true)
+	t, err := c.deps.GuildAPI().NewTransaction(msg.Context(), true)
 	if err != nil {
 		return r, err
 	}
-	defer deferutil.CheckDefer(func() error { return t.Rollback(ctx) })
+	defer deferutil.CheckDefer(func() error { return t.Rollback(msg.Context()) })
 
-	bGuild, err := t.AddGuild(ctx, msg.GuildID().ToString())
+	bGuild, err := t.AddGuild(msg.Context(), msg.GuildID().ToString())
 	if err != nil {
 		return r, errors.Wrap(err, "unable to find or add guild")
 	}
 
 	s := storage.GuildSettings{}
-	bGuild.SetSettings(ctx, s)
+	bGuild.SetSettings(msg.Context(), s)
 
-	err = t.SaveGuild(ctx, bGuild)
+	err = t.SaveGuild(msg.Context(), bGuild)
 	if err != nil {
 		return r, errors.Wrap(err, "could not save guild settings")
 	}
 
-	err = t.Commit(ctx)
+	err = t.Commit(msg.Context())
 	if err != nil {
 		return r, errors.Wrap(err, "could not save guild settings")
 	}

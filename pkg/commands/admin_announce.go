@@ -4,16 +4,16 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gsmcwhirter/go-util/v8/deferutil"
-	"github.com/gsmcwhirter/go-util/v8/errors"
-	"github.com/gsmcwhirter/go-util/v8/logging/level"
+	"github.com/gsmcwhirter/go-util/v7/deferutil"
+	"github.com/gsmcwhirter/go-util/v7/errors"
+	"github.com/gsmcwhirter/go-util/v7/logging/level"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v19/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v19/logging"
-	"github.com/gsmcwhirter/discord-bot-lib/v19/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v18/snowflake"
 )
 
 func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, error) {
@@ -30,7 +30,7 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 	logger := logging.WithMessage(msg, c.deps.Logger())
 	level.Info(logger).Message("handling adminCommand", "command", "announce", "args", msg.Contents())
 
-	gsettings, err := storage.GetSettings(ctx, c.deps.GuildAPI(), msg.GuildID())
+	gsettings, err := storage.GetSettings(msg.Context(), c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
 		return r, err
 	}
@@ -51,13 +51,13 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 	trialName := msg.Contents()[0]
 	phrase := strings.Join(msg.Contents()[1:], " ")
 
-	t, err := c.deps.TrialAPI().NewTransaction(ctx, msg.GuildID().ToString(), false)
+	t, err := c.deps.TrialAPI().NewTransaction(msg.Context(), msg.GuildID().ToString(), false)
 	if err != nil {
 		return r, err
 	}
-	defer deferutil.CheckDefer(func() error { return t.Rollback(ctx) })
+	defer deferutil.CheckDefer(func() error { return t.Rollback(msg.Context()) })
 
-	trial, err := t.GetTrial(ctx, trialName)
+	trial, err := t.GetTrial(msg.Context(), trialName)
 	if err != nil {
 		return r, err
 	}
@@ -70,16 +70,16 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 	var signupCid snowflake.Snowflake
 	var announceCid snowflake.Snowflake
 
-	if scID, ok := sessionGuild.ChannelWithName(trial.GetSignupChannel(ctx)); ok {
+	if scID, ok := sessionGuild.ChannelWithName(trial.GetSignupChannel(msg.Context())); ok {
 		signupCid = scID
 	}
 
-	if acID, ok := sessionGuild.ChannelWithName(trial.GetAnnounceChannel(ctx)); ok {
+	if acID, ok := sessionGuild.ChannelWithName(trial.GetAnnounceChannel(msg.Context())); ok {
 		announceCid = acID
 	}
 
-	roles := trial.GetRoleCounts(ctx)
-	signups := trial.GetSignups(ctx)
+	roles := trial.GetRoleCounts(msg.Context())
+	signups := trial.GetSignups(msg.Context())
 
 	roleStrs := make([]string, 0, len(roles))
 	emojis := make([]string, 0, len(roles))
@@ -93,8 +93,8 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 			filledStr += ")"
 		}
 
-		emoji := rc.GetEmoji(ctx)
-		roleStrs = append(roleStrs, fmt.Sprintf("%s %s: %d %s", emoji, rc.GetRole(ctx), rc.GetCount(ctx), filledStr))
+		emoji := rc.GetEmoji(msg.Context())
+		roleStrs = append(roleStrs, fmt.Sprintf("%s %s: %d %s", emoji, rc.GetRole(msg.Context()), rc.GetCount(msg.Context()), filledStr))
 
 		if emoji != "" {
 			emojis = append(emojis, emoji)
@@ -102,7 +102,7 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 	}
 
 	var toStr string
-	tAnnTo := trial.GetAnnounceTo(ctx)
+	tAnnTo := trial.GetAnnounceTo(msg.Context())
 	switch {
 	case tAnnTo != "":
 		toStr = tAnnTo
@@ -115,19 +115,16 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 	r2 := &cmdhandler.EmbedResponse{
 		To:          fmt.Sprintf("%s %s", toStr, phrase),
 		ToChannel:   announceCid,
-		Title:       fmt.Sprintf("Signups are open for %s", trial.GetName(ctx)),
-		Description: trial.GetDescription(ctx),
+		Title:       fmt.Sprintf("Signups are open for %s", trial.GetName(msg.Context())),
+		Description: trial.GetDescription(msg.Context()),
 		Fields: []cmdhandler.EmbedField{
 			{
 				Name: "Roles Requested",
 				Val:  fmt.Sprintf("```\n%s\n```\n", strings.Join(roleStrs, "\n")),
 			},
 		},
-		FooterText: fmt.Sprintf("event:%s", trial.GetName(ctx)),
-	}
-
-	if !trial.HideReactionsAnnounce(ctx) {
-		r2.Reactions = emojis
+		Reactions:  emojis,
+		FooterText: fmt.Sprintf("event:%s", trial.GetName(msg.Context())),
 	}
 
 	if signupCid != 0 {
