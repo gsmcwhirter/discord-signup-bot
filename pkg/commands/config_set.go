@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gsmcwhirter/go-util/v7/deferutil"
-	"github.com/gsmcwhirter/go-util/v7/errors"
-	"github.com/gsmcwhirter/go-util/v7/logging/level"
+	"github.com/gsmcwhirter/go-util/v8/deferutil"
+	"github.com/gsmcwhirter/go-util/v8/errors"
+	"github.com/gsmcwhirter/go-util/v8/logging/level"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v18/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v18/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v19/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v19/logging"
 )
 
 type argPair struct {

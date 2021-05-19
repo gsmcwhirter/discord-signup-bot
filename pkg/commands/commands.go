@@ -3,23 +3,22 @@ package commands
 import (
 	"fmt"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v18/bot"
-	"github.com/gsmcwhirter/discord-bot-lib/v18/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v18/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/v18/logging"
-	"github.com/gsmcwhirter/go-util/v7/parser"
-	"github.com/gsmcwhirter/go-util/v7/telemetry"
+	"github.com/gsmcwhirter/discord-bot-lib/v19/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v19/bot/session"
+	"github.com/gsmcwhirter/discord-bot-lib/v19/cmdhandler"
+	"github.com/gsmcwhirter/go-util/v8/parser"
+	"github.com/gsmcwhirter/go-util/v8/telemetry"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/stats"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
 
 type dependencies interface {
-	Logger() logging.Logger
+	Logger() Logger
 	TrialAPI() storage.TrialAPI
 	GuildAPI() storage.GuildAPI
-	BotSession() *etfapi.Session
-	Bot() bot.DiscordBot
+	BotSession() *session.Session
+	Bot() *bot.DiscordBot
 	Census() *telemetry.Census
 }
 
@@ -61,11 +60,11 @@ func CommandHandler(deps dependencies, versionStr string, opts Options) (*cmdhan
 }
 
 type configDependencies interface {
-	Logger() logging.Logger
+	Logger() Logger
 	GuildAPI() storage.GuildAPI
 	TrialAPI() storage.TrialAPI
-	BotSession() *etfapi.Session
-	Bot() bot.DiscordBot
+	BotSession() *session.Session
+	Bot() *bot.DiscordBot
 	Census() *telemetry.Census
 	StatsHub() *stats.Hub
 }
@@ -128,11 +127,11 @@ func ConfigDebugHandler(deps configDependencies) (*cmdhandler.CommandHandler, er
 }
 
 type adminDependencies interface {
-	Logger() logging.Logger
+	Logger() Logger
 	GuildAPI() storage.GuildAPI
 	TrialAPI() storage.TrialAPI
-	BotSession() *etfapi.Session
-	Bot() bot.DiscordBot
+	BotSession() *session.Session
+	Bot() *bot.DiscordBot
 	Census() *telemetry.Census
 }
 

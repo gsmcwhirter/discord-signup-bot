@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/gsmcwhirter/go-util/v7/deferutil"
-	"github.com/gsmcwhirter/go-util/v7/errors"
-	"github.com/gsmcwhirter/go-util/v7/logging/level"
+	"github.com/gsmcwhirter/go-util/v8/deferutil"
+	"github.com/gsmcwhirter/go-util/v8/errors"
+	"github.com/gsmcwhirter/go-util/v8/logging/level"
 )
 
 type config struct {

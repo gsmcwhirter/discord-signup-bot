@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/gsmcwhirter/go-util/v7/telemetry"
+	"github.com/gsmcwhirter/go-util/v8/telemetry"
 	"google.golang.org/protobuf/proto"
 )
 

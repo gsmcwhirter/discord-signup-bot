@@ -3,8 +3,8 @@ package pgxutil
 import (
 	"context"
 
-	log "github.com/gsmcwhirter/go-util/v7/logging"
-	"github.com/gsmcwhirter/go-util/v7/logging/level"
+	log "github.com/gsmcwhirter/go-util/v8/logging"
+	"github.com/gsmcwhirter/go-util/v8/logging/level"
 	"github.com/jackc/pgx/v4"
 )
 
