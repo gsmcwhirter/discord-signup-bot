@@ -180,6 +180,7 @@ func createDependencies(conf config, botPermissions, botIntents int) (*dependenc
 	d.httpClient.SetHeaders(h)
 
 	d.wsClient = wsclient.NewWSClient(d, wsclient.Options{MaxConcurrentHandlers: conf.NumWorkers})
+	d.jsClient = json.NewDiscordJSONClient(d, DiscordAPI)
 
 	d.cmdHandler, err = commands.CommandHandler(d, conf.Version, commands.Options{CmdIndicator: "!"})
 	if err != nil {
@@ -239,7 +240,7 @@ func (d *dependencies) Logger() Logger                             { return d.lo
 func (d *dependencies) GuildAPI() storage.GuildAPI                 { return d.guildAPI }
 func (d *dependencies) TrialAPI() storage.TrialAPI                 { return d.trialAPI }
 func (d *dependencies) HTTPDoer() httpclient.Doer                  { return d.httpDoer }
-func (d *dependencies) HTTPClient() *httpclient.HTTPClient         { return d.httpClient }
+func (d *dependencies) HTTPClient() json.HTTPClient                { return d.httpClient }
 func (d *dependencies) WSDialer() wsclient.Dialer                  { return d.wsDialer }
 func (d *dependencies) WSClient() wsapi.WSClient                   { return d.wsClient }
 func (d *dependencies) DiscordJSONClient() *json.DiscordJSONClient { return d.jsClient }
