@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/gsmcwhirter/go-util/v8/errors"
 	"github.com/gsmcwhirter/go-util/v8/telemetry"
 	"google.golang.org/protobuf/proto"
 )
@@ -136,6 +137,20 @@ func (b *protoTrial) GetRoleOrder(ctx context.Context) []string {
 	defer span.End()
 
 	return b.protoTrial.RoleSortOrder
+}
+
+func (b *protoTrial) HideReactionsAnnounce(ctx context.Context) bool {
+	_, span := b.census.StartSpan(ctx, "protoTrial.HideReactionsAnnounce")
+	defer span.End()
+
+	return b.protoTrial.HideReactionsAnnounce
+}
+
+func (b *protoTrial) HideReactionsShow(ctx context.Context) bool {
+	_, span := b.census.StartSpan(ctx, "protoTrial.HideReactionsShow")
+	defer span.End()
+
+	return b.protoTrial.HideReactionsShow
 }
 
 func (b *protoTrial) PrettyRoleOrder(ctx context.Context) string {
@@ -316,6 +331,34 @@ func (b *protoTrial) SetRoleOrder(ctx context.Context, ord []string) {
 	for _, role := range ord {
 		b.protoTrial.RoleSortOrder = append(b.protoTrial.RoleSortOrder, strings.ToLower(role))
 	}
+}
+
+func (b *protoTrial) SetHideReactionsAnnounce(ctx context.Context, val string) error {
+	_, span := b.census.StartSpan(ctx, "protoTrial.SetHideReactionsAnnounce")
+	defer span.End()
+
+	var err error
+	val, err = normalizeTrueFalseString(val)
+	if err != nil {
+		return errors.Wrap(err, "could not normalize true/false value", "val", val)
+	}
+
+	b.protoTrial.HideReactionsAnnounce = val == "true"
+	return nil
+}
+
+func (b *protoTrial) SetHideReactionsShow(ctx context.Context, val string) error {
+	_, span := b.census.StartSpan(ctx, "protoTrial.SetHideReactionsShow")
+	defer span.End()
+
+	var err error
+	val, err = normalizeTrueFalseString(val)
+	if err != nil {
+		return errors.Wrap(err, "could not normalize true/false value", "val", val)
+	}
+
+	b.protoTrial.HideReactionsShow = val == "true"
+	return nil
 }
 
 func (b *protoTrial) Serialize(ctx context.Context) (out []byte, err error) {

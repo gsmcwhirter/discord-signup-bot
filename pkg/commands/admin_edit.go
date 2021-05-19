@@ -29,7 +29,7 @@ func (c *adminCommands) edit(msg cmdhandler.Message) (cmdhandler.Response, error
 	logger := logging.WithMessage(msg, c.deps.Logger())
 	level.Info(logger).Message("handling adminCommand", "command", "edit", "args", msg.Contents())
 
-	gsettings, err := storage.GetSettings(msg.Context(), c.deps.GuildAPI(), msg.GuildID())
+	gsettings, err := storage.GetSettings(ctx, c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
 		return r, err
 	}
@@ -50,13 +50,13 @@ func (c *adminCommands) edit(msg cmdhandler.Message) (cmdhandler.Response, error
 	trialName := msg.Contents()[0]
 	settings := msg.Contents()[1:]
 
-	t, err := c.deps.TrialAPI().NewTransaction(msg.Context(), msg.GuildID().ToString(), true)
+	t, err := c.deps.TrialAPI().NewTransaction(ctx, msg.GuildID().ToString(), true)
 	if err != nil {
 		return r, err
 	}
-	defer deferutil.CheckDefer(func() error { return t.Rollback(msg.Context()) })
+	defer deferutil.CheckDefer(func() error { return t.Rollback(ctx) })
 
-	trial, err := t.GetTrial(msg.Context(), trialName)
+	trial, err := t.GetTrial(ctx, trialName)
 	if err != nil {
 		return r, err
 	}
@@ -67,19 +67,19 @@ func (c *adminCommands) edit(msg cmdhandler.Message) (cmdhandler.Response, error
 	}
 
 	if v, ok := settingMap["description"]; ok {
-		trial.SetDescription(msg.Context(), v)
+		trial.SetDescription(ctx, v)
 	}
 
 	if v, ok := settingMap["announcechannel"]; ok {
-		trial.SetAnnounceChannel(msg.Context(), v)
+		trial.SetAnnounceChannel(ctx, v)
 	}
 
 	if v, ok := settingMap["announceto"]; ok {
-		trial.SetAnnounceTo(msg.Context(), v)
+		trial.SetAnnounceTo(ctx, v)
 	}
 
 	if v, ok := settingMap["signupchannel"]; ok {
-		trial.SetSignupChannel(msg.Context(), v)
+		trial.SetSignupChannel(ctx, v)
 	}
 
 	if v, ok := settingMap["roleorder"]; ok {
@@ -87,7 +87,7 @@ func (c *adminCommands) edit(msg cmdhandler.Message) (cmdhandler.Response, error
 		for i := range roleOrder {
 			roleOrder[i] = strings.TrimSpace(roleOrder[i])
 		}
-		trial.SetRoleOrder(msg.Context(), roleOrder)
+		trial.SetRoleOrder(ctx, roleOrder)
 	}
 
 	roleCtEmoList, err := parseRolesString(settingMap["roles"])
@@ -96,17 +96,17 @@ func (c *adminCommands) edit(msg cmdhandler.Message) (cmdhandler.Response, error
 	}
 	for _, rce := range roleCtEmoList {
 		if rce.ct == 0 {
-			trial.RemoveRole(msg.Context(), rce.role)
+			trial.RemoveRole(ctx, rce.role)
 		} else {
-			trial.SetRoleCount(msg.Context(), rce.role, rce.emo, rce.ct)
+			trial.SetRoleCount(ctx, rce.role, rce.emo, rce.ct)
 		}
 	}
 
-	if err = t.SaveTrial(msg.Context(), trial); err != nil {
+	if err = t.SaveTrial(ctx, trial); err != nil {
 		return r, errors.Wrap(err, "could not save event")
 	}
 
-	if err = t.Commit(msg.Context()); err != nil {
+	if err = t.Commit(ctx); err != nil {
 		return r, errors.Wrap(err, "could not save event")
 	}
 

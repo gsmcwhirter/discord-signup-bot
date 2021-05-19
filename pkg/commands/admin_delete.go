@@ -28,7 +28,7 @@ func (c *adminCommands) delete(msg cmdhandler.Message) (cmdhandler.Response, err
 	logger := logging.WithMessage(msg, c.deps.Logger())
 	level.Info(logger).Message("handling adminCommand", "command", "delete", "args", msg.Contents())
 
-	gsettings, err := storage.GetSettings(msg.Context(), c.deps.GuildAPI(), msg.GuildID())
+	gsettings, err := storage.GetSettings(ctx, c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
 		return r, err
 	}
@@ -52,17 +52,17 @@ func (c *adminCommands) delete(msg cmdhandler.Message) (cmdhandler.Response, err
 
 	trialName := msg.Contents()[0]
 
-	t, err := c.deps.TrialAPI().NewTransaction(msg.Context(), msg.GuildID().ToString(), true)
+	t, err := c.deps.TrialAPI().NewTransaction(ctx, msg.GuildID().ToString(), true)
 	if err != nil {
 		return r, err
 	}
-	defer deferutil.CheckDefer(func() error { return t.Rollback(msg.Context()) })
+	defer deferutil.CheckDefer(func() error { return t.Rollback(ctx) })
 
-	if err = t.DeleteTrial(msg.Context(), trialName); err != nil {
+	if err = t.DeleteTrial(ctx, trialName); err != nil {
 		return r, errors.Wrap(err, "could not delete event")
 	}
 
-	if err = t.Commit(msg.Context()); err != nil {
+	if err = t.Commit(ctx); err != nil {
 		return r, errors.Wrap(err, "could not delete event")
 	}
 

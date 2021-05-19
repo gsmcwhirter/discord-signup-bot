@@ -31,7 +31,7 @@ func (c *adminCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error
 	logger := logging.WithMessage(msg, c.deps.Logger())
 	level.Info(logger).Message("handling adminCommand", "command", "list")
 
-	gsettings, err := storage.GetSettings(msg.Context(), c.deps.GuildAPI(), msg.GuildID())
+	gsettings, err := storage.GetSettings(ctx, c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
 		return r, err
 	}
@@ -45,20 +45,20 @@ func (c *adminCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error
 		return r, msg.ContentErr()
 	}
 
-	t, err := c.deps.TrialAPI().NewTransaction(msg.Context(), msg.GuildID().ToString(), false)
+	t, err := c.deps.TrialAPI().NewTransaction(ctx, msg.GuildID().ToString(), false)
 	if err != nil {
 		return r, err
 	}
-	defer deferutil.CheckDefer(func() error { return t.Rollback(msg.Context()) })
+	defer deferutil.CheckDefer(func() error { return t.Rollback(ctx) })
 
-	trials := t.GetTrials(msg.Context())
+	trials := t.GetTrials(ctx)
 	tNamesOpen := make([]string, 0, len(trials))
 	tNamesClosed := make([]string, 0, len(trials))
 	for _, trial := range trials {
-		if trial.GetState(msg.Context()) == storage.TrialStateClosed {
-			tNamesClosed = append(tNamesClosed, fmt.Sprintf("%s (#%s)", trial.GetName(msg.Context()), trial.GetSignupChannel(msg.Context())))
+		if trial.GetState(ctx) == storage.TrialStateClosed {
+			tNamesClosed = append(tNamesClosed, fmt.Sprintf("%s (#%s)", trial.GetName(ctx), trial.GetSignupChannel(ctx)))
 		} else {
-			tNamesOpen = append(tNamesOpen, fmt.Sprintf("%s (#%s)", trial.GetName(msg.Context()), trial.GetSignupChannel(msg.Context())))
+			tNamesOpen = append(tNamesOpen, fmt.Sprintf("%s (#%s)", trial.GetName(ctx), trial.GetSignupChannel(ctx)))
 		}
 	}
 	sort.Strings(tNamesOpen)

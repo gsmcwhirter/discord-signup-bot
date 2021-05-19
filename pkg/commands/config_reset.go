@@ -29,26 +29,26 @@ func (c *configCommands) reset(msg cmdhandler.Message) (cmdhandler.Response, err
 		return r, msg.ContentErr()
 	}
 
-	t, err := c.deps.GuildAPI().NewTransaction(msg.Context(), true)
+	t, err := c.deps.GuildAPI().NewTransaction(ctx, true)
 	if err != nil {
 		return r, err
 	}
-	defer deferutil.CheckDefer(func() error { return t.Rollback(msg.Context()) })
+	defer deferutil.CheckDefer(func() error { return t.Rollback(ctx) })
 
-	bGuild, err := t.AddGuild(msg.Context(), msg.GuildID().ToString())
+	bGuild, err := t.AddGuild(ctx, msg.GuildID().ToString())
 	if err != nil {
 		return r, errors.Wrap(err, "unable to find or add guild")
 	}
 
 	s := storage.GuildSettings{}
-	bGuild.SetSettings(msg.Context(), s)
+	bGuild.SetSettings(ctx, s)
 
-	err = t.SaveGuild(msg.Context(), bGuild)
+	err = t.SaveGuild(ctx, bGuild)
 	if err != nil {
 		return r, errors.Wrap(err, "could not save guild settings")
 	}
 
-	err = t.Commit(msg.Context())
+	err = t.Commit(ctx)
 	if err != nil {
 		return r, errors.Wrap(err, "could not save guild settings")
 	}

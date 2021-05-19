@@ -10,7 +10,6 @@ require (
 	github.com/bugsnag/panicwrap v1.2.0 // indirect
 	github.com/dustin/go-humanize v1.0.0
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
-	github.com/golang/protobuf v1.5.0
 	github.com/golangci/golangci-lint v1.39.0
 	github.com/google/pprof v0.0.0-20210423192551-a2663126120b
 	github.com/gorilla/websocket v1.4.2

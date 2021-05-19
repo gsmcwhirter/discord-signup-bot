@@ -13,4 +13,6 @@ message ProtoGuild {
     string admin_role = 9;
     bool show_after_signup = 7;
     bool show_after_withdraw = 8;
+    bool hide_reactions_announce = 10;
+    bool hide_reactions_show = 11;
 }

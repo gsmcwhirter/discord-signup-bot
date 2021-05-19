@@ -60,7 +60,7 @@ func (c *configCommands) stats(msg cmdhandler.Message) (cmdhandler.Response, err
 		return r, msg.ContentErr()
 	}
 
-	allGuilds, err := c.deps.GuildAPI().AllGuilds(msg.Context())
+	allGuilds, err := c.deps.GuildAPI().AllGuilds(ctx)
 	if err != nil {
 		return r, err
 	}
@@ -68,7 +68,7 @@ func (c *configCommands) stats(msg cmdhandler.Message) (cmdhandler.Response, err
 	s := stat{}
 
 	for _, guild := range allGuilds {
-		st, err := c.collectStats(msg.Context(), guild)
+		st, err := c.collectStats(ctx, guild)
 		if err != nil {
 			return r, err
 		}

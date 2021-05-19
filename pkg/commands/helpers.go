@@ -200,7 +200,10 @@ func formatTrialDisplay(ctx context.Context, trial storage.Trial, withState bool
 	}
 
 	r.Fields = append(r.Fields, overflowFields...)
-	r.Reactions = emojis
+
+	if !trial.HideReactionsShow(ctx) {
+		r.Reactions = emojis
+	}
 	r.FooterText = fmt.Sprintf("event:%s", trial.GetName(ctx))
 
 	return r

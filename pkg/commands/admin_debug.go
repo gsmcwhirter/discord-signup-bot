@@ -30,7 +30,7 @@ func (c *adminCommands) debug(msg cmdhandler.Message) (cmdhandler.Response, erro
 	logger := logging.WithMessage(msg, c.deps.Logger())
 	level.Info(logger).Message("handling adminCommand", "command", "debug", "args", msg.Contents())
 
-	gsettings, err := storage.GetSettings(msg.Context(), c.deps.GuildAPI(), msg.GuildID())
+	gsettings, err := storage.GetSettings(ctx, c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
 		return r, err
 	}
@@ -54,29 +54,29 @@ func (c *adminCommands) debug(msg cmdhandler.Message) (cmdhandler.Response, erro
 
 	trialName := msg.Contents()[0]
 
-	t, err := c.deps.TrialAPI().NewTransaction(msg.Context(), msg.GuildID().ToString(), false)
+	t, err := c.deps.TrialAPI().NewTransaction(ctx, msg.GuildID().ToString(), false)
 	if err != nil {
 		return r, err
 	}
-	defer deferutil.CheckDefer(func() error { return t.Rollback(msg.Context()) })
+	defer deferutil.CheckDefer(func() error { return t.Rollback(ctx) })
 
-	trial, err := t.GetTrial(msg.Context(), trialName)
+	trial, err := t.GetTrial(ctx, trialName)
 	if err != nil {
 		return r, err
 	}
 
-	rcs := trial.GetRoleCounts(msg.Context())
+	rcs := trial.GetRoleCounts(ctx)
 	rsParts := make([]string, 0, len(rcs))
 	for _, rc := range rcs {
-		rsParts = append(rsParts, fmt.Sprintf("'%s' %d '%s'", rc.GetRole(msg.Context()), rc.GetCount(msg.Context()), rc.GetEmoji(msg.Context())))
+		rsParts = append(rsParts, fmt.Sprintf("'%s' %d '%s'", rc.GetRole(ctx), rc.GetCount(ctx), rc.GetEmoji(ctx)))
 	}
 	roleStr := strings.Join(rsParts, "\n		")
 
-	ro := trial.GetRoleOrder(msg.Context())
+	ro := trial.GetRoleOrder(ctx)
 	roleOrderStr := strings.Join(ro, ", ")
 
-	announceChannel := trial.GetAnnounceChannel(msg.Context())
-	signupChannel := trial.GetSignupChannel(msg.Context())
+	announceChannel := trial.GetAnnounceChannel(ctx)
+	signupChannel := trial.GetSignupChannel(ctx)
 
 	g, ok := c.deps.BotSession().Guild(msg.GuildID())
 	if !ok {
@@ -114,7 +114,7 @@ Description:
 %[1]s
 %[7]s
 
-%[1]s`, "```", announceChannel, signupChannel, trial.GetAnnounceTo(msg.Context()), trial.GetState(msg.Context()), roleStr, trial.GetDescription(msg.Context()), roleOrderStr, announceChannelID.ToString(), signupChannelID.ToString())
+%[1]s`, "```", announceChannel, signupChannel, trial.GetAnnounceTo(ctx), trial.GetState(ctx), roleStr, trial.GetDescription(ctx), roleOrderStr, announceChannelID.ToString(), signupChannelID.ToString())
 
 	level.Info(logger).Message("trial debug shown", "trial_name", trialName)
 

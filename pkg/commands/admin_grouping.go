@@ -30,7 +30,7 @@ func (c *adminCommands) grouping(msg cmdhandler.Message) (cmdhandler.Response, e
 	logger := logging.WithMessage(msg, c.deps.Logger())
 	level.Info(logger).Message("handling adminCommand", "command", "grouping", "args", msg.Contents())
 
-	gsettings, err := storage.GetSettings(msg.Context(), c.deps.GuildAPI(), msg.GuildID())
+	gsettings, err := storage.GetSettings(ctx, c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
 		return r, err
 	}
@@ -54,13 +54,13 @@ func (c *adminCommands) grouping(msg cmdhandler.Message) (cmdhandler.Response, e
 		phrase = strings.Join(msg.Contents()[1:], " ")
 	}
 
-	t, err := c.deps.TrialAPI().NewTransaction(msg.Context(), msg.GuildID().ToString(), false)
+	t, err := c.deps.TrialAPI().NewTransaction(ctx, msg.GuildID().ToString(), false)
 	if err != nil {
 		return r, err
 	}
-	defer deferutil.CheckDefer(func() error { return t.Rollback(msg.Context()) })
+	defer deferutil.CheckDefer(func() error { return t.Rollback(ctx) })
 
-	trial, err := t.GetTrial(msg.Context(), trialName)
+	trial, err := t.GetTrial(ctx, trialName)
 	if err != nil {
 		return r, err
 	}
@@ -71,17 +71,17 @@ func (c *adminCommands) grouping(msg cmdhandler.Message) (cmdhandler.Response, e
 	}
 
 	var announceCid snowflake.Snowflake
-	if acID, ok := sessionGuild.ChannelWithName(trial.GetAnnounceChannel(msg.Context())); ok {
+	if acID, ok := sessionGuild.ChannelWithName(trial.GetAnnounceChannel(ctx)); ok {
 		announceCid = acID
 	}
 
-	roleCounts := trial.GetRoleCounts(msg.Context()) // already sorted by name
-	signups := trial.GetSignups(msg.Context())
+	roleCounts := trial.GetRoleCounts(ctx) // already sorted by name
+	signups := trial.GetSignups(ctx)
 
 	userMentions := make([]string, 0, len(signups))
 
 	for _, rc := range roleCounts {
-		suNames, ofNames := getTrialRoleSignups(msg.Context(), signups, rc)
+		suNames, ofNames := getTrialRoleSignups(ctx, signups, rc)
 
 		userMentions = append(userMentions, suNames...)
 		userMentions = append(userMentions, ofNames...)

@@ -31,7 +31,7 @@ func (c *adminCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, e
 	logger := logging.WithMessage(msg, c.deps.Logger())
 	level.Info(logger).Message("handling adminCommand", "command", "withdraw", "args", msg.Contents())
 
-	gsettings, err := storage.GetSettings(msg.Context(), c.deps.GuildAPI(), msg.GuildID())
+	gsettings, err := storage.GetSettings(ctx, c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
 		return r, err
 	}
@@ -46,19 +46,19 @@ func (c *adminCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, e
 
 	trialName := msg.Contents()[0]
 
-	t, err := c.deps.TrialAPI().NewTransaction(msg.Context(), msg.GuildID().ToString(), true)
+	t, err := c.deps.TrialAPI().NewTransaction(ctx, msg.GuildID().ToString(), true)
 	if err != nil {
 		return r, err
 	}
-	defer deferutil.CheckDefer(func() error { return t.Rollback(msg.Context()) })
+	defer deferutil.CheckDefer(func() error { return t.Rollback(ctx) })
 
-	trial, err := t.GetTrial(msg.Context(), trialName)
+	trial, err := t.GetTrial(ctx, trialName)
 	if err != nil {
 		return r, err
 	}
 
-	if !isSignupChannel(ctx, logger, msg, trial.GetSignupChannel(msg.Context()), gsettings.AdminChannel, gsettings.AdminRoles, c.deps.BotSession(), c.deps.Bot()) {
-		level.Info(logger).Message("command not in admin or signup channel", "signup_channel", trial.GetSignupChannel(msg.Context()))
+	if !isSignupChannel(ctx, logger, msg, trial.GetSignupChannel(ctx), gsettings.AdminChannel, gsettings.AdminRoles, c.deps.BotSession(), c.deps.Bot()) {
+		level.Info(logger).Message("command not in admin or signup channel", "signup_channel", trial.GetSignupChannel(ctx))
 		return nil, msghandler.ErrUnauthorized
 	}
 
@@ -83,7 +83,7 @@ func (c *adminCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, e
 		return r, errors.New("you must mention one or more users that you are trying to withdraw (@...)")
 	}
 
-	if trial.GetState(msg.Context()) != storage.TrialStateOpen {
+	if trial.GetState(ctx) != storage.TrialStateOpen {
 		return r, errors.New("cannot withdraw from a closed event")
 	}
 
@@ -93,7 +93,7 @@ func (c *adminCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, e
 	}
 
 	var signupCid snowflake.Snowflake
-	if scID, ok := sessionGuild.ChannelWithName(trial.GetSignupChannel(msg.Context())); ok {
+	if scID, ok := sessionGuild.ChannelWithName(trial.GetSignupChannel(ctx)); ok {
 		signupCid = scID
 	}
 
@@ -104,19 +104,19 @@ func (c *adminCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, e
 			continue
 		}
 
-		trial.RemoveSignup(msg.Context(), userAcctMention)
-		trial.RemoveSignup(msg.Context(), m)
+		trial.RemoveSignup(ctx, userAcctMention)
+		trial.RemoveSignup(ctx, m)
 	}
 
 	if err != nil {
 		return r, err
 	}
 
-	if err = t.SaveTrial(msg.Context(), trial); err != nil {
+	if err = t.SaveTrial(ctx, trial); err != nil {
 		return r, errors.Wrap(err, "could not save event withdraw")
 	}
 
-	if err = t.Commit(msg.Context()); err != nil {
+	if err = t.Commit(ctx); err != nil {
 		return r, errors.Wrap(err, "could not save event withdraw")
 	}
 
@@ -125,7 +125,7 @@ func (c *adminCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, e
 	if gsettings.ShowAfterWithdraw == "true" {
 		level.Debug(logger).Message("auto-show after withdraw", "trial_name", trialName)
 
-		r2 := formatTrialDisplay(msg.Context(), trial, true)
+		r2 := formatTrialDisplay(ctx, trial, true)
 		r2.To = strings.Join(userMentions, ", ")
 		r2.ToChannel = signupCid
 		r2.Description = fmt.Sprintf("%s\n\n%s", descStr, r2.Description)
