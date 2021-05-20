@@ -7,15 +7,21 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v18/bot"
-	"github.com/gsmcwhirter/discord-bot-lib/v18/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v18/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/v18/logging"
-	"github.com/gsmcwhirter/go-util/v7/errors"
+	"github.com/gsmcwhirter/discord-bot-lib/v19/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v19/bot/session"
+	"github.com/gsmcwhirter/discord-bot-lib/v19/cmdhandler"
+	"github.com/gsmcwhirter/go-util/v8/errors"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
+
+type Logger = interface {
+	Log(keyvals ...interface{}) error
+	Message(string, ...interface{})
+	Err(string, error, ...interface{})
+	Printf(string, ...interface{})
+}
 
 var ErrUnknownRole = errors.New("unknown role")
 
@@ -24,16 +30,16 @@ var (
 	isAdminChannel    = msghandler.IsAdminChannel
 )
 
-func isSignupChannel(ctx context.Context, logger logging.Logger, msg msghandler.MessageLike, signupChannel, adminChannel string, adminRoles []string, session *etfapi.Session, b bot.DiscordBot) bool {
-	if msghandler.IsSignupChannel(msg, signupChannel, session) {
+func isSignupChannel(ctx context.Context, logger Logger, msg msghandler.MessageLike, signupChannel, adminChannel string, adminRoles []string, sess *session.Session, b *bot.DiscordBot) bool {
+	if msghandler.IsSignupChannel(msg, signupChannel, sess) {
 		return true
 	}
 
-	if !isAdminChannel(logger, msg, adminChannel, session) {
+	if !isAdminChannel(logger, msg, adminChannel, sess) {
 		return false
 	}
 
-	return isAdminAuthorized(ctx, logger, msg, adminRoles, session, b)
+	return isAdminAuthorized(ctx, logger, msg, adminRoles, sess, b)
 }
 
 func signupsForRole(ctx context.Context, role string, signups []storage.TrialSignup, sorted bool) []string {
@@ -194,7 +200,10 @@ func formatTrialDisplay(ctx context.Context, trial storage.Trial, withState bool
 	}
 
 	r.Fields = append(r.Fields, overflowFields...)
-	r.Reactions = emojis
+
+	if !trial.HideReactionsShow(ctx) {
+		r.Reactions = emojis
+	}
 	r.FooterText = fmt.Sprintf("event:%s", trial.GetName(ctx))
 
 	return r

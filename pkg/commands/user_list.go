@@ -5,13 +5,13 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/gsmcwhirter/go-util/v7/deferutil"
-	"github.com/gsmcwhirter/go-util/v7/logging/level"
+	"github.com/gsmcwhirter/go-util/v8/deferutil"
+	"github.com/gsmcwhirter/go-util/v8/logging/level"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v18/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v18/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v19/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v19/logging"
 )
 
 func (c *userCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error) {
@@ -32,25 +32,25 @@ func (c *userCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error)
 		return r, msg.ContentErr()
 	}
 
-	t, err := c.deps.TrialAPI().NewTransaction(msg.Context(), msg.GuildID().ToString(), false)
+	t, err := c.deps.TrialAPI().NewTransaction(ctx, msg.GuildID().ToString(), false)
 	if err != nil {
 		return r, err
 	}
-	defer deferutil.CheckDefer(func() error { return t.Rollback(msg.Context()) })
+	defer deferutil.CheckDefer(func() error { return t.Rollback(ctx) })
 
 	g, ok := c.deps.BotSession().Guild(msg.GuildID())
 	if !ok {
 		return r, ErrGuildNotFound
 	}
 
-	trials := t.GetTrials(msg.Context())
+	trials := t.GetTrials(ctx)
 	tNames := make([]string, 0, len(trials))
 	for _, trial := range trials {
-		if trial.GetState(msg.Context()) != storage.TrialStateClosed {
-			if tscID, ok := g.ChannelWithName(trial.GetSignupChannel(msg.Context())); ok {
-				tNames = append(tNames, fmt.Sprintf("%s (%s)", trial.GetName(msg.Context()), cmdhandler.ChannelMentionString(tscID)))
+		if trial.GetState(ctx) != storage.TrialStateClosed {
+			if tscID, ok := g.ChannelWithName(trial.GetSignupChannel(ctx)); ok {
+				tNames = append(tNames, fmt.Sprintf("%s (%s)", trial.GetName(ctx), cmdhandler.ChannelMentionString(tscID)))
 			} else {
-				tNames = append(tNames, trial.GetName(msg.Context()))
+				tNames = append(tNames, trial.GetName(ctx))
 			}
 		}
 	}

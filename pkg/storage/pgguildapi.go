@@ -4,11 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/gsmcwhirter/go-util/v7/errors"
-	"github.com/gsmcwhirter/go-util/v7/telemetry"
+	"github.com/gsmcwhirter/go-util/v8/errors"
+	"github.com/gsmcwhirter/go-util/v8/telemetry"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"google.golang.org/protobuf/proto"
 )
 
 // var settingsBucket = []byte("GuildRecords")
@@ -110,21 +109,25 @@ func (p *pgGuildAPITx) GetGuild(ctx context.Context, name string) (Guild, error)
 	defer span.End()
 
 	r := p.tx.QueryRow(ctx, `
-	SELECT settings 
+	SELECT guild_id, command_indicator, 
+		   announce_channel, signup_channel, 
+		   admin_channel, announce_to, 
+		   show_after_signup, show_after_withdraw, 
+		   hide_reactions_announce, hide_reactions_show 
 	FROM guild_settings WHERE guild_id = $1`, name)
 
-	var val []byte
-	if err := r.Scan(&val); err != nil {
+	pGuild := ProtoGuild{}
+	if err := r.Scan(
+		&pGuild.Name, &pGuild.CommandIndicator,
+		&pGuild.AnnounceChannel, &pGuild.SignupChannel,
+		&pGuild.AdminChannel, &pGuild.AnnounceTo,
+		&pGuild.ShowAfterSignup, &pGuild.ShowAfterWithdraw,
+		&pGuild.HideReactionsAnnounce, &pGuild.HideReactionsShow,
+	); err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, ErrGuildNotExist
 		}
 		return nil, errors.Wrap(err, "could not retrieve guild settings")
-	}
-
-	pGuild := ProtoGuild{}
-	err := proto.Unmarshal(val, &pGuild)
-	if err != nil {
-		return nil, errors.Wrap(err, "guild record is corrupt")
 	}
 
 	return &protoGuild{
@@ -183,8 +186,8 @@ func (p *pgGuildAPITx) saveProtoGuild(ctx context.Context, guild Guild) error {
 	}
 
 	_, err = p.tx.Exec(ctx, `
-	INSERT INTO guild_settings (guild_id, settings, command_indicator, announce_channel, signup_channel, admin_channel, announce_to, show_after_signup, show_after_withdraw)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+	INSERT INTO guild_settings (guild_id, settings, command_indicator, announce_channel, signup_channel, admin_channel, announce_to, show_after_signup, show_after_withdraw, hide_reactions_announce, hide_reactions_show)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 	ON CONFLICT (guild_id) DO UPDATE
 	SET 
 		settings = EXCLUDED.settings,
@@ -194,8 +197,10 @@ func (p *pgGuildAPITx) saveProtoGuild(ctx context.Context, guild Guild) error {
 		admin_channel = EXCLUDED.admin_channel,
 		announce_to = EXCLUDED.announce_to,
 		show_after_signup = EXCLUDED.show_after_signup,
-		show_after_withdraw = EXCLUDED.show_after_withdraw
-	`, gid, serial, gs.ControlSequence, gs.AnnounceChannel, gs.SignupChannel, gs.AdminChannel, gs.AnnounceTo, gs.ShowAfterSignup, gs.ShowAfterWithdraw)
+		show_after_withdraw = EXCLUDED.show_after_withdraw,
+		hide_reactions_announce = EXCLUDED.hide_reactions_announce,
+		hide_reactions_show = EXCLUDED.hide_reactions_show
+	`, gid, serial, gs.ControlSequence, gs.AnnounceChannel, gs.SignupChannel, gs.AdminChannel, gs.AnnounceTo, gs.ShowAfterSignup, gs.ShowAfterWithdraw, gs.HideReactionsAnnounce, gs.HideReactionsShow)
 
 	if err != nil {
 		return errors.Wrap(err, "could not upsert guild_settings")

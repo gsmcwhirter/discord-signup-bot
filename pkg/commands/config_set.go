@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gsmcwhirter/go-util/v7/deferutil"
-	"github.com/gsmcwhirter/go-util/v7/errors"
-	"github.com/gsmcwhirter/go-util/v7/logging/level"
+	"github.com/gsmcwhirter/go-util/v8/deferutil"
+	"github.com/gsmcwhirter/go-util/v8/errors"
+	"github.com/gsmcwhirter/go-util/v8/logging/level"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v18/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v18/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v19/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v19/logging"
 )
 
 type argPair struct {
@@ -87,32 +87,32 @@ func (c *configCommands) set(msg cmdhandler.Message) (cmdhandler.Response, error
 		return r, errors.New("no settings to save")
 	}
 
-	t, err := c.deps.GuildAPI().NewTransaction(msg.Context(), true)
+	t, err := c.deps.GuildAPI().NewTransaction(ctx, true)
 	if err != nil {
 		return r, err
 	}
-	defer deferutil.CheckDefer(func() error { return t.Rollback(msg.Context()) })
+	defer deferutil.CheckDefer(func() error { return t.Rollback(ctx) })
 
-	bGuild, err := t.AddGuild(msg.Context(), msg.GuildID().ToString())
+	bGuild, err := t.AddGuild(ctx, msg.GuildID().ToString())
 	if err != nil {
 		return r, errors.Wrap(err, "unable to find guild")
 	}
 
-	s := bGuild.GetSettings(msg.Context())
+	s := bGuild.GetSettings(ctx)
 	for _, ap := range argPairs {
-		err = s.SetSettingString(msg.Context(), ap.key, ap.val)
+		err = s.SetSettingString(ctx, ap.key, ap.val)
 		if err != nil {
 			return r, err
 		}
 	}
-	bGuild.SetSettings(msg.Context(), s)
+	bGuild.SetSettings(ctx, s)
 
-	err = t.SaveGuild(msg.Context(), bGuild)
+	err = t.SaveGuild(ctx, bGuild)
 	if err != nil {
 		return r, errors.Wrap(err, "could not save guild settings")
 	}
 
-	err = t.Commit(msg.Context())
+	err = t.Commit(ctx)
 	if err != nil {
 		return r, errors.Wrap(err, "could not save guild settings")
 	}

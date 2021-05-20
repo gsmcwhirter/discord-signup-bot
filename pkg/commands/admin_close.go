@@ -3,15 +3,15 @@ package commands
 import (
 	"fmt"
 
-	"github.com/gsmcwhirter/go-util/v7/deferutil"
-	"github.com/gsmcwhirter/go-util/v7/errors"
-	"github.com/gsmcwhirter/go-util/v7/logging/level"
+	"github.com/gsmcwhirter/go-util/v8/deferutil"
+	"github.com/gsmcwhirter/go-util/v8/errors"
+	"github.com/gsmcwhirter/go-util/v8/logging/level"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v18/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v18/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v19/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v19/logging"
 )
 
 func (c *adminCommands) close(msg cmdhandler.Message) (cmdhandler.Response, error) {
@@ -28,7 +28,7 @@ func (c *adminCommands) close(msg cmdhandler.Message) (cmdhandler.Response, erro
 	logger := logging.WithMessage(msg, c.deps.Logger())
 	level.Info(logger).Message("handling adminCommand", "command", "close", "args", msg.Contents())
 
-	gsettings, err := storage.GetSettings(msg.Context(), c.deps.GuildAPI(), msg.GuildID())
+	gsettings, err := storage.GetSettings(ctx, c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
 		return r, err
 	}
@@ -52,24 +52,24 @@ func (c *adminCommands) close(msg cmdhandler.Message) (cmdhandler.Response, erro
 
 	trialName := msg.Contents()[0]
 
-	t, err := c.deps.TrialAPI().NewTransaction(msg.Context(), msg.GuildID().ToString(), true)
+	t, err := c.deps.TrialAPI().NewTransaction(ctx, msg.GuildID().ToString(), true)
 	if err != nil {
 		return r, err
 	}
-	defer deferutil.CheckDefer(func() error { return t.Rollback(msg.Context()) })
+	defer deferutil.CheckDefer(func() error { return t.Rollback(ctx) })
 
-	trial, err := t.GetTrial(msg.Context(), trialName)
+	trial, err := t.GetTrial(ctx, trialName)
 	if err != nil {
 		return r, err
 	}
 
-	trial.SetState(msg.Context(), storage.TrialStateClosed)
+	trial.SetState(ctx, storage.TrialStateClosed)
 
-	if err = t.SaveTrial(msg.Context(), trial); err != nil {
+	if err = t.SaveTrial(ctx, trial); err != nil {
 		return r, errors.Wrap(err, "could not close event")
 	}
 
-	if err = t.Commit(msg.Context()); err != nil {
+	if err = t.Commit(ctx); err != nil {
 		return r, errors.Wrap(err, "could not close event")
 	}
 

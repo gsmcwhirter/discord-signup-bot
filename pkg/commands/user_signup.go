@@ -3,15 +3,15 @@ package commands
 import (
 	"fmt"
 
-	"github.com/gsmcwhirter/go-util/v7/deferutil"
-	"github.com/gsmcwhirter/go-util/v7/errors"
-	"github.com/gsmcwhirter/go-util/v7/logging/level"
+	"github.com/gsmcwhirter/go-util/v8/deferutil"
+	"github.com/gsmcwhirter/go-util/v8/errors"
+	"github.com/gsmcwhirter/go-util/v8/logging/level"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v18/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v18/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v19/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v19/logging"
 )
 
 func (c *userCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, error) {
@@ -40,16 +40,16 @@ func (c *userCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, erro
 		return r, errors.New("incorrect number of arguments")
 	}
 
-	gsettings, err := storage.GetSettings(msg.Context(), c.deps.GuildAPI(), msg.GuildID())
+	gsettings, err := storage.GetSettings(ctx, c.deps.GuildAPI(), msg.GuildID())
 	if err != nil {
 		return r, err
 	}
 
-	t, err := c.deps.TrialAPI().NewTransaction(msg.Context(), msg.GuildID().ToString(), true)
+	t, err := c.deps.TrialAPI().NewTransaction(ctx, msg.GuildID().ToString(), true)
 	if err != nil {
 		return r, err
 	}
-	defer deferutil.CheckDefer(func() error { return t.Rollback(msg.Context()) })
+	defer deferutil.CheckDefer(func() error { return t.Rollback(ctx) })
 
 	var descStr string
 	var trial storage.Trial
@@ -57,26 +57,26 @@ func (c *userCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, erro
 	for i := 0; i < len(msg.Contents()); i += 2 {
 		trialName, role := msg.Contents()[i], msg.Contents()[i+1]
 
-		trial, err = t.GetTrial(msg.Context(), trialName)
+		trial, err = t.GetTrial(ctx, trialName)
 		if err != nil {
 			return r, err
 		}
 
-		if !isSignupChannel(ctx, logger, msg, trial.GetSignupChannel(msg.Context()), gsettings.AdminChannel, gsettings.AdminRoles, c.deps.BotSession(), c.deps.Bot()) {
-			level.Info(logger).Message("command not in signup channel", "signup_channel", trial.GetSignupChannel(msg.Context()))
+		if !isSignupChannel(ctx, logger, msg, trial.GetSignupChannel(ctx), gsettings.AdminChannel, gsettings.AdminRoles, c.deps.BotSession(), c.deps.Bot()) {
+			level.Info(logger).Message("command not in signup channel", "signup_channel", trial.GetSignupChannel(ctx))
 			return r, msghandler.ErrNoResponse
 		}
 
-		if trial.GetState(msg.Context()) != storage.TrialStateOpen {
+		if trial.GetState(ctx) != storage.TrialStateOpen {
 			return r, errors.New("cannot sign up for a closed trial")
 		}
 
-		overflow, err := signupUser(msg.Context(), trial, cmdhandler.UserMentionString(msg.UserID()), role)
+		overflow, err := signupUser(ctx, trial, cmdhandler.UserMentionString(msg.UserID()), role)
 		if err != nil {
 			return r, err
 		}
 
-		if err = t.SaveTrial(msg.Context(), trial); err != nil {
+		if err = t.SaveTrial(ctx, trial); err != nil {
 			return r, errors.Wrap(err, "could not save trial signup")
 		}
 
@@ -90,7 +90,7 @@ func (c *userCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, erro
 
 	}
 
-	if err = t.Commit(msg.Context()); err != nil {
+	if err = t.Commit(ctx); err != nil {
 		return r, errors.Wrap(err, "could not save trial signup")
 	}
 
@@ -99,7 +99,7 @@ func (c *userCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, erro
 			descStr += "\n(only showing last trial details)"
 		}
 
-		r2 := formatTrialDisplay(msg.Context(), trial, true)
+		r2 := formatTrialDisplay(ctx, trial, true)
 		// r2.To = cmdhandler.UserMentionString(msg.UserID())
 		r2.Description = fmt.Sprintf("%s\n\n%s", descStr, r2.Description)
 		r2.SetReplyTo(msg)

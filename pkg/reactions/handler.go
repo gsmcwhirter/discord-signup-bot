@@ -1,6 +1,6 @@
 package reactions
 
-import "github.com/gsmcwhirter/discord-bot-lib/v18/cmdhandler"
+import "github.com/gsmcwhirter/discord-bot-lib/v19/cmdhandler"
 
 type Handler interface {
 	HandleReactionAdd(Reaction) (cmdhandler.Response, error)

@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/gsmcwhirter/go-util/v7/deferutil"
-	"github.com/gsmcwhirter/go-util/v7/errors"
-	"github.com/gsmcwhirter/go-util/v7/logging/level"
+	"github.com/gsmcwhirter/go-util/v8/deferutil"
+	"github.com/gsmcwhirter/go-util/v8/errors"
+	"github.com/gsmcwhirter/go-util/v8/logging/level"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v18/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v18/logging"
-	"github.com/gsmcwhirter/discord-bot-lib/v18/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v19/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v19/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v19/snowflake"
 )
 
 func (c *configCommands) debug(msg cmdhandler.Message) (cmdhandler.Response, error) {
@@ -31,18 +31,18 @@ func (c *configCommands) debug(msg cmdhandler.Message) (cmdhandler.Response, err
 		return r, msg.ContentErr()
 	}
 
-	t, err := c.deps.GuildAPI().NewTransaction(msg.Context(), false)
+	t, err := c.deps.GuildAPI().NewTransaction(ctx, false)
 	if err != nil {
 		return r, err
 	}
-	defer deferutil.CheckDefer(func() error { return t.Rollback(msg.Context()) })
+	defer deferutil.CheckDefer(func() error { return t.Rollback(ctx) })
 
-	bGuild, err := t.AddGuild(msg.Context(), msg.GuildID().ToString())
+	bGuild, err := t.AddGuild(ctx, msg.GuildID().ToString())
 	if err != nil {
 		return r, errors.Wrap(err, "unable to find guild")
 	}
 
-	s := bGuild.GetSettings(msg.Context())
+	s := bGuild.GetSettings(ctx)
 
 	var adminChannelID, announceChannelID, signupChannelID snowflake.Snowflake
 

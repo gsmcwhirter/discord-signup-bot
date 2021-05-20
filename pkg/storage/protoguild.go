@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/gsmcwhirter/go-util/v7/telemetry"
+	"github.com/gsmcwhirter/go-util/v8/telemetry"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -58,6 +58,19 @@ func (g *protoGuild) GetSettings(ctx context.Context) GuildSettings {
 	} else {
 		s.ShowAfterWithdraw = "false"
 	}
+
+	if g.protoGuild.HideReactionsAnnounce {
+		s.HideReactionsAnnounce = "true"
+	} else {
+		s.HideReactionsAnnounce = "false"
+	}
+
+	if g.protoGuild.HideReactionsShow {
+		s.HideReactionsShow = "true"
+	} else {
+		s.HideReactionsShow = "false"
+	}
+
 	return s
 }
 
@@ -74,4 +87,7 @@ func (g *protoGuild) SetSettings(ctx context.Context, s GuildSettings) {
 
 	g.protoGuild.ShowAfterSignup = s.ShowAfterSignup == "true"
 	g.protoGuild.ShowAfterWithdraw = s.ShowAfterWithdraw == "true"
+
+	g.protoGuild.HideReactionsAnnounce = s.HideReactionsAnnounce == "true"
+	g.protoGuild.HideReactionsShow = s.HideReactionsShow == "true"
 }

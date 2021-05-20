@@ -1,7 +1,7 @@
 package reactions
 
 import (
-	log "github.com/gsmcwhirter/go-util/v7/logging"
+	log "github.com/gsmcwhirter/go-util/v8/logging"
 )
 
 // LoggerWithReaction wraps a logger with fields from a reactions.Reaction

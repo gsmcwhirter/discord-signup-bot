@@ -4,12 +4,11 @@ import (
 	"context"
 	"strings"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v18/bot"
-	"github.com/gsmcwhirter/discord-bot-lib/v18/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v18/etfapi"
-	"github.com/gsmcwhirter/discord-bot-lib/v18/logging"
-	"github.com/gsmcwhirter/go-util/v7/logging/level"
-	"github.com/gsmcwhirter/go-util/v7/telemetry"
+	"github.com/gsmcwhirter/discord-bot-lib/v19/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v19/bot/session"
+	"github.com/gsmcwhirter/discord-bot-lib/v19/cmdhandler"
+	"github.com/gsmcwhirter/go-util/v8/logging/level"
+	"github.com/gsmcwhirter/go-util/v8/telemetry"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/reactions"
@@ -17,11 +16,11 @@ import (
 )
 
 type reactionDependencies interface {
-	Logger() logging.Logger
+	Logger() Logger
 	TrialAPI() storage.TrialAPI
 	GuildAPI() storage.GuildAPI
-	BotSession() *etfapi.Session
-	Bot() bot.DiscordBot
+	BotSession() *session.Session
+	Bot() *bot.DiscordBot
 	Census() *telemetry.Census
 }
 
@@ -53,8 +52,8 @@ func (h *reactionHandler) HandleReactionRemove(r reactions.Reaction) (cmdhandler
 	return h.withdraw(r)
 }
 
-func (h *reactionHandler) getTrialNameForReaction(ctx context.Context, logger logging.Logger, msg reactions.Reaction) (string, error) {
-	msgInfo, err := h.deps.Bot().GetMessage(ctx, msg.ChannelID(), msg.MessageID())
+func (h *reactionHandler) getTrialNameForReaction(ctx context.Context, logger Logger, msg reactions.Reaction) (string, error) {
+	msgInfo, err := h.deps.Bot().API().GetMessage(ctx, msg.ChannelID(), msg.MessageID())
 	if err != nil {
 		level.Error(logger).Err("could not get message information", err)
 		return "", msghandler.ErrNoResponse
