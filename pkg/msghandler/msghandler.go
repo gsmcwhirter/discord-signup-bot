@@ -84,9 +84,9 @@ func NewHandlers(deps dependencies, opts Options) Handlers {
 func (h *handlers) ConnectToBot(b *bot.DiscordBot) {
 	h.bot = b
 
-	b.AddMessageHandler("MESSAGE_CREATE", h.handleMessage)
-	b.AddMessageHandler("MESSAGE_REACTION_ADD", h.handleReactionAdd)
-	b.AddMessageHandler("MESSAGE_REACTION_REMOVE", h.handleReactionRemove)
+	b.Dispatcher().AddHandler("MESSAGE_CREATE", h.handleMessage)
+	b.Dispatcher().AddHandler("MESSAGE_REACTION_ADD", h.handleReactionAdd)
+	b.Dispatcher().AddHandler("MESSAGE_REACTION_REMOVE", h.handleReactionRemove)
 }
 
 func (h *handlers) channelGuild(cid snowflake.Snowflake) (gid snowflake.Snowflake) {
