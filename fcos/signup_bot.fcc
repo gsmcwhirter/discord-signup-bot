@@ -82,7 +82,7 @@ systemd:
         TimeoutStartSec=60
         ExecStartPre=-/bin/podman kill do-agent
         ExecStartPre=-/bin/podman rm do-agent
-        ExecStartPre=/bin/podman pull digitalocean/do-agent:stable
+        ExecStartPre=/bin/podman pull docker.io/digitalocean/do-agent:stable
         ExecStart=/bin/podman \
           run \
           --name=do-agent \
@@ -91,7 +91,7 @@ systemd:
           --init \
           --userns=keep-id \
           -p 9100:9100 \
-          digitalocean/do-agent:stable
+          docker.io/digitalocean/do-agent:stable
 
         [Install]
         WantedBy=multi-user.target
