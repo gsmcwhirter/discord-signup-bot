@@ -66,6 +66,7 @@ systemd:
           --privileged=false \
           --user=discordbot:discordbot \
           --env-file /var/secrets/signup-bot.env \
+          --publish 6060:6060 \
           ghcr.io/gsmcwhirter/signup-bot:prod-bot
 
         [Install]

@@ -12,8 +12,8 @@ require (
 	github.com/golangci/golangci-lint v1.40.1
 	github.com/google/pprof v0.0.0-20210423192551-a2663126120b
 	github.com/gorilla/websocket v1.4.2
-	github.com/gsmcwhirter/discord-bot-lib/v19 v19.3.0
-	github.com/gsmcwhirter/go-util/v8 v8.2.0
+	github.com/gsmcwhirter/discord-bot-lib/v19 v19.3.2
+	github.com/gsmcwhirter/go-util/v8 v8.2.1
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/honeycombio/opencensus-exporter v1.0.1
 	github.com/jackc/pgx/v4 v4.7.1
