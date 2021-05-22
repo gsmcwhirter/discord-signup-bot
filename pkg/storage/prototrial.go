@@ -186,6 +186,8 @@ Event settings:
 	- AnnounceChannel: '#%[2]s',
 	- SignupChannel: '#%[3]s',
 	- AnnounceTo: '%[4]s', 
+	- HideReactionsAnnounce: %[9]v,
+	- HideReactionsShow: %[10]v,
 	- RoleOrder: '%[8]s',
 	- Roles:
 		%[6]s
@@ -195,7 +197,7 @@ Description:
 %[1]s
 %[7]s
 
-%[1]s`, "", b.GetAnnounceChannel(ctx), b.GetSignupChannel(ctx), b.GetAnnounceTo(ctx), b.GetState(ctx), b.PrettyRoles(ctx, "		"), b.GetDescription(ctx), b.PrettyRoleOrder(ctx))
+%[1]s`, "", b.GetAnnounceChannel(ctx), b.GetSignupChannel(ctx), b.GetAnnounceTo(ctx), b.GetState(ctx), b.PrettyRoles(ctx, "		"), b.GetDescription(ctx), b.PrettyRoleOrder(ctx), b.HideReactionsAnnounce(ctx), b.HideReactionsShow(ctx))
 }
 
 func (b *protoTrial) SetName(ctx context.Context, name string) {

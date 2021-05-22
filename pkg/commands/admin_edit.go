@@ -82,6 +82,24 @@ func (c *adminCommands) edit(msg cmdhandler.Message) (cmdhandler.Response, error
 		trial.SetSignupChannel(ctx, v)
 	}
 
+	if v, ok := settingMap["hidereactionsannounce"]; !ok {
+		err = trial.SetHideReactionsAnnounce(ctx, gsettings.HideReactionsAnnounce)
+	} else {
+		err = trial.SetHideReactionsAnnounce(ctx, v)
+	}
+	if err != nil {
+		return r, err
+	}
+
+	if v, ok := settingMap["hidereactionsshow"]; !ok {
+		err = trial.SetHideReactionsShow(ctx, gsettings.HideReactionsShow)
+	} else {
+		err = trial.SetHideReactionsShow(ctx, v)
+	}
+	if err != nil {
+		return r, err
+	}
+
 	if v, ok := settingMap["roleorder"]; ok {
 		roleOrder := strings.Split(v, ",")
 		for i := range roleOrder {
