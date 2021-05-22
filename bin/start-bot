@@ -7,7 +7,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/botlib"
 : "${HONEYTAIL_CONFIG_TMPL:="$REPO_ROOT/honeytail.conf.tmpl"}"
 : "${NUM_WORKERS:=64}"
 
-env HONEYCOMB_KEY="$(sed -r 's/\s+//g' < /secrets/honeycomb)" envsubst < "$HONEYTAIL_CONFIG_TMPL" > /tmp/honeytail.conf
+envsubst < "$HONEYTAIL_CONFIG_TMPL" > /tmp/honeytail.conf
 
 export GOMAXPROCS=32
 exec &> >(tee >(honeytail -c /tmp/honeytail.conf))

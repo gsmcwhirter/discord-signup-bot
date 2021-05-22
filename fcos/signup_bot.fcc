@@ -48,6 +48,7 @@ systemd:
         Group=discordbot
 
         Restart=always
+        RestartSec=5
 
         Environment="DOPPLER_TOKEN=${DOPPLER_TOKEN}"
 
@@ -55,16 +56,16 @@ systemd:
         ExecStartPre=-/bin/podman kill signup-bot
         ExecStartPre=-/bin/podman rm signup-bot
         ExecStartPre=/bin/podman pull ghcr.io/gsmcwhirter/signup-bot:prod-bot
+        ExecStartPre=/bin/sh -c '/usr/local/bin/doppler secrets download --format docker --no-file > /var/secrets/signup-bot.env'
         ExecStart=/bin/podman \
           run \
           --name=signup-bot \
-          --volume=/var/secrets/signup-bot:/secrets:ro \
           --read-only \
           --read-only-tmpfs \
           --init \
           --privileged=false \
           --user=discordbot:discordbot \
-          --env-file <(/usr/local/bin/doppler secrets download --no-file --format docker) \
+          --env-file /var/secrets/signup-bot.env \
           ghcr.io/gsmcwhirter/signup-bot:prod-bot
 
         [Install]
@@ -80,6 +81,7 @@ systemd:
 
         [Service]
         Restart=always
+        RestartSec=5
 
         TimeoutStartSec=60
         ExecStartPre=-/bin/podman kill do-agent
@@ -99,6 +101,14 @@ systemd:
         WantedBy=multi-user.target
 
 storage:
+  directories:
+    - path: /var/secrets
+      mode: 0700
+      user:
+        name: discordbot
+      group:
+        name: botctrl
+
   files:
     - path: /etc/sudoers.d/cicd
       contents:
@@ -106,17 +116,17 @@ storage:
           %botctrl ALL= NOPASSWD: /bin/systemctl start signup-bot.service
           %botctrl ALL= NOPASSWD: /bin/systemctl stop signup-bot.service
           %botctrl ALL= NOPASSWD: /bin/systemctl restart signup-bot.service
+    
     - path: /usr/local/bin/doppler
       mode: 0755
       user:
         name: core
       group:
-        name: core
+        name: botctrl
       contents:
-        source: "https://github.com/gsmcwhirter/doppler-binary-mirror/blob/main/doppler-3.25.0-linux-amd64.gz?raw=true"
-        compression: gzip
+        source: "https://github.com/gsmcwhirter/doppler-binary-mirror/blob/main/doppler-3.25.0-linux-amd64?raw=true"
         verification:
-          hash: sha256-7a3192e13c027c31ec25f1cc6d7ddf52a2bef8846aee734d49a7e36273c2b9cc
+          hash: sha256-91be8ab9ce8ab323bd68103b104238c18f3e9ce5e79b44509dc58303e201219f
         
     - path: /usr/local/bin/prettify
       mode: 0755
