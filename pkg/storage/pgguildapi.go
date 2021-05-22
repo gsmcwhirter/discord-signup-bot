@@ -8,6 +8,7 @@ import (
 	"github.com/gsmcwhirter/go-util/v8/telemetry"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"google.golang.org/protobuf/proto"
 )
 
 // var settingsBucket = []byte("GuildRecords")
@@ -108,27 +109,40 @@ func (p *pgGuildAPITx) GetGuild(ctx context.Context, name string) (Guild, error)
 	_, span := p.census.StartSpan(ctx, "pgGuildAPITx.GetGuild")
 	defer span.End()
 
+	pGuild := ProtoGuild{}
+
 	r := p.tx.QueryRow(ctx, `
-	SELECT guild_id, settings, command_indicator, 
-		   announce_channel, signup_channel, 
-		   admin_channel, announce_to, 
-		   show_after_signup, show_after_withdraw, 
-		   hide_reactions_announce, hide_reactions_show 
+	SELECT settings
 	FROM guild_settings WHERE guild_id = $1`, name)
 
-	var dummy []byte
-	pGuild := ProtoGuild{}
-	if err := r.Scan(
-		&pGuild.Name, &dummy, &pGuild.CommandIndicator,
-		&pGuild.AnnounceChannel, &pGuild.SignupChannel,
-		&pGuild.AdminChannel, &pGuild.AnnounceTo,
-		&pGuild.ShowAfterSignup, &pGuild.ShowAfterWithdraw,
-		&pGuild.HideReactionsAnnounce, &pGuild.HideReactionsShow,
-	); err != nil {
+	// r := p.tx.QueryRow(ctx, `
+	// SELECT guild_id, settings, command_indicator,
+	// 	   announce_channel, signup_channel,
+	// 	   admin_channel, announce_to,
+	// 	   show_after_signup, show_after_withdraw,
+	// 	   hide_reactions_announce, hide_reactions_show
+	// FROM guild_settings WHERE guild_id = $1`, name)
+
+	// var dummy []byte
+	// if err := r.Scan(
+	// 	&pGuild.Name, &dummy, &pGuild.CommandIndicator,
+	// 	&pGuild.AnnounceChannel, &pGuild.SignupChannel,
+	// 	&pGuild.AdminChannel, &pGuild.AnnounceTo,
+	// 	&pGuild.ShowAfterSignup, &pGuild.ShowAfterWithdraw,
+	// 	&pGuild.HideReactionsAnnounce, &pGuild.HideReactionsShow,
+	// ); err != nil {
+
+	var val []byte
+	if err := r.Scan(&val); err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, ErrGuildNotExist
 		}
 		return nil, errors.Wrap(err, "could not retrieve guild settings")
+	}
+
+	err := proto.Unmarshal(val, &pGuild)
+	if err != nil {
+		return nil, errors.Wrap(err, "guild record is corrupt")
 	}
 
 	return &protoGuild{
