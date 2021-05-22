@@ -49,6 +49,8 @@ systemd:
 
         Restart=always
 
+        Environment="DOPPLER_TOKEN=${DOPPLER_TOKEN}"
+
         TimeoutStartSec=60
         ExecStartPre=-/bin/podman kill signup-bot
         ExecStartPre=-/bin/podman rm signup-bot
@@ -62,7 +64,7 @@ systemd:
           --init \
           --privileged=false \
           --user=discordbot:discordbot \
-          --security-opt label=disable \
+          --env-file <(/usr/local/bin/doppler secrets download --no-file --format docker) \
           ghcr.io/gsmcwhirter/signup-bot:prod-bot
 
         [Install]
@@ -96,21 +98,7 @@ systemd:
         [Install]
         WantedBy=multi-user.target
 
-# note: 166536 = 165536 + 1000 (/etc/subuid for discordbot + id for discordbot - 1) -- necessary to mount in the secrets properly
 storage:
-  directories:
-    - path: /var/secrets
-      mode: 0770
-      user:
-        id: 166536
-      group:
-        name: botctrl
-    - path: /var/secrets/signup-bot
-      mode: 0700
-      user: 
-        id: 166536
-      group: 
-        name: botctrl
   files:
     - path: /etc/sudoers.d/cicd
       contents:
@@ -118,6 +106,18 @@ storage:
           %botctrl ALL= NOPASSWD: /bin/systemctl start signup-bot.service
           %botctrl ALL= NOPASSWD: /bin/systemctl stop signup-bot.service
           %botctrl ALL= NOPASSWD: /bin/systemctl restart signup-bot.service
+    - path: /usr/local/bin/doppler
+      mode: 0755
+      user:
+        name: core
+      group:
+        name: core
+      contents:
+        source: "https://github.com/gsmcwhirter/doppler-binary-mirror/blob/main/doppler-3.25.0-linux-amd64.gz?raw=true"
+        compression: gzip
+        verification:
+          hash: sha256-7a3192e13c027c31ec25f1cc6d7ddf52a2bef8846aee734d49a7e36273c2b9cc
+        
     - path: /usr/local/bin/prettify
       mode: 0755
       user:
@@ -129,43 +129,3 @@ storage:
         verification:
           hash: sha256-bf411e43aeb6ffd877d28e277c54688a1c77508d739dda86ce048e176fc3af4c
 
-    - path: /var/secrets/signup-bot/postgres
-      mode: 0400
-      user:
-        id: 166536
-      group:
-        name: botctrl
-      contents:
-        inline: "${POSTGRES_SECRET}"
-    - path: /var/secrets/signup-bot/bugsnag
-      mode: 0400
-      user:
-        id: 166536
-      group:
-        name: botctrl
-      contents:
-        inline: "${BUGSNAG_KEY}"
-    - path: /var/secrets/signup-bot/honeycomb
-      mode: 0400
-      user:
-        id: 166536
-      group:
-        name: botctrl
-      contents:
-        inline: "${HONEYCOMB_KEY}"
-    - path: /var/secrets/signup-bot/bot_login
-      mode: 0400
-      user:
-        id: 166536
-      group:
-        name: botctrl
-      contents:
-        inline: "${BOT_LOGIN}"
-    - path: /var/secrets/signup-bot/bot_token
-      mode: 0400
-      user:
-        id: 166536
-      group:
-        name: botctrl
-      contents:
-        inline: "${BOT_TOKEN}"

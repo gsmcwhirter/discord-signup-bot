@@ -63,6 +63,7 @@ func start(c config) error {
 		Handler:      mux,
 	}
 
+	level.Info(deps.Logger()).Message("pprof hostport", "val", c.PProfHostPort)
 	err = pprofsidecar.Run(ctx, c.PProfHostPort, nil, runAll(deps, deps.Bot(), prom))
 
 	level.Error(deps.Logger()).Err("error in start; quitting", err)

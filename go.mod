@@ -1,11 +1,10 @@
 module github.com/gsmcwhirter/discord-signup-bot
 
-go 1.15
+go 1.16
 
 require (
 	contrib.go.opencensus.io/exporter/prometheus v0.2.0
 	github.com/bitly/go-simplejson v0.5.0 // indirect
-	github.com/bmizerany/assert v0.0.0-20160611221934-b7ed37b82869 // indirect
 	github.com/bugsnag/bugsnag-go v1.5.3
 	github.com/bugsnag/panicwrap v1.2.0 // indirect
 	github.com/dustin/go-humanize v1.0.0
@@ -13,8 +12,8 @@ require (
 	github.com/golangci/golangci-lint v1.40.1
 	github.com/google/pprof v0.0.0-20210423192551-a2663126120b
 	github.com/gorilla/websocket v1.4.2
-	github.com/gsmcwhirter/discord-bot-lib/v19 v19.1.0
-	github.com/gsmcwhirter/go-util/v8 v8.0.0
+	github.com/gsmcwhirter/discord-bot-lib/v19 v19.3.0
+	github.com/gsmcwhirter/go-util/v8 v8.2.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/honeycombio/opencensus-exporter v1.0.1
 	github.com/jackc/pgx/v4 v4.7.1

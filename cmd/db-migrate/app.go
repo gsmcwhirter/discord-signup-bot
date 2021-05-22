@@ -26,9 +26,9 @@ func start(c config) error {
 	}
 	defer deps.Close()
 
-	// if err := migrateGuildSettings2(ctx, deps); err != nil {
-	// 	return err
-	// }
+	if err := migrateGuildSettings2(ctx, deps); err != nil {
+		return err
+	}
 
 	if err := migrateAllGuildEvents2(ctx, deps); err != nil {
 		return err
@@ -37,35 +37,33 @@ func start(c config) error {
 	return nil
 }
 
-// func migrateGuildSettings2(ctx context.Context, deps *dependencies) error {
-// 	guilds, err := deps.GuildAPI().AllGuilds(ctx)
-// 	if err != nil {
-// 		return errors.Wrap(err, "could not list all guilds")
-// 	}
+func migrateGuildSettings2(ctx context.Context, deps *dependencies) error {
+	guilds, err := deps.GuildAPI().AllGuilds(ctx)
+	if err != nil {
+		return errors.Wrap(err, "could not list all guilds")
+	}
 
-// 	// guilds := []string{"794041996959809536"}
+	tx, err := deps.GuildAPI().NewTransaction(ctx, true)
+	if err != nil {
+		return errors.Wrap(err, "could not start write transaction")
+	}
+	defer deferutil.CheckDefer(func() error { return tx.Rollback(ctx) })
 
-// 	tx, err := deps.GuildAPI().NewTransaction(ctx, true)
-// 	if err != nil {
-// 		return errors.Wrap(err, "could not start write transaction")
-// 	}
-// 	defer deferutil.CheckDefer(func() error { return tx.Rollback(ctx) })
+	for _, gname := range guilds {
+		level.Info(deps.Logger()).Message("migrating guild settings", "guild_id", gname)
+		guild, err := tx.GetGuild(ctx, gname)
+		if err != nil {
+			level.Error(deps.Logger()).Err("could not retrieve guild settings", err, "guild_id", gname)
+			continue
+		}
 
-// 	for _, gname := range guilds {
-// 		level.Info(deps.Logger()).Message("migrating guild settings", "guild_id", gname)
-// 		guild, err := tx.GetGuild(ctx, gname)
-// 		if err != nil {
-// 			level.Error(deps.Logger()).Err("could not retrieve guild settings", err, "guild_id", gname)
-// 			continue
-// 		}
+		if err := tx.SaveGuild(ctx, guild); err != nil {
+			return errors.Wrap(err, "could not save guild settings", "guild_id", gname)
+		}
+	}
 
-// 		if err := tx.SaveGuild(ctx, guild); err != nil {
-// 			return errors.Wrap(err, "could not save guild settings", "guild_id", gname)
-// 		}
-// 	}
-
-// 	return tx.Commit(ctx)
-// }
+	return tx.Commit(ctx)
+}
 
 // func migrateGuildSettings(ctx context.Context, deps *dependencies) error {
 // 	guilds, err := deps.OldGuildAPI().AllGuilds(ctx)

@@ -3,7 +3,7 @@ bot_presence = "Event Signups"
 client_url = "https://www.evogames.org"
 log_format = "json"
 log_level = "info"
-pprof_hostport = "127.0.0.1:6060"
+pprof_hostport = ":6060"
 num_workers = 64
 trace_probability = 0.1
 prometheus_namespace = "signup_bot"
@@ -19,11 +19,10 @@ postgres_statement_cache_mode = "prepare"
 postgres_min_pool_size = 4
 postgres_max_pool_size = 20
 
-disable_sends = false
+disable_sends = true
 
 client_secret_var = "CLIENT_LOGIN"
 client_token_var = "CLIENT_TOKEN"
 postgres_creds_var = "POSTGRES_USERPASS"
 honeycomb_apikey_var = "HONEYCOMB_KEY"
 bugsnag_apikey_var = "BUGSNAG_KEY"
-

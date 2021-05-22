@@ -149,6 +149,11 @@ _github_token() {
     _get_password_doc "Github Token" | dasel -r json --plain '.details.fields.(name=password).value'
 }
 
+_doppler_token() {
+    # _get_password_doc "Doppler Prod Token" | jq -r .details.password
+    _get_password_doc "Doppler Prod Token" | dasel -r json --plain '.details.password'
+}
+
 _doctl() {
     : "${DIGITALOCEAN_ACCESS_TOKEN:=$(_digitalocean_token)}"
     doctl "$@"
@@ -223,6 +228,7 @@ _envsubst_secrets() {
         HONEYCOMB_KEY="$(_honeycomb_key)" \
         BOT_LOGIN="$(_bot_login)" \
         BOT_TOKEN="$(_bot_token)" \
+        DOPPLER_TOKEN="$(_doppler_token)" \
     envsubst
 }
 
