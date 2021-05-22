@@ -1,5 +1,5 @@
 ################################################################################
-FROM golang:1.15 as build
+FROM golang:1.16 as build
 
 ENV GOPROXY=https://proxy.golang.org
 ARG PROTOC_VERSION=3.13.0
