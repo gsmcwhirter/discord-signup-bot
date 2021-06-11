@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/gsmcwhirter/go-util/v8/errors"
 	"github.com/gsmcwhirter/go-util/v8/telemetry"
@@ -76,26 +77,26 @@ func (p *pgGuildAPI) NewTransaction(ctx context.Context, writable bool) (GuildAP
 		return nil, err
 	}
 
-	return &pgGuildAPITx{
+	return &PgGuildAPITx{
 		tx:     tx,
 		census: p.census,
 	}, nil
 }
 
-type pgGuildAPITx struct {
+type PgGuildAPITx struct {
 	tx     pgx.Tx
 	census *telemetry.Census
 }
 
-func (p *pgGuildAPITx) Commit(ctx context.Context) error {
-	_, span := p.census.StartSpan(ctx, "pgGuildAPITx.Commit")
+func (p *PgGuildAPITx) Commit(ctx context.Context) error {
+	_, span := p.census.StartSpan(ctx, "PgGuildAPITx.Commit")
 	defer span.End()
 
 	return p.tx.Commit(ctx)
 }
 
-func (p *pgGuildAPITx) Rollback(ctx context.Context) error {
-	_, span := p.census.StartSpan(ctx, "pgGuildAPITx.Rollback")
+func (p *PgGuildAPITx) Rollback(ctx context.Context) error {
+	_, span := p.census.StartSpan(ctx, "PgGuildAPITx.Rollback")
 	defer span.End()
 
 	err := p.tx.Rollback(ctx)
@@ -105,32 +106,19 @@ func (p *pgGuildAPITx) Rollback(ctx context.Context) error {
 	return nil
 }
 
-func (p *pgGuildAPITx) GetGuild(ctx context.Context, name string) (Guild, error) {
-	_, span := p.census.StartSpan(ctx, "pgGuildAPITx.GetGuild")
+func (p *PgGuildAPITx) GetGuild(ctx context.Context, name string) (Guild, error) {
+	_, span := p.census.StartSpan(ctx, "PgGuildAPITx.GetGuild")
 	defer span.End()
 
+	return p.getGuildProto(ctx, name)
+}
+
+func (p *PgGuildAPITx) getGuildProto(ctx context.Context, name string) (Guild, error) {
 	pGuild := ProtoGuild{}
 
 	r := p.tx.QueryRow(ctx, `
 	SELECT settings
 	FROM guild_settings WHERE guild_id = $1`, name)
-
-	// r := p.tx.QueryRow(ctx, `
-	// SELECT guild_id, settings, command_indicator,
-	// 	   announce_channel, signup_channel,
-	// 	   admin_channel, announce_to,
-	// 	   show_after_signup, show_after_withdraw,
-	// 	   hide_reactions_announce, hide_reactions_show
-	// FROM guild_settings WHERE guild_id = $1`, name)
-
-	// var dummy []byte
-	// if err := r.Scan(
-	// 	&pGuild.Name, &dummy, &pGuild.CommandIndicator,
-	// 	&pGuild.AnnounceChannel, &pGuild.SignupChannel,
-	// 	&pGuild.AdminChannel, &pGuild.AnnounceTo,
-	// 	&pGuild.ShowAfterSignup, &pGuild.ShowAfterWithdraw,
-	// 	&pGuild.HideReactionsAnnounce, &pGuild.HideReactionsShow,
-	// ); err != nil {
 
 	var val []byte
 	if err := r.Scan(&val); err != nil {
@@ -145,14 +133,66 @@ func (p *pgGuildAPITx) GetGuild(ctx context.Context, name string) (Guild, error)
 		return nil, errors.Wrap(err, "guild record is corrupt")
 	}
 
+	pGuild.Name = strings.TrimSpace(pGuild.Name)
+
 	return &protoGuild{
 		protoGuild: &pGuild,
 		census:     p.census,
 	}, nil
 }
 
-func (p *pgGuildAPITx) AddGuild(ctx context.Context, name string) (Guild, error) {
-	_, span := p.census.StartSpan(ctx, "pgGuildAPITx.AddGuild")
+func (p *PgGuildAPITx) GetGuildPg(ctx context.Context, name string) (Guild, error) {
+	pGuild := ProtoGuild{}
+
+	r := p.tx.QueryRow(ctx, `
+	SELECT guild_id, command_indicator,
+		   announce_channel, signup_channel,
+		   admin_channel, announce_to,
+		   show_after_signup, show_after_withdraw,
+		   hide_reactions_announce, hide_reactions_show
+	FROM guild_settings WHERE guild_id = $1`, name)
+
+	if err := r.Scan(
+		&pGuild.Name, &pGuild.CommandIndicator,
+		&pGuild.AnnounceChannel, &pGuild.SignupChannel,
+		&pGuild.AdminChannel, &pGuild.AnnounceTo,
+		&pGuild.ShowAfterSignup, &pGuild.ShowAfterWithdraw,
+		&pGuild.HideReactionsAnnounce, &pGuild.HideReactionsShow,
+	); err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, ErrGuildNotExist
+		}
+		return nil, errors.Wrap(err, "could not retrieve guild settings")
+	}
+
+	pGuild.Name = strings.TrimSpace(pGuild.Name)
+
+	rs, err := p.tx.Query(ctx, `SELECT admin_role FROM guild_admin_roles WHERE guild_id = $1`, name)
+	if err != nil && err != pgx.ErrNoRows {
+		return nil, errors.Wrap(err, "could not retrieve guild admin roles")
+	}
+	defer rs.Close()
+
+	adminRoles := make([]string, 0, 5)
+	var role string
+
+	for rs.Next() {
+		if err := rs.Scan(&role); err != nil {
+			return nil, errors.Wrap(err, "could not retrieve guild admin roles information")
+		}
+		adminRoles = append(adminRoles, role)
+	}
+
+	pGuild.AdminRole = strings.Join(adminRoles, ",")
+
+	return &protoGuild{
+		protoGuild: &pGuild,
+		census:     p.census,
+	}, nil
+}
+
+func (p *PgGuildAPITx) AddGuild(ctx context.Context, name string) (Guild, error) {
+	_, span := p.census.StartSpan(ctx, "PgGuildAPITx.AddGuild")
 	defer span.End()
 
 	guild, err := p.GetGuild(ctx, name)
@@ -166,7 +206,7 @@ func (p *pgGuildAPITx) AddGuild(ctx context.Context, name string) (Guild, error)
 	return guild, err
 }
 
-func (p *pgGuildAPITx) getAdminRoles(ctx context.Context, gid string) ([]string, error) {
+func (p *PgGuildAPITx) getAdminRoles(ctx context.Context, gid string) ([]string, error) {
 	var roles []string
 
 	rs, err := p.tx.Query(ctx, `
@@ -191,7 +231,7 @@ func (p *pgGuildAPITx) getAdminRoles(ctx context.Context, gid string) ([]string,
 	return roles, nil
 }
 
-func (p *pgGuildAPITx) saveProtoGuild(ctx context.Context, guild Guild) error {
+func (p *PgGuildAPITx) saveProtoGuild(ctx context.Context, guild Guild) error {
 	gid := guild.GetName(ctx)
 	gs := guild.GetSettings(ctx)
 
@@ -269,8 +309,8 @@ func (p *pgGuildAPITx) saveProtoGuild(ctx context.Context, guild Guild) error {
 	return nil
 }
 
-func (p *pgGuildAPITx) SaveGuild(ctx context.Context, guild Guild) error {
-	ctx, span := p.census.StartSpan(ctx, "pgGuildAPITx.SaveGuild")
+func (p *PgGuildAPITx) SaveGuild(ctx context.Context, guild Guild) error {
+	ctx, span := p.census.StartSpan(ctx, "PgGuildAPITx.SaveGuild")
 	defer span.End()
 
 	return p.saveProtoGuild(ctx, guild)
