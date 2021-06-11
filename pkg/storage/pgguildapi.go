@@ -110,7 +110,7 @@ func (p *PgGuildAPITx) GetGuild(ctx context.Context, name string) (Guild, error)
 	_, span := p.census.StartSpan(ctx, "PgGuildAPITx.GetGuild")
 	defer span.End()
 
-	return p.getGuildProto(ctx, name)
+	return p.GetGuildPg(ctx, name)
 }
 
 func (p *PgGuildAPITx) getGuildProto(ctx context.Context, name string) (Guild, error) {
