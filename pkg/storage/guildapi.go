@@ -27,6 +27,8 @@ type GuildSettings struct {
 	HideReactionsAnnounce string
 	HideReactionsShow     string
 	AdminRoles            []string
+	MessageColor          string
+	ErrorColor            string
 }
 
 // PrettyString returns a multi-line string describing the settings
@@ -51,9 +53,11 @@ GuildSettings:
 	- ShowAfterWithdraw: '%[8]s',
 	- HideReactionsAnnounce: '%[10]s',
 	- HideReactionsShow: '%[11]s',
+	- MessageColor: '%[12]s',
+	- ErrorColor: '%[13]s',
 	- AdminRoles: '%[9]s',
 
-	`, "```", s.ControlSequence, s.AnnounceChannel, s.SignupChannel, s.AdminChannel, s.AnnounceTo, s.ShowAfterSignup, s.ShowAfterWithdraw, strings.Join(adminRoles, ", "), s.HideReactionsAnnounce, s.HideReactionsShow)
+	`, "```", s.ControlSequence, s.AnnounceChannel, s.SignupChannel, s.AdminChannel, s.AnnounceTo, s.ShowAfterSignup, s.ShowAfterWithdraw, strings.Join(adminRoles, ", "), s.HideReactionsAnnounce, s.HideReactionsShow, s.MessageColor, s.ErrorColor)
 }
 
 // GetSettingString gets the value of a setting
@@ -82,6 +86,10 @@ func (s *GuildSettings) GetSettingString(ctx context.Context, name string) (stri
 		return s.HideReactionsShow, nil
 	case "adminrole":
 		return strings.Join(s.AdminRoles, ","), nil
+	case "messagecolor":
+		return s.MessageColor, nil
+	case "errorcolor":
+		return s.ErrorColor, nil
 	default:
 		return "", ErrBadSetting
 	}
@@ -153,6 +161,12 @@ func (s *GuildSettings) SetSettingString(ctx context.Context, name, val string) 
 		} else {
 			s.AdminRoles = strings.Split(val, ",")
 		}
+		return nil
+	case "messagecolor":
+		s.MessageColor = val
+		return nil
+	case "errorcolor":
+		s.ErrorColor = val
 		return nil
 	default:
 		return ErrBadSetting

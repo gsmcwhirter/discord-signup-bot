@@ -35,6 +35,18 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 		return r, err
 	}
 
+	okColor, err := colorToInt(gsettings.MessageColor)
+	if err != nil {
+		return r, err
+	}
+
+	errColor, err := colorToInt(gsettings.ErrorColor)
+	if err != nil {
+		return r, err
+	}
+
+	r.SetColor(errColor)
+
 	if !isAdminChannel(logger, msg, gsettings.AdminChannel, c.deps.BotSession()) {
 		level.Info(logger).Message("command not in admin channel", "admin_channel", gsettings.AdminChannel)
 		return nil, msghandler.ErrUnauthorized
@@ -114,6 +126,7 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 
 	r2 := &cmdhandler.EmbedResponse{
 		To:          fmt.Sprintf("%s %s", toStr, phrase),
+		Color:       okColor,
 		ToChannel:   announceCid,
 		Title:       fmt.Sprintf("Signups are open for %s", trial.GetName(ctx)),
 		Description: trial.GetDescription(ctx),

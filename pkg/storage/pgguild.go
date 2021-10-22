@@ -16,6 +16,8 @@ type guildData struct {
 	AnnounceTo        string
 	ShowAfterSignup   bool
 	ShowAfterWithdraw bool
+	MessageColor      string
+	ErrorColor        string
 
 	AdminRoles []string
 }
@@ -51,6 +53,8 @@ func (g *pgGuild) GetSettings(ctx context.Context) GuildSettings {
 		SignupChannel:   g.data.SignupChannel,
 		AnnounceTo:      g.data.AnnounceTo,
 		AdminRoles:      g.data.AdminRoles,
+		MessageColor:    g.data.MessageColor,
+		ErrorColor:      g.data.ErrorColor,
 	}
 
 	if g.data.ShowAfterSignup {
@@ -76,6 +80,8 @@ func (g *pgGuild) SetSettings(ctx context.Context, s GuildSettings) {
 	g.data.AdminChannel = s.AdminChannel
 	g.data.SignupChannel = s.SignupChannel
 	g.data.AnnounceTo = s.AnnounceTo
+	g.data.MessageColor = s.MessageColor
+	g.data.ErrorColor = s.ErrorColor
 	g.data.AdminRoles = s.AdminRoles
 
 	g.data.ShowAfterSignup = s.ShowAfterSignup == "true"

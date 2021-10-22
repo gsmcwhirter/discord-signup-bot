@@ -44,6 +44,18 @@ func (c *configCommands) debug(msg cmdhandler.Message) (cmdhandler.Response, err
 
 	s := bGuild.GetSettings(ctx)
 
+	okColor, err := colorToInt(s.MessageColor)
+	if err != nil {
+		return r, err
+	}
+
+	errColor, err := colorToInt(s.ErrorColor)
+	if err != nil {
+		return r, err
+	}
+
+	r.SetColor(errColor)
+
 	var adminChannelID, announceChannelID, signupChannelID snowflake.Snowflake
 
 	g, ok := c.deps.BotSession().Guild(msg.GuildID())
@@ -84,6 +96,8 @@ GuildSettings:
 	- AnnounceTo: '%[6]s', 
 	- ShowAfterSignup: '%[7]s',
 	- ShowAfterWithdraw: '%[8]s',
+	- MessageColor: '%[16]s',
+	- ErrorColor: '%[17]s',
 	
 	- AnnounceChannel: '#%[3]s',
 	- AnnounceChannel ID: %[11]s,
@@ -112,8 +126,12 @@ GuildSettings:
 		signupChannelID.ToString(),
 		adminChannelID.ToString(),
 		msg.ChannelID().ToString(),
-		s.AdminRoles)
+		s.AdminRoles,
+		s.MessageColor,
+		s.ErrorColor,
+	)
 
 	r.Description = dbgString
+	r.Color = okColor
 	return r, nil
 }

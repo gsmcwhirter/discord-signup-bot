@@ -174,9 +174,11 @@ func (h *handlers) handleResponse(ctx context.Context, logger Logger, resp cmdha
 		resp.IncludeError(err)
 	}
 
-	if resp.HasErrors() {
+	if resp.HasErrors() && resp.GetColor() == 0 {
 		resp.SetColor(h.errorColor)
-	} else {
+	}
+
+	if !resp.HasErrors() && resp.GetColor() == 0 {
 		resp.SetColor(h.successColor)
 	}
 

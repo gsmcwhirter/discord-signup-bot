@@ -34,6 +34,18 @@ func (c *adminCommands) create(msg cmdhandler.Message) (cmdhandler.Response, err
 		return r, err
 	}
 
+	okColor, err := colorToInt(gsettings.MessageColor)
+	if err != nil {
+		return r, err
+	}
+
+	errColor, err := colorToInt(gsettings.ErrorColor)
+	if err != nil {
+		return r, err
+	}
+
+	r.SetColor(errColor)
+
 	if !isAdminChannel(logger, msg, gsettings.AdminChannel, c.deps.BotSession()) {
 		level.Info(logger).Message("command not in admin channel", "admin_channel", gsettings.AdminChannel)
 		return nil, msghandler.ErrUnauthorized
@@ -132,6 +144,7 @@ func (c *adminCommands) create(msg cmdhandler.Message) (cmdhandler.Response, err
 
 	level.Info(logger).Message("trial created", "trial_name", trialName)
 	r.Description = fmt.Sprintf("Event %q created successfully", trialName)
+	r.SetColor(okColor)
 
 	return r, nil
 }

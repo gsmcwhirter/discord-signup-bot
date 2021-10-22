@@ -15,4 +15,6 @@ message ProtoGuild {
     bool show_after_withdraw = 8;
     bool hide_reactions_announce = 10;
     bool hide_reactions_show = 11;
+    string message_color = 12;
+    string error_color = 13;
 }

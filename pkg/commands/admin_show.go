@@ -31,6 +31,18 @@ func (c *adminCommands) show(msg cmdhandler.Message) (cmdhandler.Response, error
 		return r, err
 	}
 
+	okColor, err := colorToInt(gsettings.MessageColor)
+	if err != nil {
+		return r, err
+	}
+
+	errColor, err := colorToInt(gsettings.ErrorColor)
+	if err != nil {
+		return r, err
+	}
+
+	r.SetColor(errColor)
+
 	if !isAdminChannel(logger, msg, gsettings.AdminChannel, c.deps.BotSession()) {
 		level.Info(logger).Message("command not in admin channel", "admin_channel", gsettings.AdminChannel)
 		return nil, msghandler.ErrUnauthorized
@@ -62,6 +74,7 @@ func (c *adminCommands) show(msg cmdhandler.Message) (cmdhandler.Response, error
 	}
 
 	r.Description = trial.PrettySettings(ctx)
+	r.SetColor(okColor)
 
 	level.Info(logger).Message("trial shown", "trial_name", trialName)
 

@@ -36,6 +36,18 @@ func (c *adminCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, e
 		return r, err
 	}
 
+	okColor, err := colorToInt(gsettings.MessageColor)
+	if err != nil {
+		return r, err
+	}
+
+	errColor, err := colorToInt(gsettings.ErrorColor)
+	if err != nil {
+		return r, err
+	}
+
+	r.SetColor(errColor)
+
 	if msg.ContentErr() != nil {
 		return r, msg.ContentErr()
 	}
@@ -129,12 +141,14 @@ func (c *adminCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, e
 		r2.To = strings.Join(userMentions, ", ")
 		r2.ToChannel = signupCid
 		r2.Description = fmt.Sprintf("%s\n\n%s", descStr, r2.Description)
+		r2.Color = okColor
 		return r2, nil
 	}
 
 	r.To = strings.Join(userMentions, ", ")
 	r.ToChannel = signupCid
 	r.Description = descStr
+	r.SetColor(okColor)
 
 	level.Info(logger).Message("admin withdraw complete", "trial_name", trialName, "withdraw_users", userMentions, "signup_channel", r.ToChannel.ToString())
 

@@ -225,3 +225,17 @@ func signupUser(ctx context.Context, trial storage.Trial, userMentionStr, role s
 
 	return overflow, nil
 }
+
+func colorToInt(c string) (int, error) {
+	if c == "" {
+		return 0, nil
+	}
+
+	c = strings.ToLower(c)
+	v, err := strconv.ParseInt(c, 16, 64)
+	if err != nil {
+		return 0, errors.Wrap(err, "could not understand color")
+	}
+
+	return int(v), nil
+}

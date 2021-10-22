@@ -149,7 +149,8 @@ func (p *PgGuildAPITx) GetGuildPg(ctx context.Context, name string) (Guild, erro
 		   announce_channel, signup_channel,
 		   admin_channel, announce_to,
 		   show_after_signup, show_after_withdraw,
-		   hide_reactions_announce, hide_reactions_show
+		   hide_reactions_announce, hide_reactions_show,
+		   message_color, error_color
 	FROM guild_settings WHERE guild_id = $1`, name)
 
 	if err := r.Scan(
@@ -158,6 +159,7 @@ func (p *PgGuildAPITx) GetGuildPg(ctx context.Context, name string) (Guild, erro
 		&pGuild.AdminChannel, &pGuild.AnnounceTo,
 		&pGuild.ShowAfterSignup, &pGuild.ShowAfterWithdraw,
 		&pGuild.HideReactionsAnnounce, &pGuild.HideReactionsShow,
+		&pGuild.MessageColor, &pGuild.ErrorColor,
 	); err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, ErrGuildNotExist
@@ -241,8 +243,8 @@ func (p *PgGuildAPITx) saveProtoGuild(ctx context.Context, guild Guild) error {
 	}
 
 	_, err = p.tx.Exec(ctx, `
-	INSERT INTO guild_settings (guild_id, settings, command_indicator, announce_channel, signup_channel, admin_channel, announce_to, show_after_signup, show_after_withdraw, hide_reactions_announce, hide_reactions_show)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+	INSERT INTO guild_settings (guild_id, settings, command_indicator, announce_channel, signup_channel, admin_channel, announce_to, show_after_signup, show_after_withdraw, hide_reactions_announce, hide_reactions_show, message_color, error_color)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 	ON CONFLICT (guild_id) DO UPDATE
 	SET 
 		settings = EXCLUDED.settings,
@@ -254,8 +256,10 @@ func (p *PgGuildAPITx) saveProtoGuild(ctx context.Context, guild Guild) error {
 		show_after_signup = EXCLUDED.show_after_signup,
 		show_after_withdraw = EXCLUDED.show_after_withdraw,
 		hide_reactions_announce = EXCLUDED.hide_reactions_announce,
-		hide_reactions_show = EXCLUDED.hide_reactions_show
-	`, gid, serial, gs.ControlSequence, gs.AnnounceChannel, gs.SignupChannel, gs.AdminChannel, gs.AnnounceTo, gs.ShowAfterSignup, gs.ShowAfterWithdraw, gs.HideReactionsAnnounce, gs.HideReactionsShow)
+		hide_reactions_show = EXCLUDED.hide_reactions_show,
+		message_color = EXCLUDED.message_color,
+		error_color = EXCLUDED.error_color
+	`, gid, serial, gs.ControlSequence, gs.AnnounceChannel, gs.SignupChannel, gs.AdminChannel, gs.AnnounceTo, gs.ShowAfterSignup, gs.ShowAfterWithdraw, gs.HideReactionsAnnounce, gs.HideReactionsShow, gs.MessageColor, gs.ErrorColor)
 
 	if err != nil {
 		return errors.Wrap(err, "could not upsert guild_settings")

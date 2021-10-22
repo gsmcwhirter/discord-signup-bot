@@ -35,6 +35,18 @@ func (c *adminCommands) debug(msg cmdhandler.Message) (cmdhandler.Response, erro
 		return r, err
 	}
 
+	okColor, err := colorToInt(gsettings.MessageColor)
+	if err != nil {
+		return r, err
+	}
+
+	errColor, err := colorToInt(gsettings.ErrorColor)
+	if err != nil {
+		return r, err
+	}
+
+	r.SetColor(errColor)
+
 	if !isAdminChannel(logger, msg, gsettings.AdminChannel, c.deps.BotSession()) {
 		level.Info(logger).Message("command not in admin channel", "admin_channel", gsettings.AdminChannel)
 		return nil, msghandler.ErrUnauthorized
@@ -115,6 +127,7 @@ Description:
 %[7]s
 
 %[1]s`, "```", announceChannel, signupChannel, trial.GetAnnounceTo(ctx), trial.GetState(ctx), roleStr, trial.GetDescription(ctx), roleOrderStr, announceChannelID.ToString(), signupChannelID.ToString())
+	r.SetColor(okColor)
 
 	level.Info(logger).Message("trial debug shown", "trial_name", trialName)
 
