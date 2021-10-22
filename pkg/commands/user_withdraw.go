@@ -29,6 +29,23 @@ func (c *userCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, er
 	logger := logging.WithMessage(msg, c.deps.Logger())
 	level.Info(logger).Message("handling rootCommand", "command", "withdraw", "trial_name", msg.Contents())
 
+	gsettings, err := storage.GetSettings(ctx, c.deps.GuildAPI(), msg.GuildID())
+	if err != nil {
+		return r, err
+	}
+
+	okColor, err := colorToInt(gsettings.MessageColor)
+	if err != nil {
+		return r, err
+	}
+
+	errColor, err := colorToInt(gsettings.ErrorColor)
+	if err != nil {
+		return r, err
+	}
+
+	r.SetColor(errColor)
+
 	if msg.ContentErr() != nil {
 		return r, msg.ContentErr()
 	}
@@ -38,11 +55,6 @@ func (c *userCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, er
 	}
 
 	trialName := strings.TrimSpace(msg.Contents()[0])
-
-	gsettings, err := storage.GetSettings(ctx, c.deps.GuildAPI(), msg.GuildID())
-	if err != nil {
-		return r, err
-	}
 
 	t, err := c.deps.TrialAPI().NewTransaction(ctx, msg.GuildID().ToString(), true)
 	if err != nil {
@@ -84,10 +96,12 @@ func (c *userCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, er
 		// r2.To = cmdhandler.UserMentionString(msg.UserID())
 		r2.Description = fmt.Sprintf("%s\n\n%s", descStr, r2.Description)
 		r2.SetReplyTo(msg)
+		r2.Color = okColor
 		return r2, nil
 	}
 
 	r.Description = descStr
+	r.Color = okColor
 
 	return r, nil
 }

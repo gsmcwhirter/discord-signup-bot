@@ -38,6 +38,18 @@ func (c *reactionHandler) signup(msg reactions.Reaction) (cmdhandler.Response, e
 		return r, err
 	}
 
+	okColor, err := colorToInt(gsettings.MessageColor)
+	if err != nil {
+		return r, err
+	}
+
+	errColor, err := colorToInt(gsettings.ErrorColor)
+	if err != nil {
+		return r, err
+	}
+
+	r.SetColor(errColor)
+
 	t, err := c.deps.TrialAPI().NewTransaction(ctx, msg.GuildID().ToString(), true)
 	if err != nil {
 		return r, err
@@ -104,11 +116,13 @@ func (c *reactionHandler) signup(msg reactions.Reaction) (cmdhandler.Response, e
 
 		r2.Description = fmt.Sprintf("%s\n\n%s", descStr, r2.Description)
 		r2.To = cmdhandler.UserMentionString(msg.UserID())
+		r2.Color = okColor
 
 		return r2, nil
 	}
 
 	r.Description = descStr
+	r.Color = okColor
 
 	return r, nil
 }

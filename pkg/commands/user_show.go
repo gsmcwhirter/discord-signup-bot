@@ -28,6 +28,23 @@ func (c *userCommands) show(msg cmdhandler.Message) (cmdhandler.Response, error)
 	logger := logging.WithMessage(msg, c.deps.Logger())
 	level.Info(logger).Message("handling rootCommand", "command", "show", "trial_name", msg.Contents())
 
+	gsettings, err := storage.GetSettings(ctx, c.deps.GuildAPI(), msg.GuildID())
+	if err != nil {
+		return r, err
+	}
+
+	okColor, err := colorToInt(gsettings.MessageColor)
+	if err != nil {
+		return r, err
+	}
+
+	errColor, err := colorToInt(gsettings.ErrorColor)
+	if err != nil {
+		return r, err
+	}
+
+	r.SetColor(errColor)
+
 	if msg.ContentErr() != nil {
 		return r, msg.ContentErr()
 	}
@@ -37,11 +54,6 @@ func (c *userCommands) show(msg cmdhandler.Message) (cmdhandler.Response, error)
 	}
 
 	trialName := strings.TrimSpace(msg.Contents()[0])
-
-	gsettings, err := storage.GetSettings(ctx, c.deps.GuildAPI(), msg.GuildID())
-	if err != nil {
-		return r, err
-	}
 
 	t, err := c.deps.TrialAPI().NewTransaction(ctx, msg.GuildID().ToString(), false)
 	if err != nil {
@@ -62,6 +74,7 @@ func (c *userCommands) show(msg cmdhandler.Message) (cmdhandler.Response, error)
 	r2 := formatTrialDisplay(ctx, trial, true)
 	// r2.To = cmdhandler.UserMentionString(msg.UserID())
 	r2.SetReplyTo(msg)
+	r2.Color = okColor
 
 	return r2, nil
 }

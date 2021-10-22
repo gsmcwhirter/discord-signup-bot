@@ -28,6 +28,23 @@ func (c *userCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error)
 	logger := logging.WithMessage(msg, c.deps.Logger())
 	level.Info(logger).Message("handling rootCommand", "command", "list")
 
+	gsettings, err := storage.GetSettings(ctx, c.deps.GuildAPI(), msg.GuildID())
+	if err != nil {
+		return r, err
+	}
+
+	okColor, err := colorToInt(gsettings.MessageColor)
+	if err != nil {
+		return r, err
+	}
+
+	errColor, err := colorToInt(gsettings.ErrorColor)
+	if err != nil {
+		return r, err
+	}
+
+	r.SetColor(errColor)
+
 	if msg.ContentErr() != nil {
 		return r, msg.ContentErr()
 	}
@@ -69,6 +86,7 @@ func (c *userCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error)
 			Val:  listContent,
 		},
 	}
+	r.Color = okColor
 
 	return r, nil
 }
