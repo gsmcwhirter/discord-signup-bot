@@ -11,7 +11,7 @@ import (
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/reactions"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v19/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v20/cmdhandler"
 )
 
 func (c *reactionHandler) withdraw(msg reactions.Reaction) (cmdhandler.Response, error) {

@@ -424,7 +424,7 @@ go:deps() {
 
     go:list-tools | while read -r tool; do
         echo "Installing $tool"
-        go get "$tool"
+        go install "$tool"
     done
 }
 
@@ -481,7 +481,7 @@ go:lint() {
 
     echo "Running linters on $project"
 
-    golangci-lint run -E golint,gosimple,staticcheck "$project"
+    golangci-lint run -E revive,gosimple,staticcheck "$project"
     golangci-lint run -E deadcode,depguard,errcheck,gocritic,gofmt,goimports,gosec,govet,ineffassign,nakedret,prealloc,structcheck,typecheck,unconvert,varcheck "$project"
 }
 

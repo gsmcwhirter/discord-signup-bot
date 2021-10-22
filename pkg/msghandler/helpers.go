@@ -3,10 +3,10 @@ package msghandler
 import (
 	"context"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v19/bot"
-	"github.com/gsmcwhirter/discord-bot-lib/v19/bot/session"
-	"github.com/gsmcwhirter/discord-bot-lib/v19/discordapi/json"
-	"github.com/gsmcwhirter/discord-bot-lib/v19/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v20/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v20/bot/session"
+	"github.com/gsmcwhirter/discord-bot-lib/v20/discordapi/json"
+	"github.com/gsmcwhirter/discord-bot-lib/v20/snowflake"
 	"github.com/gsmcwhirter/go-util/v8/logging/level"
 )
 

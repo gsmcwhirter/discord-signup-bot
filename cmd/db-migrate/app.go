@@ -5,11 +5,12 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 	"github.com/gsmcwhirter/go-util/v8/deferutil"
 	"github.com/gsmcwhirter/go-util/v8/errors"
 	"github.com/gsmcwhirter/go-util/v8/logging/level"
 	multierror "github.com/hashicorp/go-multierror"
+
+	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
 
 var errMismatch = errors.New("settings mismatch")

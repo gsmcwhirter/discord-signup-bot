@@ -5,8 +5,8 @@ import (
 	"github.com/gsmcwhirter/go-util/v8/errors"
 	"github.com/gsmcwhirter/go-util/v8/logging/level"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v19/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v19/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v20/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v20/logging"
 )
 
 func (c *configCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error) {

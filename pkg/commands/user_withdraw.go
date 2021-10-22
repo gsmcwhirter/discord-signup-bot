@@ -11,8 +11,8 @@ import (
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v19/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v19/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v20/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v20/logging"
 )
 
 func (c *userCommands) withdraw(msg cmdhandler.Message) (cmdhandler.Response, error) {

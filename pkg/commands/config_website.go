@@ -1,8 +1,8 @@
 package commands
 
 import (
-	"github.com/gsmcwhirter/discord-bot-lib/v19/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v19/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v20/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v20/logging"
 	"github.com/gsmcwhirter/go-util/v8/logging/level"
 )
 

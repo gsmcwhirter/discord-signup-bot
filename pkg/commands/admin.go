@@ -4,7 +4,7 @@ import (
 	"github.com/gsmcwhirter/go-util/v8/errors"
 	"github.com/gsmcwhirter/go-util/v8/parser"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v19/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v20/cmdhandler"
 )
 
 // ErrGuildNotFound is the error returned when a guild is not known about

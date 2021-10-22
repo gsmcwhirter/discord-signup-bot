@@ -3,9 +3,9 @@ package commands
 import (
 	"fmt"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v19/bot"
-	"github.com/gsmcwhirter/discord-bot-lib/v19/bot/session"
-	"github.com/gsmcwhirter/discord-bot-lib/v19/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v20/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v20/bot/session"
+	"github.com/gsmcwhirter/discord-bot-lib/v20/cmdhandler"
 	"github.com/gsmcwhirter/go-util/v8/parser"
 	"github.com/gsmcwhirter/go-util/v8/telemetry"
 
