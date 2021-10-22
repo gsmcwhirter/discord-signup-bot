@@ -41,6 +41,8 @@ func (g *protoGuild) GetSettings(ctx context.Context) GuildSettings {
 		AdminChannel:    g.protoGuild.AdminChannel,
 		SignupChannel:   g.protoGuild.SignupChannel,
 		AnnounceTo:      g.protoGuild.AnnounceTo,
+		MessageColor:    g.protoGuild.MessageColor,
+		ErrorColor:      g.protoGuild.ErrorColor,
 	}
 
 	if g.protoGuild.AdminRole != "" {
@@ -90,4 +92,7 @@ func (g *protoGuild) SetSettings(ctx context.Context, s GuildSettings) {
 
 	g.protoGuild.HideReactionsAnnounce = s.HideReactionsAnnounce == "true"
 	g.protoGuild.HideReactionsShow = s.HideReactionsShow == "true"
+
+	g.protoGuild.MessageColor = s.MessageColor
+	g.protoGuild.ErrorColor = s.ErrorColor
 }
