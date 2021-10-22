@@ -36,6 +36,7 @@ type TrialAPITx interface {
 // Trial is the api for managing a particular trial
 type Trial interface {
 	GetName(ctx context.Context) string
+	GetTime(ctx context.Context) string
 	GetDescription(ctx context.Context) string
 	GetAnnounceTo(ctx context.Context) string
 	GetAnnounceChannel(ctx context.Context) string
@@ -49,6 +50,7 @@ type Trial interface {
 	PrettySettings(ctx context.Context) string
 
 	SetName(ctx context.Context, name string)
+	SetTime(ctx context.Context, t string)
 	SetDescription(ctx context.Context, d string)
 	SetAnnounceTo(ctx context.Context, val string)
 	SetAnnounceChannel(ctx context.Context, val string)

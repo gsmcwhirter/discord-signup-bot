@@ -160,7 +160,13 @@ func formatTrialDisplay(ctx context.Context, trial storage.Trial, withState bool
 	} else {
 		r.Title = fmt.Sprintf("__%s__", trial.GetName(ctx))
 	}
-	r.Description = trial.GetDescription(ctx)
+
+	desc := trial.GetDescription(ctx)
+	if t := trial.GetTime(ctx); t != "" {
+		desc = fmt.Sprintf("When: %s\n\n%s", t, desc)
+	}
+
+	r.Description = desc
 	r.Fields = []cmdhandler.EmbedField{}
 
 	overflowFields := []cmdhandler.EmbedField{}

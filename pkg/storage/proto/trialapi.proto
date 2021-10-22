@@ -22,6 +22,7 @@ message ProtoTrial {
     string announce_to = 9;
     string signup_channel = 4;
     string description = 7;
+    string time = 13;
 
     map<string, uint64> role_counts = 5;
     repeated ProtoTrialSignup signups = 6;

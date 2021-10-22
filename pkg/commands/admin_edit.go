@@ -112,6 +112,10 @@ func (c *adminCommands) edit(msg cmdhandler.Message) (cmdhandler.Response, error
 		return r, err
 	}
 
+	if v, ok := settingMap["time"]; ok {
+		trial.SetTime(ctx, v)
+	}
+
 	if v, ok := settingMap["roleorder"]; ok {
 		roleOrder := strings.Split(v, ",")
 		for i := range roleOrder {

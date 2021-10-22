@@ -124,12 +124,17 @@ func (c *adminCommands) announce(msg cmdhandler.Message) (cmdhandler.Response, e
 		toStr = "@everyone"
 	}
 
+	desc := trial.GetDescription(ctx)
+	if t := trial.GetTime(ctx); t != "" {
+		desc = fmt.Sprintf("When: %s\n\n%s", t, desc)
+	}
+
 	r2 := &cmdhandler.EmbedResponse{
 		To:          fmt.Sprintf("%s %s", toStr, phrase),
 		Color:       okColor,
 		ToChannel:   announceCid,
 		Title:       fmt.Sprintf("Signups are open for %s", trial.GetName(ctx)),
-		Description: trial.GetDescription(ctx),
+		Description: desc,
 		Fields: []cmdhandler.EmbedField{
 			{
 				Name: "Roles Requested",

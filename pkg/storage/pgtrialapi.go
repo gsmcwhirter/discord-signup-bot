@@ -136,8 +136,8 @@ func (p *pgTrialAPITx) SaveTrial(ctx context.Context, t Trial) error {
 	name := strings.ToLower(t.GetName(ctx))
 
 	_, err = p.tx.Exec(ctx, `
-	INSERT INTO events (guild_id, event_name, event_data, nice_name, event_state, announce_channel, signup_channel, announce_to, description, role_sort_order, hide_reactions_announce, hide_reactions_show) 
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) 
+	INSERT INTO events (guild_id, event_name, event_data, nice_name, event_state, announce_channel, signup_channel, announce_to, description, role_sort_order, hide_reactions_announce, hide_reactions_show, event_time) 
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13) 
 	ON CONFLICT (guild_id, event_name) DO UPDATE
 	SET 
 		event_data = EXCLUDED.event_data,
@@ -149,8 +149,9 @@ func (p *pgTrialAPITx) SaveTrial(ctx context.Context, t Trial) error {
 		description = EXCLUDED.description,
 		role_sort_order = EXCLUDED.role_sort_order,
 		hide_reactions_announce = EXCLUDED.hide_reactions_announce,
-		hide_reactions_show = EXCLUDED.hide_reactions_show
-	`, p.guildID, name, serial, t.GetName(ctx), string(t.GetState(ctx)), t.GetAnnounceChannel(ctx), t.GetSignupChannel(ctx), t.GetAnnounceTo(ctx), t.GetDescription(ctx), strings.Join(t.GetRoleOrder(ctx), ","), t.HideReactionsAnnounce(ctx), t.HideReactionsShow(ctx))
+		hide_reactions_show = EXCLUDED.hide_reactions_show,
+		event_time = EXCLUDED.event_time
+	`, p.guildID, name, serial, t.GetName(ctx), string(t.GetState(ctx)), t.GetAnnounceChannel(ctx), t.GetSignupChannel(ctx), t.GetAnnounceTo(ctx), t.GetDescription(ctx), strings.Join(t.GetRoleOrder(ctx), ","), t.HideReactionsAnnounce(ctx), t.HideReactionsShow(ctx), t.GetTime(ctx))
 
 	return err
 }

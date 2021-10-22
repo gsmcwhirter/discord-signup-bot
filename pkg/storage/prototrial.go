@@ -29,6 +29,12 @@ func (b *protoTrial) GetName(ctx context.Context) string {
 	return b.protoTrial.Name
 }
 
+func (b *protoTrial) GetTime(ctx context.Context) string {
+	_, span := b.census.StartSpan(ctx, "protoTrial.GetTime")
+	defer span.End()
+	return b.protoTrial.Time
+}
+
 func (b *protoTrial) GetDescription(ctx context.Context) string {
 	_, span := b.census.StartSpan(ctx, "protoTrial.GetDescription")
 	defer span.End()
@@ -183,6 +189,7 @@ func (b *protoTrial) PrettySettings(ctx context.Context) string {
 Event settings:
 %[1]s
 	- State: '%[5]s',
+	- Time: '%[11]s',
 	- AnnounceChannel: '#%[2]s',
 	- SignupChannel: '#%[3]s',
 	- AnnounceTo: '%[4]s', 
@@ -197,13 +204,19 @@ Description:
 %[1]s
 %[7]s
 
-%[1]s`, "", b.GetAnnounceChannel(ctx), b.GetSignupChannel(ctx), b.GetAnnounceTo(ctx), b.GetState(ctx), b.PrettyRoles(ctx, "		"), b.GetDescription(ctx), b.PrettyRoleOrder(ctx), b.HideReactionsAnnounce(ctx), b.HideReactionsShow(ctx))
+%[1]s`, "", b.GetAnnounceChannel(ctx), b.GetSignupChannel(ctx), b.GetAnnounceTo(ctx), b.GetState(ctx), b.PrettyRoles(ctx, "		"), b.GetDescription(ctx), b.PrettyRoleOrder(ctx), b.HideReactionsAnnounce(ctx), b.HideReactionsShow(ctx), b.GetTime(ctx))
 }
 
 func (b *protoTrial) SetName(ctx context.Context, name string) {
 	_, span := b.census.StartSpan(ctx, "protoTrial.SetName")
 	defer span.End()
 	b.protoTrial.Name = name
+}
+
+func (b *protoTrial) SetTime(ctx context.Context, t string) {
+	_, span := b.census.StartSpan(ctx, "protoTrial.SetTime")
+	defer span.End()
+	b.protoTrial.Time = t
 }
 
 func (b *protoTrial) SetDescription(ctx context.Context, d string) {
