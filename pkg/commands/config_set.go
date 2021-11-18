@@ -8,15 +8,15 @@ import (
 	"github.com/gsmcwhirter/go-util/v8/errors"
 	"github.com/gsmcwhirter/go-util/v8/logging/level"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v20/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v20/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/logging"
 )
 
 type argPair struct {
 	key, val string
 }
 
-func (c *configCommands) set(msg cmdhandler.Message) (cmdhandler.Response, error) {
+func (c *ConfigCommands) setHandler(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	ctx, span := c.deps.Census().StartSpan(msg.Context(), "configCommands.set", "guild_id", msg.GuildID().ToString())
 	defer span.End()
 	msg = cmdhandler.NewWithContext(ctx, msg)
@@ -117,5 +117,5 @@ func (c *configCommands) set(msg cmdhandler.Message) (cmdhandler.Response, error
 		return r, errors.Wrap(err, "could not save guild settings")
 	}
 
-	return c.list(cmdhandler.NewWithContents(msg, ""))
+	return c.listHandler(cmdhandler.NewWithContents(msg, ""))
 }

@@ -1,24 +1,103 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	"github.com/gsmcwhirter/go-util/v8/deferutil"
 	"github.com/gsmcwhirter/go-util/v8/errors"
+	log "github.com/gsmcwhirter/go-util/v8/logging"
 	"github.com/gsmcwhirter/go-util/v8/logging/level"
 	multierror "github.com/hashicorp/go-multierror"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v20/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v20/logging"
-	"github.com/gsmcwhirter/discord-bot-lib/v20/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/discordapi/entity"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/snowflake"
 )
 
-func (c *adminCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, error) {
-	ctx, span := c.deps.Census().StartSpan(msg.Context(), "adminCommands.signup", "guild_id", msg.GuildID().ToString())
+func (c *AdminCommands) signupInteraction(ix *cmdhandler.Interaction, opts []entity.ApplicationCommandInteractionOption) (cmdhandler.Response, []cmdhandler.Response, error) {
+	ctx, span := c.deps.Census().StartSpan(ix.Context(), "adminCommands.signupInteraction", "guild_id", ix.GuildID().ToString())
+	defer span.End()
+
+	r := &cmdhandler.SimpleEmbedResponse{}
+
+	logger := logging.WithMessage(ix, c.deps.Logger())
+	level.Info(logger).Message("handling admin interaction", "command", "signup")
+
+	gsettings, err := storage.GetSettings(ctx, c.deps.GuildAPI(), ix.GuildID())
+	if err != nil {
+		return r, nil, err
+	}
+
+	okColor, err := colorToInt(gsettings.MessageColor)
+	if err != nil {
+		return r, nil, err
+	}
+
+	errColor, err := colorToInt(gsettings.ErrorColor)
+	if err != nil {
+		return r, nil, err
+	}
+
+	r.SetColor(errColor)
+
+	var eventName, role string
+	var uid snowflake.Snowflake
+	for i := range opts {
+		if opts[i].Name == "event_name" {
+			eventName = opts[i].ValueString
+			continue
+		}
+
+		if opts[i].Name == "role" {
+			role = opts[i].ValueString
+			continue
+		}
+
+		if opts[i].Name == "user" {
+			uid = opts[i].ValueUser
+		}
+	}
+
+	userMentions := []string{cmdhandler.UserMentionString(uid)}
+
+	signupCid, r2, accepted, overflows, err := c.signup(ctx, logger, ix, ix.GuildID(), gsettings, eventName, role, userMentions)
+	if err != nil {
+		return r, nil, errors.Wrap(err, "could not sign up for the event")
+	}
+
+	descStr := fmt.Sprintf("Signed up for %s in %s by %s\n\n", role, eventName, cmdhandler.UserMentionString(ix.UserID()))
+	if len(accepted) > 0 {
+		descStr += fmt.Sprintf("**Main Group:** %s\n", strings.Join(accepted, ", "))
+	}
+	if len(overflows) > 0 {
+		descStr += fmt.Sprintf("**Overflow:** %s\n", strings.Join(overflows, ", "))
+	}
+
+	level.Info(logger).Message("admin signup complete", "trial_name", eventName, "signup_users", accepted, "overflows", overflows, "role", role, "signup_channel", signupCid)
+
+	r.Description = "Users signed up successfully"
+
+	if r2 != nil {
+		r2.Description = fmt.Sprintf("%s\n\n%s", descStr, r2.Description)
+		r2.SetColor(okColor)
+	} else {
+		r2 = &cmdhandler.EmbedResponse{}
+		r2.To = strings.Join(userMentions, ", ")
+		r2.ToChannel = signupCid
+		r2.Description = descStr
+		r2.SetColor(okColor)
+	}
+	return r, []cmdhandler.Response{r2}, nil
+}
+
+func (c *AdminCommands) signupHandler(msg cmdhandler.Message) (cmdhandler.Response, error) {
+	ctx, span := c.deps.Census().StartSpan(msg.Context(), "adminCommands.signupHandler", "guild_id", msg.GuildID().ToString())
 	defer span.End()
 	msg = cmdhandler.NewWithContext(ctx, msg)
 
@@ -58,22 +137,6 @@ func (c *adminCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, err
 
 	trialName := msg.Contents()[0]
 
-	t, err := c.deps.TrialAPI().NewTransaction(ctx, msg.GuildID().ToString(), true)
-	if err != nil {
-		return r, err
-	}
-	defer deferutil.CheckDefer(func() error { return t.Rollback(ctx) })
-
-	trial, err := t.GetTrial(ctx, trialName)
-	if err != nil {
-		return r, err
-	}
-
-	if !isSignupChannel(ctx, logger, msg, trial.GetSignupChannel(ctx), gsettings.AdminChannel, gsettings.AdminRoles, c.deps.BotSession(), c.deps.Bot()) {
-		level.Info(logger).Message("command not in admin or signup channel", "signup_channel", trial.GetSignupChannel(ctx))
-		return nil, msghandler.ErrUnauthorized
-	}
-
 	role := msg.Contents()[1]
 	userMentions := make([]string, 0, len(msg.Contents())-2)
 
@@ -96,67 +159,24 @@ func (c *adminCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, err
 		return r, errors.New("you must mention one or more users that you are trying to sign up (@...)")
 	}
 
-	if trial.GetState(ctx) != storage.TrialStateOpen {
-		return r, errors.New("cannot sign up for a closed event")
-	}
-
-	sessionGuild, ok := c.deps.BotSession().Guild(msg.GuildID())
-	if !ok {
-		return r, ErrGuildNotFound
-	}
-
-	var signupCid snowflake.Snowflake
-	if scID, ok := sessionGuild.ChannelWithName(trial.GetSignupChannel(ctx)); ok {
-		signupCid = scID
-	}
-
-	overflows := make([]bool, len(userMentions))
-	regularUsers := make([]string, 0, len(userMentions))
-	overflowUsers := make([]string, 0, len(userMentions))
-
-	for i, userMention := range userMentions {
-		var serr error
-		overflows[i], serr = signupUser(ctx, trial, userMention, role)
-		if serr != nil {
-			err = multierror.Append(err, serr)
-			continue
-		}
-
-		if overflows[i] {
-			overflowUsers = append(overflowUsers, userMention)
-		} else {
-			regularUsers = append(regularUsers, userMention)
-		}
-	}
-
+	signupCid, r2, accepted, overflows, err := c.signup(ctx, logger, msg, msg.GuildID(), gsettings, trialName, role, userMentions)
 	if err != nil {
-		return r, err
-	}
-
-	if err = t.SaveTrial(ctx, trial); err != nil {
-		return r, errors.Wrap(err, "could not save event signup")
-	}
-
-	if err = t.Commit(ctx); err != nil {
-		return r, errors.Wrap(err, "could not save event signup")
+		return r, errors.Wrap(err, "could not sign up for the event")
 	}
 
 	descStr := fmt.Sprintf("Signed up for %s in %s by %s\n\n", role, trialName, cmdhandler.UserMentionString(msg.UserID()))
-	if len(regularUsers) > 0 {
-		descStr += fmt.Sprintf("**Main Group:** %s\n", strings.Join(regularUsers, ", "))
+	if len(accepted) > 0 {
+		descStr += fmt.Sprintf("**Main Group:** %s\n", strings.Join(accepted, ", "))
 	}
-	if len(overflowUsers) > 0 {
-		descStr += fmt.Sprintf("**Overflow:** %s\n", strings.Join(overflowUsers, ", "))
+	if len(overflows) > 0 {
+		descStr += fmt.Sprintf("**Overflow:** %s\n", strings.Join(overflows, ", "))
 	}
 
-	if gsettings.ShowAfterSignup == "true" {
-		level.Debug(logger).Message("auto-show after signup", "trial_name", trialName)
+	level.Info(logger).Message("admin signup complete", "trial_name", trialName, "signup_users", accepted, "overflows", overflows, "role", role, "signup_channel", signupCid)
 
-		r2 := formatTrialDisplay(ctx, trial, true)
-		r2.To = strings.Join(userMentions, ", ")
-		r2.ToChannel = signupCid
+	if r2 != nil {
 		r2.Description = fmt.Sprintf("%s\n\n%s", descStr, r2.Description)
-		r2.Color = okColor
+		r2.SetColor(okColor)
 		return r2, nil
 	}
 
@@ -164,8 +184,82 @@ func (c *adminCommands) signup(msg cmdhandler.Message) (cmdhandler.Response, err
 	r.ToChannel = signupCid
 	r.Description = descStr
 	r.SetColor(okColor)
-
-	level.Info(logger).Message("admin signup complete", "trial_name", trialName, "signup_users", userMentions, "overflows", overflows, "role", role, "signup_channel", r.ToChannel.ToString())
-
 	return r, nil
+}
+
+func (c *AdminCommands) signup(ctx context.Context, logger log.Logger, msg msghandler.MessageLike, gid snowflake.Snowflake, gsettings storage.GuildSettings, eventName, role string, userMentions []string) (cid snowflake.Snowflake, r2 *cmdhandler.EmbedResponse, accepted, overflows []string, err error) {
+	ctx, span := c.deps.Census().StartSpan(ctx, "adminCommands.signup", "guild_id", gid.ToString())
+	defer span.End()
+
+	t, err := c.deps.TrialAPI().NewTransaction(ctx, gid.ToString(), true)
+	if err != nil {
+		return 0, nil, nil, nil, err
+	}
+	defer deferutil.CheckDefer(func() error { return t.Rollback(ctx) })
+
+	trial, err := t.GetTrial(ctx, eventName)
+	if err != nil {
+		return 0, nil, nil, nil, err
+	}
+
+	// TODO: figure out what to do differently here, because having to pass msg through kinda sucks
+	if !isSignupChannel(ctx, logger, msg, trial.GetSignupChannel(ctx), gsettings.AdminChannel, gsettings.AdminRoles, c.deps.BotSession(), c.deps.Bot()) {
+		level.Info(logger).Message("command not in admin or signup channel", "signup_channel", trial.GetSignupChannel(ctx), "admin_channel", gsettings.AdminChannel)
+		return 0, nil, nil, nil, msghandler.ErrUnauthorized
+	}
+
+	if trial.GetState(ctx) != storage.TrialStateOpen {
+		return 0, nil, nil, nil, errors.New("cannot sign up for a closed event")
+	}
+
+	sessionGuild, ok := c.deps.BotSession().Guild(gid)
+	if !ok {
+		return 0, nil, nil, nil, ErrGuildNotFound
+	}
+
+	var signupCid snowflake.Snowflake
+	if scID, ok := sessionGuild.ChannelWithName(trial.GetSignupChannel(ctx)); ok {
+		signupCid = scID
+	}
+
+	ofs := make([]bool, len(userMentions))
+	accepted = make([]string, 0, len(userMentions))
+	overflows = make([]string, 0, len(userMentions))
+
+	for i, userMention := range userMentions {
+		var serr error
+		ofs[i], serr = signupUser(ctx, trial, userMention, role)
+		if serr != nil {
+			err = multierror.Append(err, serr)
+			continue
+		}
+
+		if ofs[i] {
+			overflows = append(overflows, userMention)
+		} else {
+			accepted = append(accepted, userMention)
+		}
+	}
+
+	if err != nil {
+		return signupCid, nil, nil, nil, err
+	}
+
+	if err = t.SaveTrial(ctx, trial); err != nil {
+		return signupCid, nil, nil, nil, errors.Wrap(err, "could not save event signup")
+	}
+
+	if err = t.Commit(ctx); err != nil {
+		return signupCid, nil, nil, nil, errors.Wrap(err, "could not save event signup")
+	}
+
+	if gsettings.ShowAfterSignup == "true" {
+		level.Debug(logger).Message("auto-show after signup", "trial_name", eventName)
+
+		r2 = formatTrialDisplay(ctx, trial, true)
+		r2.To = strings.Join(userMentions, ", ")
+		r2.ToChannel = signupCid
+	}
+
+	return signupCid, r2, accepted, overflows, nil
 }

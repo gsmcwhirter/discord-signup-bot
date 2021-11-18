@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	bstats "github.com/gsmcwhirter/discord-bot-lib/v20/stats"
+	bstats "github.com/gsmcwhirter/discord-bot-lib/v23/stats"
 	"github.com/gsmcwhirter/go-util/v8/errors"
 	"golang.org/x/sync/errgroup"
 )

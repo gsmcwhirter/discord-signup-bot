@@ -3,12 +3,13 @@ package commands
 import (
 	"fmt"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v20/bot"
-	"github.com/gsmcwhirter/discord-bot-lib/v20/bot/session"
-	"github.com/gsmcwhirter/discord-bot-lib/v20/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/bot/session"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/cmdhandler"
 	"github.com/gsmcwhirter/go-util/v8/parser"
 	"github.com/gsmcwhirter/go-util/v8/telemetry"
 
+	"github.com/gsmcwhirter/discord-signup-bot/pkg/permissions"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/stats"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
@@ -27,17 +28,12 @@ type Options struct {
 	CmdIndicator string
 }
 
-// RootCommands holds the commands at the root level
-type userCommands struct {
-	deps dependencies
-}
-
 // CommandHandler creates a new command handler for !list, !show, !signup, and !withdraw
-func CommandHandler(deps dependencies, versionStr string, opts Options) (*cmdhandler.CommandHandler, error) {
+func CommandHandler(deps dependencies, versionStr string, opts Options) (*UserCommands, *cmdhandler.CommandHandler, error) {
 	p := parser.NewParser(parser.Options{
 		CmdIndicator: opts.CmdIndicator,
 	})
-	rh := userCommands{
+	uc := &UserCommands{
 		deps: deps,
 	}
 
@@ -45,18 +41,12 @@ func CommandHandler(deps dependencies, versionStr string, opts Options) (*cmdhan
 		NoHelpOnUnknownCommands: true,
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	ch.SetHandler("list", cmdhandler.NewMessageHandler(rh.list))
-	ch.SetHandler("myevents", cmdhandler.NewMessageHandler(rh.myEvents))
-	ch.SetHandler("show", cmdhandler.NewMessageHandler(rh.show))
-	ch.SetHandler("signup", cmdhandler.NewMessageHandler(rh.signup))
-	ch.SetHandler("su", cmdhandler.NewMessageHandler(rh.signup))
-	ch.SetHandler("withdraw", cmdhandler.NewMessageHandler(rh.withdraw))
-	ch.SetHandler("wd", cmdhandler.NewMessageHandler(rh.withdraw))
+	uc.AttachToCommandHandler(ch)
 
-	return ch, nil
+	return uc, ch, nil
 }
 
 type configDependencies interface {
@@ -67,10 +57,11 @@ type configDependencies interface {
 	Bot() *bot.DiscordBot
 	Census() *telemetry.Census
 	StatsHub() *stats.Hub
+	PermissionsManager() *permissions.Manager
 }
 
 // ConfigHandler creates a new command handler for !config-su
-func ConfigHandler(deps configDependencies, versionStr string, opts Options) (*cmdhandler.CommandHandler, error) {
+func ConfigHandler(deps configDependencies, versionStr string, opts Options) (*ConfigCommands, *cmdhandler.CommandHandler, error) {
 	p := parser.NewParser(parser.Options{
 		CmdIndicator: opts.CmdIndicator,
 	})
@@ -79,12 +70,12 @@ func ConfigHandler(deps configDependencies, versionStr string, opts Options) (*c
 		NoHelpOnUnknownCommands: true,
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	cch, err := ConfigCommandHandler(deps, versionStr, fmt.Sprintf("%sconfig-su", opts.CmdIndicator))
+	cc, cch, err := ConfigCommandHandler(deps, versionStr, fmt.Sprintf("%sconfig-su", opts.CmdIndicator))
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	ch.SetHandler("config-su", cch)
@@ -95,7 +86,7 @@ func ConfigHandler(deps configDependencies, versionStr string, opts Options) (*c
 		return r, parser.ErrUnknownCommand
 	}))
 
-	return ch, nil
+	return cc, ch, nil
 }
 
 func ConfigDebugHandler(deps configDependencies) (*cmdhandler.CommandHandler, error) {
@@ -136,7 +127,7 @@ type adminDependencies interface {
 }
 
 // AdminHandler creates a new command handler for !admin
-func AdminHandler(deps adminDependencies, versionStr string, opts Options) (*cmdhandler.CommandHandler, error) {
+func AdminHandler(deps adminDependencies, versionStr string, opts Options) (*AdminCommands, *cmdhandler.CommandHandler, error) {
 	p := parser.NewParser(parser.Options{
 		CmdIndicator: opts.CmdIndicator,
 	})
@@ -145,12 +136,12 @@ func AdminHandler(deps adminDependencies, versionStr string, opts Options) (*cmd
 		NoHelpOnUnknownCommands: true,
 	})
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	ach, err := AdminCommandHandler(deps, fmt.Sprintf("%sadmin", opts.CmdIndicator))
+	ac, ach, err := AdminCommandHandler(deps, fmt.Sprintf("%sadmin", opts.CmdIndicator))
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	ch.SetHandler("admin", ach)
@@ -160,5 +151,5 @@ func AdminHandler(deps adminDependencies, versionStr string, opts Options) (*cmd
 		return r, parser.ErrUnknownCommand
 	}))
 
-	return ch, nil
+	return ac, ch, nil
 }

@@ -1,32 +1,84 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strings"
 
 	"github.com/gsmcwhirter/go-util/v8/deferutil"
+	"github.com/gsmcwhirter/go-util/v8/errors"
 	"github.com/gsmcwhirter/go-util/v8/logging/level"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v20/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v20/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/discordapi/entity"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/snowflake"
 )
 
-func (c *adminCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error) {
-	ctx, span := c.deps.Census().StartSpan(msg.Context(), "adminCommands.list", "guild_id", msg.GuildID().ToString())
+func (c *AdminCommands) listInteraction(ix *cmdhandler.Interaction, opts []entity.ApplicationCommandInteractionOption) (cmdhandler.Response, []cmdhandler.Response, error) {
+	ctx, span := c.deps.Census().StartSpan(ix.Context(), "adminCommands.listInteraction", "guild_id", ix.GuildID().ToString())
+	defer span.End()
+
+	r := &cmdhandler.EmbedResponse{}
+
+	logger := logging.WithMessage(ix, c.deps.Logger())
+	level.Info(logger).Message("handling admin interaction", "command", "list")
+
+	gsettings, err := storage.GetSettings(ctx, c.deps.GuildAPI(), ix.GuildID())
+	if err != nil {
+		return r, nil, err
+	}
+
+	okColor, err := colorToInt(gsettings.MessageColor)
+	if err != nil {
+		return r, nil, err
+	}
+
+	errColor, err := colorToInt(gsettings.ErrorColor)
+	if err != nil {
+		return r, nil, err
+	}
+
+	r.SetColor(errColor)
+
+	if !isAdminChannel(logger, ix, gsettings.AdminChannel, c.deps.BotSession()) {
+		level.Info(logger).Message("command not in admin channel", "admin_channel", gsettings.AdminChannel)
+		return nil, nil, msghandler.ErrUnauthorized
+	}
+
+	tNamesOpen, tNamesClosed, err := c.list(ctx, ix.GuildID())
+	if err != nil {
+		return r, nil, errors.Wrap(err, "could not produce event lists")
+	}
+
+	r.To = "Event List"
+	r.Fields = []cmdhandler.EmbedField{
+		{
+			Name: "*Available Events*",
+			Val:  fmt.Sprintf("```\n%s\n```\n", strings.Join(tNamesOpen, "\n")),
+		},
+		{
+			Name: "*Closed Events*",
+			Val:  fmt.Sprintf("```\n%s\n```\n", strings.Join(tNamesClosed, "\n")),
+		},
+	}
+	r.SetColor(okColor)
+
+	return r, nil, nil
+}
+
+func (c *AdminCommands) listHandler(msg cmdhandler.Message) (cmdhandler.Response, error) {
+	ctx, span := c.deps.Census().StartSpan(msg.Context(), "adminCommands.listHandler", "guild_id", msg.GuildID().ToString())
 	defer span.End()
 	msg = cmdhandler.NewWithContext(ctx, msg)
 
-	r := &cmdhandler.EmbedResponse{
-		// To: cmdhandler.UserMentionString(msg.UserID()),
-	}
+	r := &cmdhandler.EmbedResponse{}
 
 	r.SetReplyTo(msg)
-
-	fmt.Printf("%#v", r)
 
 	logger := logging.WithMessage(msg, c.deps.Logger())
 	level.Info(logger).Message("handling adminCommand", "command", "list")
@@ -57,9 +109,30 @@ func (c *adminCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error
 		return r, msg.ContentErr()
 	}
 
-	t, err := c.deps.TrialAPI().NewTransaction(ctx, msg.GuildID().ToString(), false)
+	tNamesOpen, tNamesClosed, err := c.list(ctx, msg.GuildID())
 	if err != nil {
-		return r, err
+		return r, errors.Wrap(err, "could not produce event lists")
+	}
+
+	r.Fields = []cmdhandler.EmbedField{
+		{
+			Name: "*Available Events*",
+			Val:  fmt.Sprintf("```\n%s\n```\n", strings.Join(tNamesOpen, "\n")),
+		},
+		{
+			Name: "*Closed Events*",
+			Val:  fmt.Sprintf("```\n%s\n```\n", strings.Join(tNamesClosed, "\n")),
+		},
+	}
+	r.SetColor(okColor)
+
+	return r, nil
+}
+
+func (c *AdminCommands) list(ctx context.Context, gid snowflake.Snowflake) (open, closed []string, err error) {
+	t, err := c.deps.TrialAPI().NewTransaction(ctx, gid.ToString(), false)
+	if err != nil {
+		return nil, nil, err
 	}
 	defer deferutil.CheckDefer(func() error { return t.Rollback(ctx) })
 
@@ -76,17 +149,5 @@ func (c *adminCommands) list(msg cmdhandler.Message) (cmdhandler.Response, error
 	sort.Strings(tNamesOpen)
 	sort.Strings(tNamesClosed)
 
-	r.Fields = []cmdhandler.EmbedField{
-		{
-			Name: "*Available Events*",
-			Val:  fmt.Sprintf("```\n%s\n```\n", strings.Join(tNamesOpen, "\n")),
-		},
-		{
-			Name: "*Closed Events*",
-			Val:  fmt.Sprintf("```\n%s\n```\n", strings.Join(tNamesClosed, "\n")),
-		},
-	}
-	r.SetColor(okColor)
-
-	return r, nil
+	return tNamesOpen, tNamesClosed, nil
 }

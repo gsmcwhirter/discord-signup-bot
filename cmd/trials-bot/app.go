@@ -12,7 +12,7 @@ import (
 	"github.com/gsmcwhirter/go-util/v8/pprofsidecar"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v20/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/bot"
 )
 
 func start(c config) error {

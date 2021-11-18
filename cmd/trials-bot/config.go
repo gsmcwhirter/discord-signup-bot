@@ -13,6 +13,7 @@ var ErrMissingSecret = errors.New("missing secret")
 type config struct {
 	Version                        string  `mapstructure:"-"`
 	DisableSends                   bool    `mapstructure:"disable_sends"`
+	DisableInteractionSends        bool    `mapstructure:"disable_interaction_sends"`
 	BotName                        string  `mapstructure:"bot_name"`
 	BotPresence                    string  `mapstructure:"bot_presence"`
 	ClientURL                      string  `mapstructure:"client_url"`

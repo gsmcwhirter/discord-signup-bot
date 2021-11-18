@@ -4,9 +4,9 @@ import (
 	"context"
 	"strings"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v20/bot"
-	"github.com/gsmcwhirter/discord-bot-lib/v20/bot/session"
-	"github.com/gsmcwhirter/discord-bot-lib/v20/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/bot/session"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/cmdhandler"
 	"github.com/gsmcwhirter/go-util/v8/logging/level"
 	"github.com/gsmcwhirter/go-util/v8/telemetry"
 

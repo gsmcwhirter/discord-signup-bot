@@ -1,12 +1,12 @@
 package commands
 
 import (
-	"github.com/gsmcwhirter/discord-bot-lib/v20/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v20/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/logging"
 	"github.com/gsmcwhirter/go-util/v8/logging/level"
 )
 
-func (c *configCommands) version(msg cmdhandler.Message) (cmdhandler.Response, error) {
+func (c *ConfigCommands) versionHandler(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	ctx, span := c.deps.Census().StartSpan(msg.Context(), "configCommands.version", "guild_id", msg.GuildID().ToString())
 	defer span.End()
 	msg = cmdhandler.NewWithContext(ctx, msg)

@@ -6,8 +6,8 @@ import (
 	"runtime"
 
 	"github.com/dustin/go-humanize"
-	"github.com/gsmcwhirter/discord-bot-lib/v20/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v20/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/logging"
 	"github.com/gsmcwhirter/go-util/v8/deferutil"
 	"github.com/gsmcwhirter/go-util/v8/logging/level"
 
@@ -15,7 +15,7 @@ import (
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 )
 
-func (c *configCommands) collectStats(ctx context.Context, gid string) (stat, error) {
+func (c *ConfigCommands) collectStats(ctx context.Context, gid string) (stat, error) {
 	s := stat{}
 
 	t, err := c.deps.TrialAPI().NewTransaction(ctx, gid, false)
@@ -38,7 +38,7 @@ func (c *configCommands) collectStats(ctx context.Context, gid string) (stat, er
 	return s, nil
 }
 
-func (c *configCommands) stats(msg cmdhandler.Message) (cmdhandler.Response, error) {
+func (c *ConfigCommands) statsHandler(msg cmdhandler.Message) (cmdhandler.Response, error) {
 	ctx, span := c.deps.Census().StartSpan(msg.Context(), "configCommands.stats", "guild_id", msg.GuildID().ToString())
 	defer span.End()
 	msg = cmdhandler.NewWithContext(ctx, msg)

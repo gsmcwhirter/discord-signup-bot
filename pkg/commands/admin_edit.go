@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -11,12 +12,61 @@ import (
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v20/cmdhandler"
-	"github.com/gsmcwhirter/discord-bot-lib/v20/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/discordapi/entity"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/snowflake"
 )
 
-func (c *adminCommands) edit(msg cmdhandler.Message) (cmdhandler.Response, error) {
-	ctx, span := c.deps.Census().StartSpan(msg.Context(), "adminCommands.edit", "guild_id", msg.GuildID().ToString())
+func (c *AdminCommands) editInteraction(ix *cmdhandler.Interaction, opts []entity.ApplicationCommandInteractionOption) (cmdhandler.Response, []cmdhandler.Response, error) {
+	ctx, span := c.deps.Census().StartSpan(ix.Context(), "adminCommands.editInteraction", "guild_id", ix.GuildID().ToString())
+	defer span.End()
+
+	r := &cmdhandler.SimpleEmbedResponse{}
+
+	logger := logging.WithMessage(ix, c.deps.Logger())
+	level.Info(logger).Message("handling admin interaction", "command", "edit")
+
+	gsettings, err := storage.GetSettings(ctx, c.deps.GuildAPI(), ix.GuildID())
+	if err != nil {
+		return r, nil, err
+	}
+
+	okColor, err := colorToInt(gsettings.MessageColor)
+	if err != nil {
+		return r, nil, err
+	}
+
+	errColor, err := colorToInt(gsettings.ErrorColor)
+	if err != nil {
+		return r, nil, err
+	}
+
+	r.SetColor(errColor)
+
+	if !isAdminChannel(logger, ix, gsettings.AdminChannel, c.deps.BotSession()) {
+		level.Info(logger).Message("command not in admin channel", "admin_channel", gsettings.AdminChannel)
+		return nil, nil, msghandler.ErrUnauthorized
+	}
+
+	eventName, es, err := eventSettingsFromOptions(opts, ix.Data.Resolved)
+	if err != nil {
+		return r, nil, errors.Wrap(err, "could not parse interaction data")
+	}
+
+	if err := c.edit(ctx, ix.GuildID(), eventName, es); err != nil {
+		return r, nil, errors.Wrap(err, "could not edit event")
+	}
+
+	level.Info(logger).Message("trial edited", "trial_name", eventName)
+	r.Description = fmt.Sprintf("Trial %s edited successfully", eventName)
+	r.SetColor(okColor)
+
+	return r, nil, nil
+}
+
+func (c *AdminCommands) editHandler(msg cmdhandler.Message) (cmdhandler.Response, error) {
+	ctx, span := c.deps.Census().StartSpan(msg.Context(), "adminCommands.editHandler", "guild_id", msg.GuildID().ToString())
 	defer span.End()
 	msg = cmdhandler.NewWithContext(ctx, msg)
 
@@ -62,86 +112,14 @@ func (c *adminCommands) edit(msg cmdhandler.Message) (cmdhandler.Response, error
 	trialName := msg.Contents()[0]
 	settings := msg.Contents()[1:]
 
-	t, err := c.deps.TrialAPI().NewTransaction(ctx, msg.GuildID().ToString(), true)
-	if err != nil {
-		return r, err
-	}
-	defer deferutil.CheckDefer(func() error { return t.Rollback(ctx) })
-
-	trial, err := t.GetTrial(ctx, trialName)
-	if err != nil {
-		return r, err
-	}
-
 	settingMap, err := parseSettingDescriptionArgs(settings)
 	if err != nil {
 		return r, err
 	}
+	es := loadEventSettings(settingMap)
 
-	if v, ok := settingMap["description"]; ok {
-		trial.SetDescription(ctx, v)
-	}
-
-	if v, ok := settingMap["announcechannel"]; ok {
-		trial.SetAnnounceChannel(ctx, v)
-	}
-
-	if v, ok := settingMap["announceto"]; ok {
-		trial.SetAnnounceTo(ctx, v)
-	}
-
-	if v, ok := settingMap["signupchannel"]; ok {
-		trial.SetSignupChannel(ctx, v)
-	}
-
-	if v, ok := settingMap["hidereactionsannounce"]; !ok {
-		err = trial.SetHideReactionsAnnounce(ctx, gsettings.HideReactionsAnnounce)
-	} else {
-		err = trial.SetHideReactionsAnnounce(ctx, v)
-	}
-	if err != nil {
-		return r, err
-	}
-
-	if v, ok := settingMap["hidereactionsshow"]; !ok {
-		err = trial.SetHideReactionsShow(ctx, gsettings.HideReactionsShow)
-	} else {
-		err = trial.SetHideReactionsShow(ctx, v)
-	}
-	if err != nil {
-		return r, err
-	}
-
-	if v, ok := settingMap["time"]; ok {
-		trial.SetTime(ctx, v)
-	}
-
-	if v, ok := settingMap["roleorder"]; ok {
-		roleOrder := strings.Split(v, ",")
-		for i := range roleOrder {
-			roleOrder[i] = strings.TrimSpace(roleOrder[i])
-		}
-		trial.SetRoleOrder(ctx, roleOrder)
-	}
-
-	roleCtEmoList, err := parseRolesString(settingMap["roles"])
-	if err != nil {
-		return r, err
-	}
-	for _, rce := range roleCtEmoList {
-		if rce.ct == 0 {
-			trial.RemoveRole(ctx, rce.role)
-		} else {
-			trial.SetRoleCount(ctx, rce.role, rce.emo, rce.ct)
-		}
-	}
-
-	if err = t.SaveTrial(ctx, trial); err != nil {
-		return r, errors.Wrap(err, "could not save event")
-	}
-
-	if err = t.Commit(ctx); err != nil {
-		return r, errors.Wrap(err, "could not save event")
+	if err := c.edit(ctx, msg.GuildID(), trialName, es); err != nil {
+		return r, errors.Wrap(err, "could not edit event")
 	}
 
 	level.Info(logger).Message("trial edited", "trial_name", trialName)
@@ -149,4 +127,81 @@ func (c *adminCommands) edit(msg cmdhandler.Message) (cmdhandler.Response, error
 	r.SetColor(okColor)
 
 	return r, nil
+}
+
+func (c *AdminCommands) edit(ctx context.Context, gid snowflake.Snowflake, eventName string, settings eventSettings) error {
+	t, err := c.deps.TrialAPI().NewTransaction(ctx, gid.ToString(), true)
+	if err != nil {
+		return err
+	}
+	defer deferutil.CheckDefer(func() error { return t.Rollback(ctx) })
+
+	trial, err := t.GetTrial(ctx, eventName)
+	if err != nil {
+		return err
+	}
+
+	if settings.Description != nil {
+		trial.SetDescription(ctx, *settings.Description)
+	}
+
+	if settings.AnnounceChannel != nil {
+		trial.SetAnnounceChannel(ctx, *settings.AnnounceChannel)
+	}
+
+	if settings.AnnounceTo != nil {
+		trial.SetAnnounceTo(ctx, *settings.AnnounceTo)
+	}
+
+	if settings.SignupChannel != nil {
+		trial.SetSignupChannel(ctx, *settings.SignupChannel)
+	}
+
+	if settings.HideReactionsAnnounce != nil {
+		if err := trial.SetHideReactionsAnnounce(ctx, *settings.HideReactionsAnnounce); err != nil {
+			return err
+		}
+	}
+
+	if settings.HideReactionsShow != nil {
+		if err := trial.SetHideReactionsShow(ctx, *settings.HideReactionsShow); err != nil {
+			return err
+		}
+	}
+
+	if settings.Time != nil {
+		trial.SetTime(ctx, *settings.Time)
+	}
+
+	if settings.RoleOrder != nil {
+		roleOrder := strings.Split(*settings.RoleOrder, ",")
+		for i := range roleOrder {
+			roleOrder[i] = strings.TrimSpace(roleOrder[i])
+		}
+		trial.SetRoleOrder(ctx, roleOrder)
+	}
+
+	if settings.Roles != nil {
+		roleCtEmoList, err := parseRolesString(*settings.Roles)
+		if err != nil {
+			return err
+		}
+		for _, rce := range roleCtEmoList {
+			if rce.ct == 0 {
+				trial.RemoveRole(ctx, rce.role)
+			} else {
+				trial.SetRoleCount(ctx, rce.role, rce.emo, rce.ct)
+			}
+		}
+	}
+
+	if err = t.SaveTrial(ctx, trial); err != nil {
+		return errors.Wrap(err, "could not save event")
+	}
+
+	if err = t.Commit(ctx); err != nil {
+		return errors.Wrap(err, "could not save event")
+	}
+
+	return nil
 }

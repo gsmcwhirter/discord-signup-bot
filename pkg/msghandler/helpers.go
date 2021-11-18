@@ -3,10 +3,10 @@ package msghandler
 import (
 	"context"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v20/bot"
-	"github.com/gsmcwhirter/discord-bot-lib/v20/bot/session"
-	"github.com/gsmcwhirter/discord-bot-lib/v20/discordapi/json"
-	"github.com/gsmcwhirter/discord-bot-lib/v20/snowflake"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/bot/session"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/discordapi/entity"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/snowflake"
 	"github.com/gsmcwhirter/go-util/v8/logging/level"
 )
 
@@ -67,7 +67,7 @@ func IsSignupChannel(msg MessageLike, signupChannel string, sess *session.Sessio
 	return cid == msg.ChannelID()
 }
 
-func hasAdminRole(ctx context.Context, logger Logger, gm json.GuildMemberResponse, role string) bool {
+func hasAdminRole(ctx context.Context, logger Logger, gm entity.GuildMember, role string) bool {
 	rid, err := snowflake.FromString(role)
 	if err != nil {
 		level.Error(logger).Err("could not parse AdminRole", err, "admin_role", role)
@@ -77,7 +77,7 @@ func hasAdminRole(ctx context.Context, logger Logger, gm json.GuildMemberRespons
 	return gm.HasRole(rid)
 }
 
-func hasRoleWithAdministrator(ctx context.Context, logger Logger, sess *session.Session, gid snowflake.Snowflake, gm json.GuildMemberResponse) bool {
+func hasRoleWithAdministrator(ctx context.Context, logger Logger, sess *session.Session, gid snowflake.Snowflake, gm entity.GuildMember) bool {
 	g, ok := sess.Guild(gid)
 	if !ok {
 		level.Error(logger).Message("could not find guild in the session", "guild_id", gid)

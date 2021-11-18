@@ -9,8 +9,8 @@ require (
 	github.com/golangci/golangci-lint v1.42.1
 	github.com/google/pprof v0.0.0-20211008130755-947d60d73cc0
 	github.com/gorilla/websocket v1.4.2
-	github.com/gsmcwhirter/discord-bot-lib/v20 v20.0.0
-	github.com/gsmcwhirter/go-util/v8 v8.2.1
+	github.com/gsmcwhirter/discord-bot-lib/v23 v23.4.0
+	github.com/gsmcwhirter/go-util/v8 v8.3.0
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/honeycombio/opencensus-exporter v1.0.1
 	github.com/jackc/pgx/v4 v4.13.0

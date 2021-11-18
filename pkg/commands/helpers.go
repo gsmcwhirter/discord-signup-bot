@@ -7,9 +7,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/gsmcwhirter/discord-bot-lib/v20/bot"
-	"github.com/gsmcwhirter/discord-bot-lib/v20/bot/session"
-	"github.com/gsmcwhirter/discord-bot-lib/v20/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/bot"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/bot/session"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/discordapi/entity"
 	"github.com/gsmcwhirter/go-util/v8/errors"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
@@ -91,6 +92,124 @@ func parseSettingDescriptionArgs(args []string) (map[string]string, error) {
 	}
 
 	return argMap, nil
+}
+
+func loadEventSettings(sMap map[string]string) eventSettings {
+	es := eventSettings{}
+	if v, ok := sMap["description"]; ok {
+		es.Description = &v
+	}
+
+	if v, ok := sMap["announcechannel"]; ok {
+		es.AnnounceChannel = &v
+	}
+
+	if v, ok := sMap["announceto"]; ok {
+		es.AnnounceTo = &v
+	}
+
+	if v, ok := sMap["signupchannel"]; ok {
+		es.SignupChannel = &v
+	}
+
+	if v, ok := sMap["hidereactionsannounce"]; ok {
+		es.HideReactionsAnnounce = &v
+	}
+
+	if v, ok := sMap["hidereactionsshow"]; ok {
+		es.HideReactionsShow = &v
+	}
+
+	if v, ok := sMap["time"]; ok {
+		es.Time = &v
+	}
+
+	if v, ok := sMap["roleorder"]; ok {
+		es.RoleOrder = &v
+	}
+
+	if v, ok := sMap["roles"]; ok {
+		es.Roles = &v
+	}
+
+	return es
+}
+
+func eventSettingsFromOptions(opts []entity.ApplicationCommandInteractionOption, resolved entity.ResolvedData) (string, eventSettings, error) {
+	var eventName string
+	es := eventSettings{}
+
+	for i := range opts {
+		if opts[i].Name == "event_name" {
+			eventName = opts[i].ValueString
+			continue
+		}
+
+		if opts[i].Name == "roles" {
+			v := opts[i].ValueString
+			es.Roles = &v
+			continue
+		}
+
+		if opts[i].Name == "time" {
+			v := opts[i].ValueString
+			es.Time = &v
+			continue
+		}
+
+		if opts[i].Name == "description" {
+			v := opts[i].ValueString
+			es.Description = &v
+			continue
+		}
+
+		if opts[i].Name == "announcechannel" {
+			c, ok := resolved.Channels[opts[i].ValueChannel]
+			if !ok {
+				return eventName, es, errors.Wrap(ErrMissingData, "could not find announce channel in resolved data to get name", "cid", opts[i].ValueChannel)
+			}
+			es.AnnounceChannel = &c.Name
+		}
+
+		if opts[i].Name == "announceto" {
+			v := opts[i].ValueString
+			es.AnnounceTo = &v
+			continue
+		}
+
+		if opts[i].Name == "signupchannel" {
+			c, ok := resolved.Channels[opts[i].ValueChannel]
+			if !ok {
+				return eventName, es, errors.Wrap(ErrMissingData, "could not find channel in resolved data to get name", "cid", opts[i].ValueChannel)
+			}
+			es.SignupChannel = &c.Name
+		}
+
+		if opts[i].Name == "hidereactionsannounce" {
+			if opts[i].ValueBool {
+				es.HideReactionsAnnounce = &trueString
+			} else {
+				es.HideReactionsAnnounce = &falseString
+			}
+			continue
+		}
+
+		if opts[i].Name == "hidereactionsshow" {
+			if opts[i].ValueBool {
+				es.HideReactionsShow = &trueString
+			} else {
+				es.HideReactionsShow = &falseString
+			}
+		}
+
+		if opts[i].Name == "roleorder" {
+			v := opts[i].ValueString
+			es.RoleOrder = &v
+			continue
+		}
+	}
+
+	return eventName, es, nil
 }
 
 type roleCtEmo struct {
