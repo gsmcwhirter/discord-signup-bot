@@ -88,6 +88,8 @@ func NewHandlers(deps dependencies, opts Options) Handlers {
 
 		interactionGuildAllowlist: map[snowflake.Snowflake]bool{
 			snowflake.Snowflake(468646871133454357): true,
+			snowflake.Snowflake(869634209550041128): true, // Daelinia
+			snowflake.Snowflake(685674036214235175): true, // Daelinia
 		},
 	}
 
