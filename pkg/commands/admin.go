@@ -521,7 +521,7 @@ func (c *AdminCommands) commandForGuild(ctx context.Context, gid snowflake.Snowf
 				},
 			},
 		},
-		DefaultPermission: true,
+		DefaultPermission: false,
 	}, nil
 }
 

@@ -23,37 +23,60 @@ func (c *ConfigCommands) HandleInteraction(ix *cmdhandler.Interaction) (cmdhandl
 	var opts []entity.ApplicationCommandInteractionOption
 
 	for i := range ix.Data.Options {
-		if ix.Data.Options[i].Type != entity.OptTypeSubCommand {
+		if ix.Data.Options[i].Type != entity.OptTypeSubCommand && ix.Data.Options[i].Type != entity.OptTypeSubCommandGroup {
 			continue
 		}
 
 		sc = ix.Data.Options[i].Name
 		opts = ix.Data.Options[i].Options
+		break
 	}
 
-	_ = opts
-
 	switch sc {
+	case "about":
+		return c.aboutInteraction(ix, opts)
 	case "debug":
-		return nil, nil, parser.ErrUnknownCommand
-	case "discord":
-		return nil, nil, parser.ErrUnknownCommand
+		return c.debugInteraction(ix, opts)
+	case "factory-reset":
+		return c.resetInteraction(ix, opts)
 	case "get":
-		return nil, nil, parser.ErrUnknownCommand
+		return c.getInteraction(ix, opts)
 	case "list":
-		return nil, nil, parser.ErrUnknownCommand
+		return c.listInteraction(ix, opts)
 	case "reset":
-		return nil, nil, parser.ErrUnknownCommand
+		return c.resetInteraction(ix, opts)
 	case "set":
-		return nil, nil, parser.ErrUnknownCommand
+		return c.setInteraction(ix, opts)
 	case "stats":
-		return nil, nil, parser.ErrUnknownCommand
-	case "version":
-		return nil, nil, parser.ErrUnknownCommand
-	case "website":
-		return nil, nil, parser.ErrUnknownCommand
+		return c.statsInteraction(ix, opts)
 	case "adminrole":
-		return nil, nil, parser.ErrUnknownCommand
+		var arsc string
+		var aropts []entity.ApplicationCommandInteractionOption
+
+		for i := range opts {
+			if opts[i].Type != entity.OptTypeSubCommand {
+				continue
+			}
+
+			arsc = opts[i].Name
+			aropts = opts[i].Options
+			break
+		}
+
+		switch arsc {
+		case "add":
+			return c.adminroleAddInteraction(ix, aropts)
+		case "clear":
+			return c.adminroleClearInteraction(ix, aropts)
+		case "refresh":
+			return c.adminroleRefreshInteraction(ix, aropts)
+		case "remove":
+			return c.adminroleRemoveInteraction(ix, aropts)
+		case "list":
+			return c.adminroleListInteraction(ix, aropts)
+		default:
+			return nil, nil, parser.ErrUnknownCommand
+		}
 	default:
 		return nil, nil, parser.ErrUnknownCommand
 	}
@@ -148,18 +171,8 @@ func (c *ConfigCommands) GuildCommands(gid snowflake.Snowflake) ([]cmdhandler.In
 					},
 					{
 						Type:        entity.OptTypeSubCommand,
-						Name:        "discord",
-						Description: "Show discord information",
-					},
-					{
-						Type:        entity.OptTypeSubCommand,
-						Name:        "version",
-						Description: "Show version information",
-					},
-					{
-						Type:        entity.OptTypeSubCommand,
-						Name:        "website",
-						Description: "Show website information",
+						Name:        "about",
+						Description: "Show bot information",
 					},
 					{
 						Type:        entity.OptTypeSubCommand,
@@ -201,19 +214,22 @@ func (c *ConfigCommands) GuildCommands(gid snowflake.Snowflake) ([]cmdhandler.In
 								Description: "Control sequence for the original bot functionality (DEPRECATED)",
 							},
 							{
-								Type:        entity.OptTypeChannel,
-								Name:        "announcechannel",
-								Description: "Channel to post event announcements to, by default",
+								Type:         entity.OptTypeChannel,
+								Name:         "announcechannel",
+								Description:  "Channel to post event announcements to, by default",
+								ChannelTypes: []entity.ChannelType{entity.ChannelGuildText},
 							},
 							{
-								Type:        entity.OptTypeChannel,
-								Name:        "adminchannel",
-								Description: "Channel to listen for admin messages in",
+								Type:         entity.OptTypeChannel,
+								Name:         "adminchannel",
+								Description:  "Channel to listen for admin messages in",
+								ChannelTypes: []entity.ChannelType{entity.ChannelGuildText},
 							},
 							{
-								Type:        entity.OptTypeChannel,
-								Name:        "signupchannel",
-								Description: "Channel to listed for signup messages in, by default",
+								Type:         entity.OptTypeChannel,
+								Name:         "signupchannel",
+								Description:  "Channel to listed for signup messages in, by default",
+								ChannelTypes: []entity.ChannelType{entity.ChannelGuildText},
 							},
 							{
 								Type:        entity.OptTypeString,
@@ -264,6 +280,16 @@ func (c *ConfigCommands) GuildCommands(gid snowflake.Snowflake) ([]cmdhandler.In
 							},
 							{
 								Type:        entity.OptTypeSubCommand,
+								Name:        "list",
+								Description: "List all admin roles",
+							},
+							{
+								Type:        entity.OptTypeSubCommand,
+								Name:        "refresh",
+								Description: "Refresh permissions for all admin roles",
+							},
+							{
+								Type:        entity.OptTypeSubCommand,
 								Name:        "add",
 								Description: "Add an admin role",
 								Options: []entity.ApplicationCommandOption{
@@ -271,6 +297,7 @@ func (c *ConfigCommands) GuildCommands(gid snowflake.Snowflake) ([]cmdhandler.In
 										Type:        entity.OptTypeRole,
 										Name:        "role",
 										Description: "The role to add as an administrator",
+										Required:    true,
 									},
 								},
 							},
@@ -283,6 +310,7 @@ func (c *ConfigCommands) GuildCommands(gid snowflake.Snowflake) ([]cmdhandler.In
 										Type:        entity.OptTypeRole,
 										Name:        "role",
 										Description: "The role to remove as an administrator",
+										Required:    true,
 									},
 								},
 							},

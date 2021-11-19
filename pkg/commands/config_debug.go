@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -8,13 +9,41 @@ import (
 	"github.com/gsmcwhirter/go-util/v8/errors"
 	"github.com/gsmcwhirter/go-util/v8/logging/level"
 
+	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
+
 	"github.com/gsmcwhirter/discord-bot-lib/v23/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/discordapi/entity"
 	"github.com/gsmcwhirter/discord-bot-lib/v23/logging"
 	"github.com/gsmcwhirter/discord-bot-lib/v23/snowflake"
 )
 
+func (c *ConfigCommands) debugInteraction(ix *cmdhandler.Interaction, opts []entity.ApplicationCommandInteractionOption) (cmdhandler.Response, []cmdhandler.Response, error) {
+	ctx, span := c.deps.Census().StartSpan(ix.Context(), "configCommands.debugInteraction", "guild_id", ix.GuildID().ToString())
+	defer span.End()
+
+	r := &cmdhandler.SimpleEmbedResponse{}
+
+	logger := logging.WithMessage(ix, c.deps.Logger())
+	level.Info(logger).Message("handling admin interaction", "command", "announce")
+
+	gsettings, err := storage.GetSettings(ctx, c.deps.GuildAPI(), ix.GuildID())
+	if err != nil {
+		return r, nil, err
+	}
+
+	// No color here to eliminate another class of errors, since this is debug
+	// Also no admin channel checks in case we are trying to figure out why the admin channel is broken
+
+	r2, err := c.debug(ctx, ix.GuildID(), ix.ChannelID(), ix.UserID(), gsettings)
+	if err != nil {
+		return r, nil, errors.Wrap(err, "could not debug config")
+	}
+
+	return r2, nil, nil
+}
+
 func (c *ConfigCommands) debugHandler(msg cmdhandler.Message) (cmdhandler.Response, error) {
-	ctx, span := c.deps.Census().StartSpan(msg.Context(), "configCommands.list", "guild_id", msg.GuildID().ToString())
+	ctx, span := c.deps.Census().StartSpan(msg.Context(), "configCommands.debugHandler", "guild_id", msg.GuildID().ToString())
 	defer span.End()
 	msg = cmdhandler.NewWithContext(ctx, msg)
 
@@ -25,11 +54,34 @@ func (c *ConfigCommands) debugHandler(msg cmdhandler.Message) (cmdhandler.Respon
 	r.SetReplyTo(msg)
 
 	logger := logging.WithMessage(msg, c.deps.Logger())
-	level.Info(logger).Message("handling configCommand", "command", "list")
+	level.Info(logger).Message("handling configCommand", "command", "debug")
 
 	if msg.ContentErr() != nil {
 		return r, msg.ContentErr()
 	}
+
+	gsettings, err := storage.GetSettings(ctx, c.deps.GuildAPI(), msg.GuildID())
+	if err != nil {
+		return r, err
+	}
+
+	// No color here to eliminate another class of errors, since this is debug
+	// Also no admin channel checks in case we are trying to figure out why the admin channel is broken
+
+	r2, err := c.debug(ctx, msg.GuildID(), msg.ChannelID(), msg.UserID(), gsettings)
+	if err != nil {
+		return r, errors.Wrap(err, "could not debug config")
+	}
+	r2.SetReplyTo(msg)
+
+	return r2, nil
+}
+
+func (c *ConfigCommands) debug(ctx context.Context, gid, currCid, uid snowflake.Snowflake, gsettings storage.GuildSettings) (*cmdhandler.SimpleEmbedResponse, error) {
+	ctx, span := c.deps.Census().StartSpan(ctx, "configCommands.debug", "guild_id", gid.ToString())
+	defer span.End()
+
+	r := &cmdhandler.SimpleEmbedResponse{}
 
 	t, err := c.deps.GuildAPI().NewTransaction(ctx, false)
 	if err != nil {
@@ -37,52 +89,33 @@ func (c *ConfigCommands) debugHandler(msg cmdhandler.Message) (cmdhandler.Respon
 	}
 	defer deferutil.CheckDefer(func() error { return t.Rollback(ctx) })
 
-	bGuild, err := t.AddGuild(ctx, msg.GuildID().ToString())
-	if err != nil {
-		return r, errors.Wrap(err, "unable to find guild")
-	}
-
-	s := bGuild.GetSettings(ctx)
-
-	okColor, err := colorToInt(s.MessageColor)
-	if err != nil {
-		return r, err
-	}
-
-	errColor, err := colorToInt(s.ErrorColor)
-	if err != nil {
-		return r, err
-	}
-
-	r.SetColor(errColor)
-
 	var adminChannelID, announceChannelID, signupChannelID snowflake.Snowflake
 
-	g, ok := c.deps.BotSession().Guild(msg.GuildID())
+	g, ok := c.deps.BotSession().Guild(gid)
 	if !ok {
 		return r, errors.New("could not find guild in session")
 	}
 
-	if s.AdminChannel != "" {
-		if cid, ok := g.ChannelWithName(s.AdminChannel); ok {
+	if gsettings.AdminChannel != "" {
+		if cid, ok := g.ChannelWithName(gsettings.AdminChannel); ok {
 			adminChannelID = cid
 		}
 	}
 
-	if s.AnnounceChannel != "" {
-		if cid, ok := g.ChannelWithName(s.AnnounceChannel); ok {
+	if gsettings.AnnounceChannel != "" {
+		if cid, ok := g.ChannelWithName(gsettings.AnnounceChannel); ok {
 			announceChannelID = cid
 		}
 	}
 
-	if s.SignupChannel != "" {
-		if cid, ok := g.ChannelWithName(s.SignupChannel); ok {
+	if gsettings.SignupChannel != "" {
+		if cid, ok := g.ChannelWithName(gsettings.SignupChannel); ok {
 			signupChannelID = cid
 		}
 	}
 
-	adminRoles := make([]string, 0, len(s.AdminRoles))
-	for _, rname := range s.AdminRoles {
+	adminRoles := make([]string, 0, len(gsettings.AdminRoles))
+	for _, rname := range gsettings.AdminRoles {
 		adminRoles = append(adminRoles, fmt.Sprintf("<@&%s>", rname))
 	}
 
@@ -112,26 +145,26 @@ GuildSettings:
 	- AdminRole IDs: %[15]s,
 
 	`,
-		msg.GuildID().ToString(),
-		s.ControlSequence,
-		s.AnnounceChannel,
-		s.SignupChannel,
-		s.AdminChannel,
-		s.AnnounceTo,
-		s.ShowAfterSignup,
-		s.ShowAfterWithdraw,
+		gid.ToString(),
+		gsettings.ControlSequence,
+		gsettings.AnnounceChannel,
+		gsettings.SignupChannel,
+		gsettings.AdminChannel,
+		gsettings.AnnounceTo,
+		gsettings.ShowAfterSignup,
+		gsettings.ShowAfterWithdraw,
 		strings.Join(adminRoles, ", "),
-		msg.UserID().ToString(),
+		uid.ToString(),
 		announceChannelID.ToString(),
 		signupChannelID.ToString(),
 		adminChannelID.ToString(),
-		msg.ChannelID().ToString(),
-		s.AdminRoles,
-		s.MessageColor,
-		s.ErrorColor,
+		currCid.ToString(),
+		gsettings.AdminRoles,
+		gsettings.MessageColor,
+		gsettings.ErrorColor,
 	)
 
 	r.Description = dbgString
-	r.Color = okColor
+
 	return r, nil
 }

@@ -46,7 +46,7 @@ func (c *AdminCommands) announceInteraction(ix *cmdhandler.Interaction, opts []e
 
 	if !isAdminChannel(logger, ix, gsettings.AdminChannel, c.deps.BotSession()) {
 		level.Info(logger).Message("command not in admin channel", "admin_channel", gsettings.AdminChannel)
-		return nil, nil, msghandler.ErrUnauthorized
+		return r, nil, msghandler.ErrUnauthorized
 	}
 
 	var eventName, phrase string
@@ -118,7 +118,7 @@ func (c *AdminCommands) announceHandler(msg cmdhandler.Message) (cmdhandler.Resp
 
 	if !isAdminChannel(logger, msg, gsettings.AdminChannel, c.deps.BotSession()) {
 		level.Info(logger).Message("command not in admin channel", "admin_channel", gsettings.AdminChannel)
-		return nil, msghandler.ErrUnauthorized
+		return r, msghandler.ErrUnauthorized
 	}
 
 	if msg.ContentErr() != nil {

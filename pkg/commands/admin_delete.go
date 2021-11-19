@@ -45,7 +45,7 @@ func (c *AdminCommands) deleteInteraction(ix *cmdhandler.Interaction, opts []ent
 
 	if !isAdminChannel(logger, ix, gsettings.AdminChannel, c.deps.BotSession()) {
 		level.Info(logger).Message("command not in admin channel", "admin_channel", gsettings.AdminChannel)
-		return nil, nil, msghandler.ErrUnauthorized
+		return r, nil, msghandler.ErrUnauthorized
 	}
 
 	var eventName string
@@ -100,7 +100,7 @@ func (c *AdminCommands) deleteHandler(msg cmdhandler.Message) (cmdhandler.Respon
 
 	if !isAdminChannel(logger, msg, gsettings.AdminChannel, c.deps.BotSession()) {
 		level.Info(logger).Message("command not in admin channel", "admin_channel", gsettings.AdminChannel)
-		return nil, msghandler.ErrUnauthorized
+		return r, msghandler.ErrUnauthorized
 	}
 
 	if msg.ContentErr() != nil {

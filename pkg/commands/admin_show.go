@@ -44,7 +44,7 @@ func (c *AdminCommands) showInteraction(ix *cmdhandler.Interaction, opts []entit
 
 	if !isAdminChannel(logger, ix, gsettings.AdminChannel, c.deps.BotSession()) {
 		level.Info(logger).Message("command not in admin channel", "admin_channel", gsettings.AdminChannel)
-		return nil, nil, msghandler.ErrUnauthorized
+		return r, nil, msghandler.ErrUnauthorized
 	}
 
 	var eventName string
@@ -99,7 +99,7 @@ func (c *AdminCommands) showHandler(msg cmdhandler.Message) (cmdhandler.Response
 
 	if !isAdminChannel(logger, msg, gsettings.AdminChannel, c.deps.BotSession()) {
 		level.Info(logger).Message("command not in admin channel", "admin_channel", gsettings.AdminChannel)
-		return nil, msghandler.ErrUnauthorized
+		return r, msghandler.ErrUnauthorized
 	}
 
 	if msg.ContentErr() != nil {
@@ -121,6 +121,7 @@ func (c *AdminCommands) showHandler(msg cmdhandler.Message) (cmdhandler.Response
 		return r, errors.Wrap(err, "could not show event")
 	}
 	r2.SetColor(okColor)
+	r2.SetReplyTo(msg)
 
 	level.Info(logger).Message("trial shown", "trial_name", trialName)
 

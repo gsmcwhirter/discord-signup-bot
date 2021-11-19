@@ -7,8 +7,10 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/gsmcwhirter/discord-bot-lib/v23/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/discordapi/entity"
 	"github.com/gsmcwhirter/discord-bot-lib/v23/logging"
 	"github.com/gsmcwhirter/go-util/v8/deferutil"
+	"github.com/gsmcwhirter/go-util/v8/errors"
 	"github.com/gsmcwhirter/go-util/v8/logging/level"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/msghandler"
@@ -38,8 +40,63 @@ func (c *ConfigCommands) collectStats(ctx context.Context, gid string) (stat, er
 	return s, nil
 }
 
+func (c *ConfigCommands) statsInteraction(ix *cmdhandler.Interaction, opts []entity.ApplicationCommandInteractionOption) (cmdhandler.Response, []cmdhandler.Response, error) {
+	ctx, span := c.deps.Census().StartSpan(ix.Context(), "configCommands.statsInteraction")
+	defer span.End()
+
+	r := &cmdhandler.SimpleEmbedResponse{}
+
+	if ix.UserID().ToString() != "183367875350888466" {
+		return r, nil, msghandler.ErrUnauthorized
+	}
+
+	logger := logging.WithMessage(ix, c.deps.Logger())
+	level.Info(logger).Message("handling config interaction", "command", "stats")
+
+	gsettings, err := storage.GetSettings(ctx, c.deps.GuildAPI(), ix.GuildID())
+	if err != nil {
+		return r, nil, err
+	}
+
+	okColor, err := colorToInt(gsettings.MessageColor)
+	if err != nil {
+		return r, nil, err
+	}
+
+	errColor, err := colorToInt(gsettings.ErrorColor)
+	if err != nil {
+		return r, nil, err
+	}
+
+	r.SetColor(errColor)
+
+	if !isAdminChannel(logger, ix, gsettings.AdminChannel, c.deps.BotSession()) {
+		level.Info(logger).Message("command not in admin channel", "admin_channel", gsettings.AdminChannel)
+		return r, nil, msghandler.ErrUnauthorized
+	}
+
+	level.Info(logger).Message("sending deferral")
+
+	if err := c.deps.Bot().API().DeferInteractionResponse(ctx, ix.IDSnowflake, ix.Token); err != nil {
+		return r, nil, errors.Wrap(err, "failed to send deferral request")
+	}
+
+	level.Debug(logger).Message("collecting statistics")
+
+	r2, err := c.stats(ctx)
+	if err != nil {
+		return r, nil, errors.Wrap(err, "could not collect stats")
+	}
+
+	level.Debug(logger).Message("done collecting statistics")
+
+	r2.SetColor(okColor)
+
+	return r2, nil, nil
+}
+
 func (c *ConfigCommands) statsHandler(msg cmdhandler.Message) (cmdhandler.Response, error) {
-	ctx, span := c.deps.Census().StartSpan(msg.Context(), "configCommands.stats", "guild_id", msg.GuildID().ToString())
+	ctx, span := c.deps.Census().StartSpan(msg.Context(), "configCommands.statsHandler")
 	defer span.End()
 	msg = cmdhandler.NewWithContext(ctx, msg)
 
@@ -56,9 +113,47 @@ func (c *ConfigCommands) statsHandler(msg cmdhandler.Message) (cmdhandler.Respon
 	logger := logging.WithMessage(msg, c.deps.Logger())
 	level.Info(logger).Message("handling configCommand", "command", "stats")
 
+	gsettings, err := storage.GetSettings(ctx, c.deps.GuildAPI(), msg.GuildID())
+	if err != nil {
+		return r, err
+	}
+
+	okColor, err := colorToInt(gsettings.MessageColor)
+	if err != nil {
+		return r, err
+	}
+
+	errColor, err := colorToInt(gsettings.ErrorColor)
+	if err != nil {
+		return r, err
+	}
+
+	r.SetColor(errColor)
+
+	if !isAdminChannel(logger, msg, gsettings.AdminChannel, c.deps.BotSession()) {
+		level.Info(logger).Message("command not in admin channel", "admin_channel", gsettings.AdminChannel)
+		return r, msghandler.ErrUnauthorized
+	}
+
 	if msg.ContentErr() != nil {
 		return r, msg.ContentErr()
 	}
+
+	r2, err := c.stats(ctx)
+	if err != nil {
+		return r, errors.Wrap(err, "could not collect stats")
+	}
+
+	r2.SetColor(okColor)
+
+	return r2, nil
+}
+
+func (c *ConfigCommands) stats(ctx context.Context) (*cmdhandler.SimpleEmbedResponse, error) {
+	ctx, span := c.deps.Census().StartSpan(ctx, "configCommands.stats")
+	defer span.End()
+
+	r := &cmdhandler.SimpleEmbedResponse{}
 
 	allGuilds, err := c.deps.GuildAPI().AllGuilds(ctx)
 	if err != nil {
@@ -140,5 +235,6 @@ Recent Stats:
 		// rolling stats
 		c.deps.StatsHub().Report(""),
 	)
+
 	return r, nil
 }

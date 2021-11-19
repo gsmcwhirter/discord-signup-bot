@@ -46,7 +46,7 @@ func (c *AdminCommands) editInteraction(ix *cmdhandler.Interaction, opts []entit
 
 	if !isAdminChannel(logger, ix, gsettings.AdminChannel, c.deps.BotSession()) {
 		level.Info(logger).Message("command not in admin channel", "admin_channel", gsettings.AdminChannel)
-		return nil, nil, msghandler.ErrUnauthorized
+		return r, nil, msghandler.ErrUnauthorized
 	}
 
 	eventName, es, err := eventSettingsFromOptions(opts, ix.Data.Resolved)
@@ -98,7 +98,7 @@ func (c *AdminCommands) editHandler(msg cmdhandler.Message) (cmdhandler.Response
 
 	if !isAdminChannel(logger, msg, gsettings.AdminChannel, c.deps.BotSession()) {
 		level.Info(logger).Message("command not in admin channel", "admin_channel", gsettings.AdminChannel)
-		return nil, msghandler.ErrUnauthorized
+		return r, msghandler.ErrUnauthorized
 	}
 
 	if msg.ContentErr() != nil {
