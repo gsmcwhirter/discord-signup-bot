@@ -1,21 +1,75 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"sort"
 	"strings"
 
 	"github.com/gsmcwhirter/go-util/v8/deferutil"
+	"github.com/gsmcwhirter/go-util/v8/errors"
 	"github.com/gsmcwhirter/go-util/v8/logging/level"
 
 	"github.com/gsmcwhirter/discord-signup-bot/pkg/storage"
 
 	"github.com/gsmcwhirter/discord-bot-lib/v23/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/discordapi/entity"
 	"github.com/gsmcwhirter/discord-bot-lib/v23/logging"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/snowflake"
 )
 
+func (c *UserCommands) listInteraction(ix *cmdhandler.Interaction, opts []entity.ApplicationCommandInteractionOption) (cmdhandler.Response, []cmdhandler.Response, error) {
+	ctx, span := c.deps.Census().StartSpan(ix.Context(), "userCommands.listInteraction", "guild_id", ix.GuildID().ToString())
+	defer span.End()
+
+	r := &cmdhandler.EmbedResponse{}
+
+	logger := logging.WithMessage(ix, c.deps.Logger())
+	level.Info(logger).Message("handling root interaction", "command", "list")
+
+	gsettings, err := storage.GetSettings(ctx, c.deps.GuildAPI(), ix.GuildID())
+	if err != nil {
+		return r, nil, err
+	}
+
+	okColor, err := colorToInt(gsettings.MessageColor)
+	if err != nil {
+		return r, nil, err
+	}
+
+	errColor, err := colorToInt(gsettings.ErrorColor)
+	if err != nil {
+		return r, nil, err
+	}
+
+	r.SetColor(errColor)
+
+	tNames, err := c.list(ctx, ix.GuildID())
+	if err != nil {
+		return r, nil, errors.Wrap(err, "could not list open events")
+	}
+
+	var listContent string
+	if len(tNames) > 0 {
+		listContent = strings.Join(tNames, "\n")
+	} else {
+		listContent = "(none yet)"
+	}
+
+	r.Fields = []cmdhandler.EmbedField{
+		{
+			Name: "*Available Events*",
+			Val:  listContent,
+		},
+	}
+	r.SetColor(okColor)
+	r.SetEphemeral(true)
+
+	return r, nil, nil
+}
+
 func (c *UserCommands) listHandler(msg cmdhandler.Message) (cmdhandler.Response, error) {
-	ctx, span := c.deps.Census().StartSpan(msg.Context(), "userCommands.list", "guild_id", msg.GuildID().ToString())
+	ctx, span := c.deps.Census().StartSpan(msg.Context(), "userCommands.listHandler", "guild_id", msg.GuildID().ToString())
 	defer span.End()
 	msg = cmdhandler.NewWithContext(ctx, msg)
 
@@ -49,15 +103,42 @@ func (c *UserCommands) listHandler(msg cmdhandler.Message) (cmdhandler.Response,
 		return r, msg.ContentErr()
 	}
 
-	t, err := c.deps.TrialAPI().NewTransaction(ctx, msg.GuildID().ToString(), false)
+	tNames, err := c.list(ctx, msg.GuildID())
 	if err != nil {
-		return r, err
+		return r, errors.Wrap(err, "could not list open events")
+	}
+
+	var listContent string
+	if len(tNames) > 0 {
+		listContent = strings.Join(tNames, "\n")
+	} else {
+		listContent = "(none yet)"
+	}
+
+	r.Fields = []cmdhandler.EmbedField{
+		{
+			Name: "*Available Events*",
+			Val:  listContent,
+		},
+	}
+	r.SetColor(okColor)
+
+	return r, nil
+}
+
+func (c *UserCommands) list(ctx context.Context, gid snowflake.Snowflake) ([]string, error) {
+	ctx, span := c.deps.Census().StartSpan(ctx, "userCommands.list", "guild_id", gid.ToString())
+	defer span.End()
+
+	t, err := c.deps.TrialAPI().NewTransaction(ctx, gid.ToString(), false)
+	if err != nil {
+		return nil, err
 	}
 	defer deferutil.CheckDefer(func() error { return t.Rollback(ctx) })
 
-	g, ok := c.deps.BotSession().Guild(msg.GuildID())
+	g, ok := c.deps.BotSession().Guild(gid)
 	if !ok {
-		return r, ErrGuildNotFound
+		return nil, ErrGuildNotFound
 	}
 
 	trials := t.GetTrials(ctx)
@@ -73,20 +154,5 @@ func (c *UserCommands) listHandler(msg cmdhandler.Message) (cmdhandler.Response,
 	}
 	sort.Strings(tNames)
 
-	var listContent string
-	if len(tNames) > 0 {
-		listContent = strings.Join(tNames, "\n")
-	} else {
-		listContent = "(none yet)"
-	}
-
-	r.Fields = []cmdhandler.EmbedField{
-		{
-			Name: "*Available Events*",
-			Val:  listContent,
-		},
-	}
-	r.Color = okColor
-
-	return r, nil
+	return tNames, nil
 }

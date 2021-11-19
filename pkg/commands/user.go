@@ -1,13 +1,72 @@
 package commands
 
 import (
+	"fmt"
+
 	"github.com/gsmcwhirter/discord-bot-lib/v23/cmdhandler"
+	"github.com/gsmcwhirter/discord-bot-lib/v23/discordapi/entity"
 	"github.com/gsmcwhirter/discord-bot-lib/v23/snowflake"
+	"github.com/gsmcwhirter/go-util/v8/errors"
+	"github.com/gsmcwhirter/go-util/v8/parser"
 )
 
 // RootCommands holds the commands at the root level
 type UserCommands struct {
 	deps dependencies
+}
+
+func (c *UserCommands) HandleInteraction(ix *cmdhandler.Interaction) (cmdhandler.Response, []cmdhandler.Response, error) {
+	if ix.Data == nil {
+		return nil, nil, cmdhandler.ErrMalformedInteraction
+	}
+
+	sc := ix.Data.Name
+	opts := ix.Data.Options
+
+	_ = opts
+
+	switch sc {
+	case "list":
+		return c.listInteraction(ix, opts)
+	case "myevents":
+		return c.myEventsInteraction(ix, opts)
+	case "show":
+		return c.showInteraction(ix, opts)
+	case "signup":
+		return c.signupInteraction(ix, opts)
+	case "withdraw":
+		return c.withdrawInteraction(ix, opts)
+	default:
+		return nil, nil, parser.ErrUnknownCommand
+	}
+}
+
+func (c *UserCommands) Autocomplete(ix *cmdhandler.Interaction) ([]entity.ApplicationCommandOptionChoice, error) {
+	if ix.Data == nil {
+		return nil, cmdhandler.ErrMalformedInteraction
+	}
+
+	sc := ix.Data.Name
+	opts := ix.Data.Options
+	focused, err := findFocusedOption(opts)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not find focused option")
+	}
+
+	scKind := fmt.Sprintf("%s:%s", sc, focused.Name)
+
+	switch scKind {
+	case "show:event_name":
+		return c.autocompleteOpenEvents(ix, opts, focused)
+	case "signup:event_name":
+		return c.autocompleteOpenEvents(ix, opts, focused)
+	case "signup:role":
+		return c.autocompleteEventRoles(ix, opts, focused)
+	case "withdraw:event_name":
+		return c.autocompleteOpenEvents(ix, opts, focused)
+	default:
+		return nil, parser.ErrUnknownCommand
+	}
 }
 
 func (c *UserCommands) AttachToCommandHandler(ch *cmdhandler.CommandHandler) {
@@ -24,250 +83,91 @@ func (c *UserCommands) GlobalCommands() []cmdhandler.InteractionCommandHandler {
 	return nil
 }
 
-// func (c *UserCommands) commandForGuild(ctx context.Context, gid snowflake.Snowflake) (cmd entity.ApplicationCommand, err error) {
-// 	var eventNames []entity.ApplicationCommandOptionChoice
-
-// 	tx, err := c.deps.TrialAPI().NewTransaction(ctx, gid.ToString(), false)
-// 	if err != nil {
-// 		return cmd, errors.Wrap(err, "could not open db transaction")
-// 	}
-
-// 	trials := tx.GetTrials(ctx)
-// 	eventNames = make([]entity.ApplicationCommandOptionChoice, 0, len(trials))
-// 	for _, t := range trials {
-// 		name := t.GetName(ctx)
-// 		eventNames = append(eventNames, entity.ApplicationCommandOptionChoice{
-// 			Name:        name,
-// 			ValueString: name,
-// 		})
-// 	}
-
-// 	return entity.ApplicationCommand{
-// 		Type:        entity.CmdTypeChatInput,
-// 		Name:        "admin",
-// 		Description: "Controls administrative functions of the bot",
-// 		Options: []entity.ApplicationCommandOption{
-// 			{
-// 				Type:        entity.OptTypeSubCommand,
-// 				Name:        "announce",
-// 				Description: "Create an event announcement",
-// 				Options: []entity.ApplicationCommandOption{
-// 					{
-// 						Type:        entity.OptTypeString,
-// 						Name:        "event_name",
-// 						Description: "Name of the event to announce",
-// 						Choices:     eventNames,
-// 						Required:    true,
-// 					},
-// 					{
-// 						Type:        entity.OptTypeChannel,
-// 						Name:        "announce_channel",
-// 						Description: "The channel to announce into (omit for default)",
-// 						Required:    false,
-// 					},
-// 				},
-// 			},
-// 			{
-// 				Type:        entity.OptTypeSubCommand,
-// 				Name:        "clear",
-// 				Description: "Clear the signups from an event",
-// 				Options: []entity.ApplicationCommandOption{
-// 					{
-// 						Type:        entity.OptTypeString,
-// 						Name:        "event_name",
-// 						Description: "Name of the event to clear",
-// 						Choices:     eventNames,
-// 						Required:    true,
-// 					},
-// 				},
-// 			},
-// 			{
-// 				Type:        entity.OptTypeSubCommand,
-// 				Name:        "close",
-// 				Description: "Close an event",
-// 				Options: []entity.ApplicationCommandOption{
-// 					{
-// 						Type:        entity.OptTypeString,
-// 						Name:        "event_name",
-// 						Description: "Name of the event to close",
-// 						Choices:     eventNames,
-// 						Required:    true,
-// 					},
-// 				},
-// 			},
-// 			// {
-// 			// 	Type: entity.OptTypeSubCommand,
-// 			// 	Name: "create",
-// 			// 	Description: "Create a new event",
-// 			// 	Options: []entity.ApplicationCommandOption{
-// 			// 		{
-// 			// 			Type:        entity.OptTypeString,
-// 			// 			Name:        "event_name",
-// 			// 			Description: "Name of the event to announce",
-// 			// 			Choices:     eventNames,
-// 			// 			Required:    true,
-// 			// 		},
-// 			// 	},
-// 			// },
-// 			{
-// 				Type:        entity.OptTypeSubCommand,
-// 				Name:        "debug",
-// 				Description: "Debug an event",
-// 				Options: []entity.ApplicationCommandOption{
-// 					{
-// 						Type:        entity.OptTypeString,
-// 						Name:        "event_name",
-// 						Description: "Name of the event to debug",
-// 						Choices:     eventNames,
-// 						Required:    true,
-// 					},
-// 				},
-// 			},
-// 			{
-// 				Type:        entity.OptTypeSubCommand,
-// 				Name:        "delete",
-// 				Description: "Delete an event",
-// 				Options: []entity.ApplicationCommandOption{
-// 					{
-// 						Type:        entity.OptTypeString,
-// 						Name:        "event_name",
-// 						Description: "Name of the event to delete",
-// 						Choices:     eventNames,
-// 						Required:    true,
-// 					},
-// 				},
-// 			},
-// 			// {
-// 			// 	Type: entity.OptTypeSubCommand,
-// 			// 	Name: "edit",
-// 			// 	Description: "Clear the signups from an event",
-// 			// 	Options: []entity.ApplicationCommandOption{
-// 			// 		{
-// 			// 			Type:        entity.OptTypeString,
-// 			// 			Name:        "event_name",
-// 			// 			Description: "Name of the event to announce",
-// 			// 			Choices:     eventNames,
-// 			// 			Required:    true,
-// 			// 		},
-// 			// 	},
-// 			// },
-// 			{
-// 				Type:        entity.OptTypeSubCommand,
-// 				Name:        "grouping",
-// 				Description: "Clear the signups from an event",
-// 				Options: []entity.ApplicationCommandOption{
-// 					{
-// 						Type:        entity.OptTypeString,
-// 						Name:        "event_name",
-// 						Description: "Name of the event to announce",
-// 						Choices:     eventNames,
-// 						Required:    true,
-// 					},
-// 					{
-// 						Type:        entity.OptTypeString,
-// 						Name:        "grouping_message",
-// 						Description: "A message to include with the grouping notification",
-// 						Required:    false,
-// 					},
-// 				},
-// 			},
-// 			{
-// 				Type:        entity.OptTypeSubCommand,
-// 				Name:        "list",
-// 				Description: "List all events",
-// 			},
-// 			{
-// 				Type:        entity.OptTypeSubCommand,
-// 				Name:        "open",
-// 				Description: "Open an event",
-// 				Options: []entity.ApplicationCommandOption{
-// 					{
-// 						Type:        entity.OptTypeString,
-// 						Name:        "event_name",
-// 						Description: "Name of the event to open",
-// 						Choices:     eventNames,
-// 						Required:    true,
-// 					},
-// 				},
-// 			},
-// 			{
-// 				Type:        entity.OptTypeSubCommand,
-// 				Name:        "show",
-// 				Description: "Show details for an event",
-// 				Options: []entity.ApplicationCommandOption{
-// 					{
-// 						Type:        entity.OptTypeString,
-// 						Name:        "event_name",
-// 						Description: "Name of the event to show",
-// 						Choices:     eventNames,
-// 						Required:    true,
-// 					},
-// 				},
-// 			},
-// 			{
-// 				Type:        entity.OptTypeSubCommand,
-// 				Name:        "signup",
-// 				Description: "Sign a user up for an event",
-// 				Options: []entity.ApplicationCommandOption{
-// 					{
-// 						Type:        entity.OptTypeString,
-// 						Name:        "event_name",
-// 						Description: "Name of the event",
-// 						Choices:     eventNames,
-// 						Required:    true,
-// 					},
-// 					{
-// 						Type:        entity.OptTypeUser,
-// 						Name:        "user",
-// 						Description: "User to sign up",
-// 						Required:    true,
-// 					},
-// 					{
-// 						Type:        entity.OptTypeString,
-// 						Name:        "role",
-// 						Description: "Role to sign up for",
-// 						Required:    true,
-// 					},
-// 				},
-// 			},
-// 			{
-// 				Type:        entity.OptTypeSubCommand,
-// 				Name:        "withdraw",
-// 				Description: "Withdraw a user from an event",
-// 				Options: []entity.ApplicationCommandOption{
-// 					{
-// 						Type:        entity.OptTypeString,
-// 						Name:        "event_name",
-// 						Description: "Name of the event",
-// 						Choices:     eventNames,
-// 						Required:    true,
-// 					},
-// 					{
-// 						Type:        entity.OptTypeUser,
-// 						Name:        "user",
-// 						Description: "User to sign up",
-// 						Required:    true,
-// 					},
-// 				},
-// 			},
-// 		},
-// 		DefaultPermission: true,
-// 	}, nil
-// }
-
 func (c *UserCommands) GuildCommands(gid snowflake.Snowflake) ([]cmdhandler.InteractionCommandHandler, error) {
-	// ctx := context.TODO()
-	// command, err := c.commandForGuild(ctx, gid)
-	// if err != nil {
-	// 	return nil, errors.Wrap(err, "could not get command for guild")
-	// }
-
-	// return []cmdhandler.InteractionCommandHandler{
-	// 	&InteractionCommandHandler{
-	// 		command: command,
-	// 		handler: c,
-	// 	},
-	// }, nil
-
-	return nil, nil
+	return []cmdhandler.InteractionCommandHandler{
+		&InteractionCommandHandler{
+			command: entity.ApplicationCommand{
+				Type:              entity.CmdTypeChatInput,
+				Name:              "list",
+				Description:       "List all open events",
+				DefaultPermission: true,
+			},
+			handler:      c,
+			autocomplete: c,
+		},
+		&InteractionCommandHandler{
+			command: entity.ApplicationCommand{
+				Type:              entity.CmdTypeChatInput,
+				Name:              "myevents",
+				Description:       "List my currently signed-up-for events",
+				DefaultPermission: true,
+			},
+			handler:      c,
+			autocomplete: c,
+		},
+		&InteractionCommandHandler{
+			command: entity.ApplicationCommand{
+				Type:        entity.CmdTypeChatInput,
+				Name:        "show",
+				Description: "Show details of the requested event",
+				Options: []entity.ApplicationCommandOption{
+					{
+						Type:         entity.OptTypeString,
+						Name:         "event_name",
+						Description:  "The name of the event to show",
+						Required:     true,
+						Autocomplete: true,
+					},
+				},
+				DefaultPermission: true,
+			},
+			handler:      c,
+			autocomplete: c,
+		},
+		&InteractionCommandHandler{
+			command: entity.ApplicationCommand{
+				Type:        entity.CmdTypeChatInput,
+				Name:        "signup",
+				Description: "Sign up for an event",
+				Options: []entity.ApplicationCommandOption{
+					{
+						Type:         entity.OptTypeString,
+						Name:         "event_name",
+						Description:  "The name of the event to sign up for",
+						Required:     true,
+						Autocomplete: true,
+					},
+					{
+						Type:         entity.OptTypeString,
+						Name:         "role",
+						Description:  "The role to sign up for",
+						Required:     true,
+						Autocomplete: true,
+					},
+				},
+				DefaultPermission: true,
+			},
+			handler:      c,
+			autocomplete: c,
+		},
+		&InteractionCommandHandler{
+			command: entity.ApplicationCommand{
+				Type:        entity.CmdTypeChatInput,
+				Name:        "withdraw",
+				Description: "Withdraw from an event",
+				Options: []entity.ApplicationCommandOption{
+					{
+						Type:         entity.OptTypeString,
+						Name:         "event_name",
+						Description:  "The name of the event to withdraw from",
+						Required:     true,
+						Autocomplete: true,
+					},
+				},
+				DefaultPermission: true,
+			},
+			handler:      c,
+			autocomplete: c,
+		},
+	}, nil
 }
