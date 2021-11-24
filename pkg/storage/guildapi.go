@@ -194,6 +194,4 @@ type Guild interface {
 
 	SetName(ctx context.Context, name string)
 	SetSettings(ctx context.Context, s GuildSettings)
-
-	Serialize(ctx context.Context) ([]byte, error)
 }

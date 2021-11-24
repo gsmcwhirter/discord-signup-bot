@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 
-	"github.com/gsmcwhirter/go-util/v8/errors"
 	"github.com/gsmcwhirter/go-util/v8/telemetry"
 )
 
@@ -40,10 +39,6 @@ func (g *pgGuild) GetName(ctx context.Context) string {
 
 func (g *pgGuild) SetName(ctx context.Context, name string) {
 	g.data.Name = name
-}
-
-func (g *pgGuild) Serialize(ctx context.Context) ([]byte, error) {
-	return nil, errors.New("not implemented")
 }
 
 func (g *pgGuild) GetSettings(ctx context.Context) GuildSettings {

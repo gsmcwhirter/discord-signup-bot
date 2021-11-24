@@ -226,7 +226,6 @@ func (p *PgGuildAPITx) SaveGuild(ctx context.Context, guild Guild) error {
 		message_color = EXCLUDED.message_color,
 		error_color = EXCLUDED.error_color
 	`, gid, gs.ControlSequence, gs.AnnounceChannel, gs.SignupChannel, gs.AdminChannel, gs.AnnounceTo, gs.ShowAfterSignup, gs.ShowAfterWithdraw, gs.HideReactionsAnnounce, gs.HideReactionsShow, gs.MessageColor, gs.ErrorColor)
-
 	if err != nil {
 		return errors.Wrap(err, "could not upsert guild_settings")
 	}
