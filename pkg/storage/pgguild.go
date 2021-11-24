@@ -8,16 +8,21 @@ import (
 )
 
 type guildData struct {
-	Name              string
-	CommandIndicator  string
-	AnnounceChannel   string
-	AdminChannel      string
-	SignupChannel     string
-	AnnounceTo        string
-	ShowAfterSignup   bool
-	ShowAfterWithdraw bool
-	MessageColor      string
-	ErrorColor        string
+	Name                  string
+	CommandIndicator      string
+	AnnounceChannel       string
+	AdminChannel          string
+	SignupChannel         string
+	AnnounceTo            string
+	MessageColor          string
+	ErrorColor            string
+	ShowAfterSignup       bool
+	ShowAfterWithdraw     bool
+	HideReactionsAnnounce bool
+	HideReactionsShow     bool
+	AllowMultiSignups     bool
+	ShowNotes             bool
+	OpenAdminAccess       bool
 
 	AdminRoles []string
 }

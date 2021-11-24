@@ -9,10 +9,7 @@ import (
 	"github.com/gsmcwhirter/go-util/v8/telemetry"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
-	"google.golang.org/protobuf/proto"
 )
-
-// var settingsBucket = []byte("GuildRecords")
 
 type pgGuildAPI struct {
 	db     *pgxpool.Pool
@@ -113,36 +110,8 @@ func (p *PgGuildAPITx) GetGuild(ctx context.Context, name string) (Guild, error)
 	return p.GetGuildPg(ctx, name)
 }
 
-func (p *PgGuildAPITx) getGuildProto(ctx context.Context, name string) (Guild, error) {
-	pGuild := ProtoGuild{}
-
-	r := p.tx.QueryRow(ctx, `
-	SELECT settings
-	FROM guild_settings WHERE guild_id = $1`, name)
-
-	var val []byte
-	if err := r.Scan(&val); err != nil {
-		if err == pgx.ErrNoRows {
-			return nil, ErrGuildNotExist
-		}
-		return nil, errors.Wrap(err, "could not retrieve guild settings")
-	}
-
-	err := proto.Unmarshal(val, &pGuild)
-	if err != nil {
-		return nil, errors.Wrap(err, "guild record is corrupt")
-	}
-
-	pGuild.Name = strings.TrimSpace(pGuild.Name)
-
-	return &protoGuild{
-		protoGuild: &pGuild,
-		census:     p.census,
-	}, nil
-}
-
 func (p *PgGuildAPITx) GetGuildPg(ctx context.Context, name string) (Guild, error) {
-	pGuild := ProtoGuild{}
+	pGuild := guildData{}
 
 	r := p.tx.QueryRow(ctx, `
 	SELECT guild_id, command_indicator,
@@ -185,11 +154,11 @@ func (p *PgGuildAPITx) GetGuildPg(ctx context.Context, name string) (Guild, erro
 		adminRoles = append(adminRoles, role)
 	}
 
-	pGuild.AdminRole = strings.Join(adminRoles, ",")
+	pGuild.AdminRoles = adminRoles
 
-	return &protoGuild{
-		protoGuild: &pGuild,
-		census:     p.census,
+	return &pgGuild{
+		data:   pGuild,
+		census: p.census,
 	}, nil
 }
 
@@ -199,9 +168,9 @@ func (p *PgGuildAPITx) AddGuild(ctx context.Context, name string) (Guild, error)
 
 	guild, err := p.GetGuild(ctx, name)
 	if err == ErrGuildNotExist {
-		guild = &protoGuild{
-			protoGuild: &ProtoGuild{Name: name},
-			census:     p.census,
+		guild = &pgGuild{
+			data:   guildData{Name: name},
+			census: p.census,
 		}
 		err = nil
 	}
@@ -233,21 +202,18 @@ func (p *PgGuildAPITx) getAdminRoles(ctx context.Context, gid string) ([]string,
 	return roles, nil
 }
 
-func (p *PgGuildAPITx) saveProtoGuild(ctx context.Context, guild Guild) error {
+func (p *PgGuildAPITx) SaveGuild(ctx context.Context, guild Guild) error {
+	ctx, span := p.census.StartSpan(ctx, "PgGuildAPITx.SaveGuild")
+	defer span.End()
+
 	gid := guild.GetName(ctx)
 	gs := guild.GetSettings(ctx)
 
-	serial, err := guild.Serialize(ctx)
-	if err != nil {
-		return errors.Wrap(err, "could not serialize guild data")
-	}
-
-	_, err = p.tx.Exec(ctx, `
-	INSERT INTO guild_settings (guild_id, settings, command_indicator, announce_channel, signup_channel, admin_channel, announce_to, show_after_signup, show_after_withdraw, hide_reactions_announce, hide_reactions_show, message_color, error_color)
+	_, err := p.tx.Exec(ctx, `
+	INSERT INTO guild_settings (guild_id, command_indicator, announce_channel, signup_channel, admin_channel, announce_to, show_after_signup, show_after_withdraw, hide_reactions_announce, hide_reactions_show, message_color, error_color)
 	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
 	ON CONFLICT (guild_id) DO UPDATE
 	SET 
-		settings = EXCLUDED.settings,
 		command_indicator = EXCLUDED.command_indicator,
 		announce_channel = EXCLUDED.announce_channel,
 		signup_channel = EXCLUDED.signup_channel,
@@ -259,7 +225,7 @@ func (p *PgGuildAPITx) saveProtoGuild(ctx context.Context, guild Guild) error {
 		hide_reactions_show = EXCLUDED.hide_reactions_show,
 		message_color = EXCLUDED.message_color,
 		error_color = EXCLUDED.error_color
-	`, gid, serial, gs.ControlSequence, gs.AnnounceChannel, gs.SignupChannel, gs.AdminChannel, gs.AnnounceTo, gs.ShowAfterSignup, gs.ShowAfterWithdraw, gs.HideReactionsAnnounce, gs.HideReactionsShow, gs.MessageColor, gs.ErrorColor)
+	`, gid, gs.ControlSequence, gs.AnnounceChannel, gs.SignupChannel, gs.AdminChannel, gs.AnnounceTo, gs.ShowAfterSignup, gs.ShowAfterWithdraw, gs.HideReactionsAnnounce, gs.HideReactionsShow, gs.MessageColor, gs.ErrorColor)
 
 	if err != nil {
 		return errors.Wrap(err, "could not upsert guild_settings")
@@ -311,11 +277,4 @@ func (p *PgGuildAPITx) saveProtoGuild(ctx context.Context, guild Guild) error {
 	}
 
 	return nil
-}
-
-func (p *PgGuildAPITx) SaveGuild(ctx context.Context, guild Guild) error {
-	ctx, span := p.census.StartSpan(ctx, "PgGuildAPITx.SaveGuild")
-	defer span.End()
-
-	return p.saveProtoGuild(ctx, guild)
 }
