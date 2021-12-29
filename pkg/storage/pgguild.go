@@ -68,6 +68,19 @@ func (g *pgGuild) GetSettings(ctx context.Context) GuildSettings {
 	} else {
 		s.ShowAfterWithdraw = "false"
 	}
+
+	if g.data.HideReactionsAnnounce {
+		s.HideReactionsAnnounce = "true"
+	} else {
+		s.HideReactionsAnnounce = "false"
+	}
+
+	if g.data.HideReactionsShow {
+		s.HideReactionsShow = "true"
+	} else {
+		s.HideReactionsShow = "false"
+	}
+
 	return s
 }
 
