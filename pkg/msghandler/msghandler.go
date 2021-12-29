@@ -67,6 +67,8 @@ type handlers struct {
 	defaultCommandIndicator string
 	successColor            int
 	errorColor              int
+
+	interactionGuildAllowlist map[snowflake.Snowflake]bool
 }
 
 // Options provides a way to pass configuration to NewHandlers
@@ -83,6 +85,12 @@ func NewHandlers(deps dependencies, opts Options) Handlers {
 		defaultCommandIndicator: opts.DefaultCommandIndicator,
 		successColor:            opts.SuccessColor,
 		errorColor:              opts.ErrorColor,
+
+		interactionGuildAllowlist: map[snowflake.Snowflake]bool{
+			snowflake.Snowflake(468646871133454357): true,
+			snowflake.Snowflake(869634209550041128): true, // Daelinia
+			snowflake.Snowflake(685674036214235175): true, // Daelinia
+		},
 	}
 
 	return &h
@@ -632,6 +640,10 @@ func (h *handlers) upsertGuildCommandsAndPermissions(ctx context.Context, gid sn
 	ctx, span := h.deps.Census().StartSpan(ctx, "handlers.upsertGuildCommandsAndPermissions", "gid", gid.ToString())
 	defer span.End()
 
+	if !h.interactionGuildAllowlist[gid] {
+		return nil
+	}
+
 	gcmds, err := h.deps.GuildCommandGenerator()(gid)
 	if err != nil {
 		return errors.Wrap(err, "could not generate guild commands")
@@ -654,6 +666,10 @@ func (h *handlers) upsertGuildCommandsAndPermissions(ctx context.Context, gid sn
 func (h *handlers) upsertGuildCommandPermissions(ctx context.Context, gid snowflake.Snowflake) error {
 	ctx, span := h.deps.Census().StartSpan(ctx, "handlers.upsertGuildCommandPermissions", "gid", gid.ToString())
 	defer span.End()
+
+	if !h.interactionGuildAllowlist[gid] {
+		return nil
+	}
 
 	return errors.Wrap(h.deps.PermissionsManager().RefreshPermissions(ctx, h.bot.Config().ClientID, gid), "could not RefreshPermissions")
 }
