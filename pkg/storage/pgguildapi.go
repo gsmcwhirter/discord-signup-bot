@@ -211,7 +211,7 @@ func (p *PgGuildAPITx) SaveGuild(ctx context.Context, guild Guild) error {
 
 	_, err := p.tx.Exec(ctx, `
 	INSERT INTO guild_settings (guild_id, command_indicator, announce_channel, signup_channel, admin_channel, announce_to, show_after_signup, show_after_withdraw, hide_reactions_announce, hide_reactions_show, message_color, error_color)
-	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+	VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 	ON CONFLICT (guild_id) DO UPDATE
 	SET 
 		command_indicator = EXCLUDED.command_indicator,
