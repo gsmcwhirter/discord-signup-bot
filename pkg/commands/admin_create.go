@@ -167,8 +167,11 @@ func (c *AdminCommands) create(ctx context.Context, logger log.Logger, gid snowf
 	}
 
 	trial.SetName(ctx, eventName)
-	trial.SetDescription(ctx, *settings.Description)
 	trial.SetState(ctx, storage.TrialStateOpen)
+
+	if settings.Description != nil {
+		trial.SetDescription(ctx, *settings.Description)
+	}
 
 	if settings.AnnounceChannel == nil {
 		trial.SetAnnounceChannel(ctx, gsettings.AnnounceChannel)
