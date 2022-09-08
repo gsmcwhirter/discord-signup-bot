@@ -92,6 +92,7 @@ func NewHandlers(deps dependencies, opts Options) Handlers {
 			snowflake.Snowflake(685674036214235175): true, // Daelinia
 			snowflake.Snowflake(804137119085101137): true, // kingshart
 			snowflake.Snowflake(649000389882150922): true, // OtterB
+			snowflake.Snowflake(543828735443337243): true, // Indil
 		},
 	}
 
