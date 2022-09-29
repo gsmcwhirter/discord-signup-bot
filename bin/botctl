@@ -407,7 +407,7 @@ go:format() {
     done
 
     for d in $(go list -f '{{.Dir}}' "$project"); do 
-        gofumports -w -local "$PROJECT" "$d"/*.go || die "Could gofumports $d"
+        goimports -w -local "$PROJECT" "$d"/*.go || die "Couldn't goimports $d"
     done
 }
 
