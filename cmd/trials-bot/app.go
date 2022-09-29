@@ -99,6 +99,6 @@ func serverShutdownFunc(ctx context.Context, deps *dependencies, s *http.Server)
 		shutdownCtx, cncl := context.WithTimeout(context.Background(), 2*time.Second)
 		defer cncl()
 
-		return s.Shutdown(shutdownCtx)
+		return s.Shutdown(shutdownCtx) //nolint:contextcheck // we want a fresh one here
 	}
 }

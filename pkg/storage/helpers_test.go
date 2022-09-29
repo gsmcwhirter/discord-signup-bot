@@ -6,6 +6,8 @@ import (
 )
 
 func Test_diffStringSlices(t *testing.T) {
+	t.Parallel()
+
 	type args struct {
 		a []string
 		b []string
@@ -63,7 +65,10 @@ func Test_diffStringSlices(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
 			gotA, gotB := diffStringSlices(tt.args.a, tt.args.b)
 			if !reflect.DeepEqual(gotA, tt.wantA) {
 				t.Errorf("diffStringSlices() gotA = %v, wantA %v", gotA, tt.wantA)

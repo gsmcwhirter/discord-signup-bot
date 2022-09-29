@@ -207,7 +207,7 @@ terraform:apply() {
 fcos:ignition() {
     _op_signin
 
-    local kind fccfile
+    local kind fccfile ignition_file
     kind=$1; shift
 
     fccfile="$REPO_ROOT/fcos/$kind.fcc"
@@ -368,45 +368,6 @@ docker:push() {
     docker push "$remote_image"
 }
 
-docker:dev() {
-    # app target
-    [[ $# -gt 1 ]] ||
-        die "You must specify the app and target to run"
-
-    local app target secretdir
-
-    app="$1"; shift
-    target="$1"; shift
-
-    : "${STALE:=0}"
-
-    [[ "$STALE" -eq 1 ]] ||
-        docker:build "$app:dev" "$target"
-
-    secretdir="$REPO_ROOT/run/secrets"
-    mkdir -p "$secretdir"
-    _op_signin
-    BOT_OP_INIT=1 _postgres_userpass > "$secretdir/postgres"
-    BOT_OP_INIT=1 _bugsnag_key > "$secretdir/bugsnag"
-    BOT_OP_INIT=1 _honeycomb_key > "$secretdir/honeycomb"
-    BOT_OP_INIT=1 _bot_login > "$secretdir/bot_login"
-    BOT_OP_INIT=1 _bot_token > "$secretdir/bot_token"
-
-    docker run \
-        --rm \
-        --name=signup-bot \
-        --log-driver=json-file \
-        --mount=type=volume,destination=/tmp \
-        --memory-swap=-1 \
-        --volume="$secretdir:/secrets:ro" \
-        --volume="$REPO_ROOT/config.toml:/app/config.toml:ro" \
-        --read-only \
-        --net=bridge \
-        --init \
-        --privileged=false \
-        "signup-$app:dev-$target"
-}
-
 command:go() {
     dispatch "go" "$USAGE_GO" "$@"
 }
@@ -442,7 +403,7 @@ go:format() {
     echo "Running formatters on $project"
 
     for d in $(go list -f '{{.Dir}}' "$project"); do 
-        gofumpt -s -w "$d"/*.go || die "Couldn't gofumpt $d"
+        gofumpt -w "$d"/*.go || die "Couldn't gofumpt $d"
     done
 
     for d in $(go list -f '{{.Dir}}' "$project"); do 
@@ -481,8 +442,9 @@ go:lint() {
 
     echo "Running linters on $project"
 
-    golangci-lint run -E revive,gosimple,staticcheck "$project"
-    golangci-lint run -E deadcode,depguard,errcheck,gocritic,gofmt,goimports,gosec,govet,ineffassign,nakedret,prealloc,structcheck,typecheck,unconvert,varcheck "$project"
+    golangci-lint run -c .golangci.yml -E revive,gosimple,staticcheck "$project"
+	golangci-lint run -c .golangci.yml -E asciicheck,contextcheck,depguard,durationcheck,errcheck,errname,gocritic,gofumpt,goimports,gosec,govet,ineffassign,nakedret,paralleltest,prealloc,predeclared,typecheck,unconvert,unused,whitespace "$project"
+	golangci-lint run -c .golangci.yml -E godox "$project" || true
 }
 
 go:test() {

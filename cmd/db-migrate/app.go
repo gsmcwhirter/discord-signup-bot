@@ -160,7 +160,6 @@ func checkGuildSettings2(ctx context.Context, deps *dependencies) error {
 			level.Error(deps.Logger()).Err("guild settings mismatch", err, "guild_id", gname)
 			continue
 		}
-
 	}
 
 	return tx.Commit(ctx)
