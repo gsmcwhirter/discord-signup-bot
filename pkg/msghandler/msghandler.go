@@ -94,6 +94,7 @@ func NewHandlers(deps dependencies, opts Options) Handlers {
 			snowflake.Snowflake(649000389882150922): true, // OtterB
 			snowflake.Snowflake(543828735443337243): true, // Indil
 			snowflake.Snowflake(923741471687991346): true, // FaithVsFate
+			snowflake.Snowflake(456936934762217483): true, // heat4meat
 		},
 	}
 
