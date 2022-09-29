@@ -13,6 +13,7 @@ import (
 	_ "github.com/mailru/easyjson/easyjson"
 	_ "github.com/tomwright/dasel/cmd/dasel"
 	_ "golang.org/x/tools/cmd/godoc"
+	_ "golang.org/x/tools/cmd/goimports"
 	_ "golang.org/x/tools/cmd/stringer"
 	_ "google.golang.org/protobuf/cmd/protoc-gen-go"
 	_ "mvdan.cc/gofumpt"
